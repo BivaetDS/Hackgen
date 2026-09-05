@@ -71,3 +71,8 @@ RSpec/DescribeClass:
 # The repository is LF-only (.gitattributes); RuboCop's "native" default would demand CRLF on Windows.
 Layout/EndOfLine:
   EnforcedStyle: lf
+
+# Event message templates use %{name} placeholders (see docs/IR_CONTRACT.md); values are
+# pre-formatted Strings, so annotated %<name>s tokens would add nothing.
+Style/FormatStringToken:
+  EnforcedStyle: template
