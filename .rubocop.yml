@@ -1,0 +1,73 @@
+plugins:
+  - rubocop-rake
+  - rubocop-rspec
+
+AllCops:
+  TargetRubyVersion: 3.3
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - "spec/golden/**/*"
+    - "spec/fixtures/**/*"
+    - "output/**/*"
+    - "vendor/**/*"
+    - "tmp/**/*"
+    - "claude_code_kit/**/*"
+
+# Public classes/modules under lib/ carry a short "what and why" comment.
+Style/Documentation:
+  Enabled: true
+  Exclude:
+    - "spec/**/*"
+    - "Rakefile"
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+Style/StringLiteralsInInterpolation:
+  EnforcedStyle: double_quotes
+
+Layout/LineLength:
+  Max: 120
+
+Metrics/MethodLength:
+  Max: 20
+
+Metrics/ClassLength:
+  Max: 200
+
+Metrics/ModuleLength:
+  Max: 200
+
+Metrics/BlockLength:
+  Exclude:
+    - "spec/**/*"
+    - "Rakefile"
+    - "*.gemspec"
+
+RSpec/ExampleLength:
+  Max: 25
+
+# IR assertions are grouped with aggregate_failures; one example per IR object is the readable unit.
+RSpec/MultipleExpectations:
+  Max: 10
+
+RSpec/MultipleMemoizedHelpers:
+  Max: 10
+
+RSpec/NestedGroups:
+  Max: 4
+
+# spec/<layer>/<class>_spec.rb mirrors lib/provider_integrator/<layer>/ without the gem-name
+# prefix (see .claude/skills/ruby-cli-conventions), which this cop cannot express.
+RSpec/SpecFilePathFormat:
+  Enabled: false
+
+# Cross-cutting contract specs (docs <-> code, fixtures <-> schemas) do not describe one class.
+RSpec/DescribeClass:
+  Exclude:
+    - "spec/contract/**/*"
+
+# The repository is LF-only (.gitattributes); RuboCop's "native" default would demand CRLF on Windows.
+Layout/EndOfLine:
+  EnforcedStyle: lf
