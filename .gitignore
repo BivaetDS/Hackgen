@@ -1,0 +1,20 @@
+# Bundler
+/.bundle/
+/vendor/bundle/
+
+# Generated output (regenerate with bin/integrate)
+/output/
+/tmp/
+/coverage/
+
+# IDE / OS
+/.idea/
+.DS_Store
+Thumbs.db
+
+# Local Claude Code state
+/.claude/settings.local.json
+
+# Source kit and prompt sheet (copied into CLAUDE.md, .claude/skills/, docs/)
+/claude_code_kit/
+/PROMPT_CLAUDE_CODE.md

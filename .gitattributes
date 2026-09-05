@@ -1,0 +1,6 @@
+# Deterministic output requires stable line endings everywhere (golden tests compare bytes).
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.gz binary
+*.zip binary
