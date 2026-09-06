@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
 require "digest"
+require "erb"
 require "fileutils"
 require "json"
+require "prism"
 require "psych"
 require "json_schemer"
 require "pastel"
@@ -37,6 +39,7 @@ module ProviderIntegrator
   @loader.ignore("#{__dir__}/provider_integrator/compat")
   @loader.ignore("#{__dir__}/provider_integrator/dictionaries/*.yml")
   @loader.ignore("#{__dir__}/provider_integrator/schemas/*.json")
+  @loader.ignore("#{__dir__}/provider_integrator/templates")
   @loader.setup
 
   class << self

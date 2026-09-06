@@ -18,6 +18,8 @@ gem "sinatra", "~> 4.2"          # MIT - thin web layer over the same core
 gem "thor", "~> 1.5"             # MIT - CLI framework
 gem "tty-table", "~> 0.12"       # MIT - CLI tables
 gem "zeitwerk", "~> 2.8"         # MIT - code loader
+# RuboCop runs in-process (stdin API) to normalize generated Ruby; it never touches the network.
+gem "rubocop", "~> 1.90", require: false # MIT - formatter for generated code and repo linter
 
 group :test do
   gem "rack-test", "~> 2.2" # MIT - web layer specs
@@ -26,7 +28,6 @@ group :test do
 end
 
 group :development do
-  gem "rubocop", "~> 1.90", require: false       # MIT - linter
   gem "rubocop-rake", "~> 0.7", require: false   # MIT - Rakefile cops
   gem "rubocop-rspec", "~> 3.10", require: false # MIT - RSpec cops
 end

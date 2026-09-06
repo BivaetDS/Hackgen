@@ -84,7 +84,7 @@ module ProviderIntegrator
     end
 
     def exit_with(code)
-      raise Thor::Error, "invalid --provider (expected a lower-case slug such as novapay)" if code == EXIT[:arguments]
+      raise Thor::Error, "invalid --provider (expected a lower-case slug such as acmepay)" if code == EXIT[:arguments]
 
       exit(code)
     end

@@ -36,11 +36,28 @@ RSpec.describe ProviderIntegrator::Models::Result do
   end
 
   describe ProviderIntegrator::Models::GenerationResult do
-    it "exposes the written files as #files (PLAN 3.1 usage)" do
-      files = [{ "path" => "output/novapay_service.rb", "sha256" => "abc" }]
-      result = described_class.new(value: files, events: [])
+    let(:file) do
+      ProviderIntegrator::Models::GeneratedFile.build(kind: :service, name: "novapay_service.rb",
+                                                      path: "output/novapay_service.rb", content: "# service\n")
+    end
 
-      expect(result.files).to eq(files)
+    it "exposes the generated files as #files and finds one by kind (PLAN 3.1 usage)" do
+      result = described_class.new(value: [file], events: [warning], validation: { "ok" => true })
+
+      aggregate_failures do
+        expect(result.files).to eq([file])
+        expect(result.file(:service)).to be(file)
+        expect(result.file(:fixtures)).to be_nil
+        expect(result).to be_success
+        expect(result.validation).to eq("ok" => true)
+      end
+    end
+
+    it "fails on an E201 from the output validator" do
+      result = described_class.new(value: [file], events: [events.build("E201", file: "x.rb", reason: "syntax")],
+                                   validation: { "ok" => false })
+
+      expect(result).to be_failure
     end
   end
 end

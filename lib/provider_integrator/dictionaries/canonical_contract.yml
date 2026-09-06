@@ -110,6 +110,9 @@ credentials:
 
 env:
   base_url: "%{SLUG}_BASE_URL"
+  callback_url: "%{SLUG}_CALLBACK_URL"   # URL приёма вебхуков, когда провайдер ждёт его в теле запроса
+  redirect_url: "%{SLUG}_REDIRECT_URL"   # URL возврата плательщика (pay-in провайдеры)
+  token_url: "%{SLUG}_TOKEN_URL"         # OAuth2 token endpoint (client credentials)
 
 # ProviderGateway config по направлению операции (эталон: sbp_payout / RUB_SBP_WITHDRAW).
 gateway_config:

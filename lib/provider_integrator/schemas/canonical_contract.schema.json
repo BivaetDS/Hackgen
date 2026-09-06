@@ -220,9 +220,12 @@
     "env": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["base_url"],
+      "required": ["base_url", "callback_url", "redirect_url", "token_url"],
       "properties": {
-        "base_url": { "type": "string", "pattern": "^%\\{SLUG\\}[A-Z0-9_]*$" }
+        "base_url": { "$ref": "#/$defs/envName" },
+        "callback_url": { "$ref": "#/$defs/envName" },
+        "redirect_url": { "$ref": "#/$defs/envName" },
+        "token_url": { "$ref": "#/$defs/envName" }
       }
     },
     "gateway_config": {
@@ -263,6 +266,7 @@
     }
   },
   "$defs": {
+    "envName": { "type": "string", "pattern": "^%\\{SLUG\\}[A-Z0-9_]*$" },
     "nonEmptyString": { "type": "string", "minLength": 1 },
     "rubyMethodName": { "type": "string", "pattern": "^[a-z_][a-z0-9_]*$" },
     "rubyConstant": { "type": "string", "pattern": "^[A-Z][A-Za-z0-9]*(::[A-Z][A-Za-z0-9]*)*$" },
