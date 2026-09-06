@@ -1,0 +1,7 @@
+.git
+.bundle
+.ruby-lsp
+coverage
+output
+specs
+tmp

@@ -1,0 +1,32 @@
+# Все секции необязательны. Ключи operation — это operationId из OpenAPI.
+operations:
+  createTransfer: create
+  getTransferState: status
+  revokeTransfer: cancel
+
+# Ключ: "ИмяКомпонента.путь.поля". major — рубли, minor — копейки.
+amount_unit:
+  CreateTransferRequest.amount: minor
+
+# Условная обязательность, которую спецификация не выразила структурно.
+required_if:
+  - field: recipient.bank_code
+    when: recipient.type
+    equals: sbp
+
+# Используйте header либо field, но не оба. Остальные ключи уточняют конвенцию подписи.
+signature:
+  header: X-Provider-Signature
+  algorithm: hmac-sha256
+  encoding: hex
+  message: raw_body
+
+# Значения провайдера лучше заключать в кавычки, особенно числовые.
+status_map:
+  "0": in_progress
+  "1": approved
+  "2": rejected
+
+error_actions:
+  duplicate_request: idempotent_success
+  rate_limit_exceeded: retry_with_backoff

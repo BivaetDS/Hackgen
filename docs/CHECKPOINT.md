@@ -9,7 +9,7 @@
 bundle exec rake check
 ```
 
-Ожидаемо: `769 examples, 0 failures`, `217 files inspected, no offenses detected`, пять словарей `ok`.
+Ожидаемо: `772 examples, 0 failures`, `218 files inspected, no offenses detected`, пять словарей `ok`.
 
 ---
 
@@ -198,8 +198,8 @@ SHA-256, есть тест на это.
 проходят в отдельных подпроцессах.
 
 **6:30–7:00 — что дальше.**
-README и Docker для чистой машины, мок-сервер провайдера для отдельного e2e-прогона, `--diff` для ручных
-правок и реальная публичная спека S6. Пользовательский веб-интерфейс не входит в scope.
+Wave 3 закрыта: README, Docker/Compose, пример overrides и регрессия S3 готовы. Следующие усиления — `--diff`
+для ручных правок и реальная публичная спека S6.
 
 ---
 
@@ -260,8 +260,8 @@ README и Docker для чистой машины, мок-сервер пров�
 | 1B | Генератор: сервис, `INTEGRATION.md`, `fixtures.json`, `base_contract.rb`, отчёт, валидатор, golden | **готово** |
 | 1C | Полный конвейер и запись файлов через `bin/integrate` | **готово** |
 | 2 | Golden на 6 спек, генерируемый RSpec, `--run-spec`, invalid/детерминизм/подтверждения | **готово; ядро заморожено** |
-| 3 | README, Docker, полировка инструкции | по плану |
-| 4 | Мок-сервер, `--diff`, S6 | по плану |
+| 3 | README, Docker/Compose, overrides example, S3 и дополнительные методы | **готово** |
+| 4 | `--diff`, S6 | по плану |
 | 5 | Финальная защита | по плану |
 
 Репозиторий: <https://github.com/BivaetDS/Hackgen>

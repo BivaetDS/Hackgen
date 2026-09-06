@@ -9,7 +9,7 @@
 | # | Факт | Где закреплено |
 |---|---|---|
 | 1 | `request_method` — логический тип действия (способ выплаты `sbp`/`card` или `status`), не HTTP-метод. При нескольких способах выплаты в enum реквизитов сервис ветвится `case request_method` с `build_<type>_payload` на ветку, дефолт — первое значение enum | IR `operations[].request_methods` (`docs/IR_CONTRACT.md §2.5`), `fields.yml → request_methods` |
-| 2 | Сервис шлёт запрос через абстрактный `client` и возвращает ответ; `provider_operation_id` сохраняет платформа. Реальных запросов на хакатоне нет — доказательства через WebMock/RSpec; мок-сервер — доп. идея | `canonical_contract.yml → helpers.client`, `output/base_contract.rb` |
+| 2 | Сервис шлёт запрос через абстрактный `client` и возвращает ответ; `provider_operation_id` сохраняет платформа. Реальных запросов на хакатоне нет — доказательства через WebMock/RSpec | `canonical_contract.yml → helpers.client`, `output/base_contract.rb` |
 | 3 | `process_callback(payload)` получает уже разобранный JSON. Подпись и сырое тело берутся из payload по конвенции `payload['raw_body']`, `payload.dig('headers', '<Signature-Header>')`; без `raw_body` — `JSON.generate(payload['body'] \|\| payload)` с W301 | `canonical_contract.yml → callback_payload`, `signature_defaults` |
 | 4 | Канон статусов: `pending/processing → in_progress`, `completed → approved`, `failed/cancelled → rejected`; отдельного «отменено» нет. 402 → `retry_later` | `statuses.yml → synonyms`, `errors.yml → http` |
 | 5 | Адрес, авторизация и параметры подключения — только из OpenAPI: `BASE_URL = ENV.fetch('<SLUG>_BASE_URL', servers[0])`, имя заголовка из `securitySchemes`, секреты через общий `credentials[...]` | `canonical_contract.yml → env, credentials` |

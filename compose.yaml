@@ -1,0 +1,6 @@
+services:
+  integrator:
+    build: .
+    volumes:
+      - ./specs:/workspace/specs:ro
+      - ./output:/workspace/output

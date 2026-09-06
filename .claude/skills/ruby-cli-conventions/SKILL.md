@@ -106,7 +106,19 @@ bin/integrate                         # #!/usr/bin/env ruby; require "provider_i
 - Generated code: `templates/rubocop_generated.yml` — single quotes, table-aligned rockets, `Metrics` off, `Style/Documentation` off, `Lint/UnusedMethodArgument` off (contract signatures), `Lint/UselessConstantScoping` off (`STATUS_MAP` after `private`, as in the reference), comment lines exempt from `LineLength` (the generator wraps them at 100).
 - On Windows `rubocop -A` rewrites files with CRLF: run `bundle exec rake lf` afterwards.
 
-## 9. Review checklist (run before finishing any task)
+## 9. README and container contract
+
+- `README.md` is the executable entry guide: keep the three-command local path, every Thor flag and exit code,
+  overrides schema, supported/unsupported OpenAPI features, dictionary extension, regression setup and
+  troubleshooting synchronized with code.
+- `examples/overrides.example.yml` must validate against `overrides.schema.json`; never document a key that the
+  parser silently ignores.
+- The container uses `ruby:3.3-slim`, runs as `USER integrator`, and has `bin/integrate` as its exec-form
+  `ENTRYPOINT`. Keep both Linux platforms in `Gemfile.lock`; Compose mounts specs read-only and output writable.
+- Contract changes to these artifacts belong in `spec/contract/wave3_artifacts_spec.rb`. A static container check
+  does not replace `docker build` when the daemon is available.
+
+## 10. Review checklist (run before finishing any task)
 
 1. `bundle exec rake check` green (`rspec` + `rubocop` + dictionary schemas).
 2. `grep -ri novapay lib/` returns nothing (also a spec).

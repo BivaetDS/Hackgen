@@ -261,7 +261,7 @@ HMAC-SHA256(body, callback_secret) → hex → X-NovaPay-Signature
 
 }
 
-#### 4. CLI или веб-интерфейс
+#### 4. CLI
 
 $ ./integrate --spec provider_api.yaml --provider novapay --lang ruby
 

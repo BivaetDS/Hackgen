@@ -21,7 +21,7 @@ provider_api.yaml → анализ → ProviderSpec (JSON) → правила Sp
 3. Что из спеки не выводится — не угадывается: `TODO` в коде + запись в отчёт + warning в CLI.
 4. Не блокировать результат без необходимости: `/balance` вне контракта не мешает сгенерировать create/status/webhook.
 5. Внешне похоже на эталон из ТЗ (имена методов, `STATUS_MAP`, `ERROR_MAP`, формат вывода CLI), внутри — лучше эталона (единицы в хелпере, порог из `minimum`, `auth_headers` во всех запросах, 409 как успех, `Retry-After` из заголовка).
-6. Каждое утверждение о сгенерированном коде доказывается автоматически: синтаксис, контракт, RSpec, прогон против мок-провайдера, детерминизм.
+6. Каждое утверждение о сгенерированном коде доказывается автоматически: синтаксис, контракт, RSpec и детерминизм.
 
 ---
 
@@ -42,11 +42,11 @@ provider-integrator/
     ├── dictionaries/ operations.yml fields.yml statuses.yml errors.yml canonical_contract.yml
     ├── generator.rb                      # Generator.call(spec:, provider:, output_dir:) → Result
     ├── generator/   service_generator.rb documentation_generator.rb fixtures_generator.rb
-    │                base_contract_generator.rb rspec_generator.rb mock_server_generator.rb
+    │                base_contract_generator.rb rspec_generator.rb
     │                report_generator.rb output_validator.rb regeneration_diff.rb
     ├── template_data/  service_template_data.rb documentation_template_data.rb fixtures_template_data.rb
     └── templates/   service.rb.erb integration.md.erb fixtures.json.erb base_contract.rb.erb
-                     provider_spec.rb.erb mock_server.rb.erb
+                     provider_spec.rb.erb
 spec/
 ├── fixtures/specs/  novapay.yaml bearerpay.yaml rublepay.yaml numstatus.yaml cardpay.yaml legacy_swagger2.yaml
 │                    real_public_*.yaml invalid_*.yaml
@@ -58,7 +58,7 @@ examples/  overrides.example.yml
 
 Владение: `parser/ normalizer/ models/ dictionaries/` — Dev A («мозг»); `generator/ template_data/ templates/` — Dev B («фабрика»); `bin/ spec/integration spec/fixtures/specs README ASSUMPTIONS Docker` — Dev C («продукт»).
 
-Стек (MIT/Ruby-лицензия): `openapi3_parser` (чтение + $ref + циклы, 3.0/3.1), `json_schemer` (валидация спеки, примеров, fixtures), `Psych.safe_load`, ERB, `Prism`/`ruby -c`, RuboCop `-A`, Thor + pastel/tty-table, RSpec + WebMock, Zeitwerk; Sinatra + Rack::Test — только для опционального локального мок-провайдера.
+Стек (MIT/Ruby-лицензия): `openapi3_parser` (чтение + $ref + циклы, 3.0/3.1), `json_schemer` (валидация спеки, примеров, fixtures), `Psych.safe_load`, ERB, `Prism`/`ruby -c`, RuboCop `-A`, Thor + pastel/tty-table, RSpec + WebMock, Zeitwerk.
 
 ---
 
@@ -192,7 +192,7 @@ gateway_config: { external_method: "<method>_payout", gateway: "<CUR>_<METHOD>_W
 
 **Подтверждено экспертами в чате (не допущения):**
 - `request_method` — не HTTP-метод, а логический тип действия (payment_method шлюза либо `status`/`check`). Следствие: если спека содержит несколько способов выплаты (`recipient.type: [sbp, card]`), генератор строит ветвление `case request_method` с отдельным `build_<type>_payload` на каждую ветку, дефолт — первый в enum. Это общее правило, а не частный случай NovaPay.
-- Сервис делает запрос через абстрактный `client` и **отдаёт ответ**; сохранение `provider_operation_id` происходит на платформе, вне сервиса. Реальный запрос к провайдеру на хакатоне делать не нужно → доказательства через WebMock/RSpec, мок-сервер — доп. идея, не обязательство.
+- Сервис делает запрос через абстрактный `client` и **отдаёт ответ**; сохранение `provider_operation_id` происходит на платформе, вне сервиса. Реальный запрос к провайдеру на хакатоне делать не нужно → доказательства через WebMock/RSpec.
 - `process_callback(payload)` получает **уже разобранный JSON**, не сырое тело. Следствие для подписи: `verify_signature!` берёт подпись и сырое тело из payload по конвенции (`payload['raw_body']`, `payload.dig('headers', '<Signature-Header>')`), при отсутствии `raw_body` — `JSON.generate(payload['body'] || payload)` с явным warning W301, что канонизация по пересобранному JSON ненадёжна. Конвенция описана в INTEGRATION.md и в `base_contract.rb`.
 - Статусы — канон из INTEGRATION.md задания: pending/processing → in_progress, completed → approved, failed/cancelled → rejected (отдельного «отменено» нет). 402 — `retry_later`. Допущения — в INTEGRATION.md.
 - Адрес, авторизация и параметры подключения берутся **только из OpenAPI**; отдельного конфига регистрации провайдера у платформы нет → `BASE_URL = ENV.fetch(..., servers[0])`, имя заголовка из `securitySchemes`, credentials — через общий `credentials[:api_key]`.
@@ -255,7 +255,6 @@ error_actions:         { amount_limit_exceeded: terminal_reject }
 | `generation_report.json` | доп. | События, уверенности, применённые правила и overrides, SHA-256 файлов |
 | `base_contract.rb` | доп. | Заглушка канона |
 | `<slug>_service_spec.rb` | доп. | RSpec + WebMock поверх fixtures.json: 201/409/422/429, fetch_status, callback approve/reject, signature fail |
-| `<slug>_mock_server.rb` | доп. | Sinatra-мок провайдера из спеки: маршруты, валидация тел json_schemer, ответы из examples, отдача вебхука с подписью. Позволяет прогнать сгенерированный сервис end-to-end без сети |
 
 ---
 
@@ -286,7 +285,7 @@ Output: ./output/novapay/
 
 ## 8. Валидация результата (output_validator.rb)
 
-`Prism.parse(src).success?`; `JSON.parse(fixtures.json)`; наследование от `BaseService`; 4 метода; нет остатков ERB; обязательные секции INTEGRATION.md; fixtures валидны против схем; SHA-256 в отчёте; RuboCop `-A`; опционально — запуск сгенерированного RSpec против `base_contract.rb` и прогон против сгенерированного мок-сервера.
+`Prism.parse(src).success?`; `JSON.parse(fixtures.json)`; наследование от `BaseService`; 4 метода; нет остатков ERB; обязательные секции INTEGRATION.md; fixtures валидны против схем; SHA-256 в отчёте; RuboCop `-A`; опционально — запуск сгенерированного RSpec против `base_contract.rb`.
 
 ---
 
@@ -295,7 +294,7 @@ Output: ./output/novapay/
 - **Unit** (Dev A): битый YAML, нет `paths`, неизвестный/циклический/внешний `$ref`, Bearer/OAuth2/Basic, без webhook, `callbacks`, неизвестный статус, unit inference (копейки / рубли-decimal / без сигналов), conditional_required из описания и из `oneOf`, Swagger 2.0 конвертация.
 - **Golden** (Dev B/C): `spec/golden/<spec>/*` для каждой спеки; `rake golden:update` с диффом.
 - **Детерминизм**: два прогона → идентичные SHA-256.
-- **Контрактный** (Dev C): сгенерированный RSpec зелёный на всех спеках с create; сгенерированный сервис проходит против сгенерированного мока.
+- **Контрактный** (Dev C): сгенерированный RSpec зелёный на всех спеках с create.
 - **Анти-хардкод**: `grep -ri novapay lib/` пуст; шаблоны не содержат провайдерских значений.
 
 | Спека | Отличие | Что доказывает |
@@ -314,13 +313,15 @@ Output: ./output/novapay/
 
 Каждая волна имеет критерий завершения. Порядок внутри волны — свободный, между волнами — строгий. Ресинк команды — на границе волн; заморозка не по дате, а по факту завершения Волны 3 (после неё новые фичи не начинаются, только дальнейшие волны как есть или багфикс).
 
+Статус на 2026-09-06: волны 0–3 завершены; доказательства Wave 3 — `docs/PLAN_WAVE3.md`.
+
 | Волна | Что делается (A / B / C) | Критерий завершения | Баллы, которые закрывает |
 |---|---|---|---|
 | **0. Контракты** | Все трое: ProviderSpec JSON, интерфейсы Parser/Generator, реестр E/W, `normalized_novapay.json`, `generated_manifest.json`, `canonical_contract.yml`, ASSUMPTIONS.md с вопросами | Контракт зафиксирован в репо, каждый может работать автономно | — (фундамент) |
 | **1. Сквозной NovaPay** | A: loader/validator/spec_reader/extractors/классификатор/auth/status/error/units/conditional/webhook. B: service/INTEGRATION/fixtures/base_contract по шаблонам. C: CLI формата эталона, output_validator, события | `./bin/integrate` на NovaPay → 3 файла; валидатор зелёный; вывод близок к эталону | Разбор 20/20; Генерация 25/25; Преобразование 15/15; Понятность 6+4 / 4+3+3; Качество 6 / 4 |
 | **2. Доказательства** | C: `invalid_*`, S1–S5, golden на все шесть спек, детерминизм, анти-хардкод, `--run-spec`. A: правки ядра по регрессии и `overrides.yml`. B: `generation_report.json`, `rspec_generator`, TODO по уверенности | Регрессия зелёная на NovaPay+S1–S5+invalid; все шесть сгенерированных RSpec проходят; `grep novapay lib/` пуст | Универсальность 15/15 / 10/10; Ошибки разбора 4 / 3; Док и fixtures 13; Доп. идеи (часть) |
 | **3. Полнота и инструкция** | C: README (запуск, настройка, поддерж./неподдерж. элементы, troubleshooting), ASSUMPTIONS с ответами экспертов, Dockerfile. B: полировка INTEGRATION.md, cancel/balance как доп. методы | Проект запускается на чистой машине по README | Инструкция 3; Полнота 8; Инфо по настройке 5 / 5+4 |
-| **4. Сильные доп. идеи** | B: `mock_server_generator`, e2e «сервис ↔ мок» (реальные запросы к провайдеру не требуются — это только демонстрация). C: `--diff`/`regeneration_diff`, S6 реальная спека | e2e против мока и S6 зелёные; diff показывает ручные правки | Доп. идеи 6; усиление Универсальности и Выступления |
+| **4. Сильные доп. идеи** | C: `--diff`/`regeneration_diff`, S6 реальная спека | S6 зелёная; diff показывает ручные правки | Доп. идеи 6; усиление Универсальности и Выступления |
 | **5. Защита** | Все: сценарий, 3+ репетиции с таймером, ответы на вопросы, резервная запись | Демо укладывается в 7 минут стабильно | Выступление 6 |
 
 Если по ходу выясняется, что времени всё же не хватает — граница отсечения проходит между волнами, не внутри: завершённая Волна 2 без Волны 4 даёт больше баллов, чем все волны, начатые наполовину.
@@ -334,7 +335,7 @@ Output: ./output/novapay/
 | Методы+параметры (8 / 5+5) | operation_classifier, schema_extractor, `--analyze-only` | A | JSON: 5 операций, поля с типами |
 | Авторизация, статусы, ошибки (7 / 4+3) | authentication, status_mapper, error_classifier | A | `status_map`, `errors[].action` |
 | Webhook и условия (5 / 3) | webhook_analyzer (path + `callbacks`), idempotency, Retry-After | A | JSON `webhook`, W301 |
-| Формирует/шлёт запросы (10 / 5+5) | `create_request` + `build_payload` + `auth_headers` | B | RSpec: POST с телом и `X-API-Key`; e2e против мока |
+| Формирует/шлёт запросы (10 / 5+5) | `create_request` + `build_payload` + `auth_headers` | B | RSpec: POST с телом и `X-API-Key` |
 | Ответы/статусы/ошибки (8 / 4+4) | `parse_*_response`, `STATUS_MAP`, rescue/ERROR_MAP, 409 | B | RSpec 201/409/422/429 |
 | Уведомления + конфиг (7 / 4+3) | `process_callback`, `verify_signature!`, `ENV.fetch` | B | RSpec approve/reject/bad signature |
 | Поля и статусы (8 / 5+4) | field_mapper + status_mapper | A/B | golden diff |
@@ -348,7 +349,7 @@ Output: ./output/novapay/
 | Структура кода (6 / 4) | parser/normalizer/generator + Zeitwerk | A | обзор на защите |
 | Ошибки разбора/генерации (4 / 3) | validator, E-коды, output_validator | C | invalid_* → сообщение, exit 3 |
 | Инструкция (— / 3) | README | C | чистая машина |
-| Доп. идеи (6) | report, RSpec-генератор, мок-сервер, diff, base_contract | B/C | показать на защите |
+| Доп. идеи (6) | report, RSpec-генератор, diff, base_contract | B/C | показать на защите |
 | Выступление (6) | сценарий + репетиции | все | таймер |
 | Полнота (8) | 4 метода + cancel/balance + файлы ТЗ + документация и RSpec | все | чек-лист ТЗ |
 
@@ -358,9 +359,9 @@ Output: ./output/novapay/
 
 Формат подтверждён организаторами: презентация нужна только топ-5, готовится после объявления финалистов; ~10 минут на команду **включая вопросы жюри**, свой экран, без ограничений по формату. Значит, рассказ — 6 минут, 3–4 минуты на вопросы; сейчас все силы — на чекпоинты, не на слайды.
 
-Тайминг: 0:45 проблема → 1:45 живой прогон на NovaPay, сервис рядом с эталоном ТЗ: «то же, но единицы выведены, порог из `minimum`, 409 — успех, `Retry-After` из заголовка» → 1:00 «как без нейросети»: JSON-модель, словари, скоринг, уверенность → 1:00 чужая спека (S6) + битая спека → 1:00 доказательства: RSpec зелёный, e2e против мока, детерминизм, отчёт неоднозначностей → 0:30 допущения по BaseService и ответы экспертов.
+Тайминг: 0:45 проблема → 1:45 живой прогон на NovaPay, сервис рядом с эталоном ТЗ: «то же, но единицы выведены, порог из `minimum`, 409 — успех, `Retry-After` из заголовка» → 1:00 «как без нейросети»: JSON-модель, словари, скоринг, уверенность → 1:00 чужая спека (S6) + битая спека → 1:00 доказательства: RSpec зелёный, детерминизм, отчёт неоднозначностей → 0:30 допущения по BaseService и ответы экспертов.
 
-Ответы: без нейросети — правила/словари/скоринг, воспроизводимо; копейки — три сигнала, при конфликте TODO; другие статусы — строка в `statuses.yml`, показать S1/S3; не выводится — не угадываем, заглушка + отчёт; почему не openapi-generator — нужен адаптер под канон, ядро на Java; BaseService не дан — заглушка контракта, допущения зафиксированы, RSpec и мок проходят; 409 — по структуре ответа идемпотентный дубль; HMAC — канонизация не в спеке, дефолт raw body + hex + secure_compare, W301; ручные правки после генерации — `--diff` и W601.
+Ответы: без нейросети — правила/словари/скоринг, воспроизводимо; копейки — три сигнала, при конфликте TODO; другие статусы — строка в `statuses.yml`, показать S1/S3; не выводится — не угадываем, заглушка + отчёт; почему не openapi-generator — нужен адаптер под канон, ядро на Java; BaseService не дан — заглушка контракта, допущения зафиксированы, RSpec проходит; 409 — по структуре ответа идемпотентный дубль; HMAC — канонизация не в спеке, дефолт raw body + hex + secure_compare, W301; ручные правки после генерации — `--diff` и W601.
 
 ---
 
@@ -372,16 +373,16 @@ Output: ./output/novapay/
 | openapi3_parser падает на сложной спеке | `Error::InvalidData` | rescue → E004 с путём; собственный мини-резолвер локальных `$ref` как фолбэк |
 | Недетерминизм | SHA меняется | убрать время/`Hash#inspect`, сортировать ключи, RuboCop -A |
 | Захардкоженный NovaPay | S1 генерит `payouts`/`X-API-Key` | анти-хардкод тест в CI |
-| Сложность не видна жюри | демо показывает только файлы | показывать `--analyze-only`, отчёт, e2e против мока |
+| Сложность не видна жюри | демо показывает только файлы | показывать `--analyze-only`, отчёт и сгенерированный RSpec |
 | Демо падает | флейк на репетиции | резервная запись + прогон из golden |
 
 ---
 
 ## 14. Definition of Done
 
-1. `./bin/integrate --spec provider_api.yaml --provider novapay` за один запуск даёт три файла по ТЗ + report, base_contract, spec, mock.
+1. `./bin/integrate --spec provider_api.yaml --provider novapay` за один запуск даёт три файла по ТЗ + report, base_contract и spec.
 2. Найдены 5 эндпоинтов, ApiKeyAuth, Idempotency-Key, X-NovaPay-Signature, статусы, ошибки с действиями, единицы, условная обязательность.
-3. Сервис проходит синтаксис, 4 метода контракта, RSpec на fixtures зелёный, e2e против мока зелёный.
+3. Сервис проходит синтаксис, 4 метода контракта, RSpec на fixtures зелёный.
 4. Повторный запуск — идентичные SHA-256; `--diff` показывает ручные правки.
 5. Неоднозначности — W-события в CLI, в отчёте и как TODO в коде.
 6. S1–S6 проходят без правки кода; анти-хардкод тест зелёный.
