@@ -7,6 +7,10 @@
 #
 # Credentials this provider reads: api_key, callback_secret.
 
+require 'json'
+require 'net/http'
+require 'uri'
+
 class Provider
   class RateLimitError < StandardError; end
   class UnauthorizedError < StandardError; end
@@ -27,6 +31,50 @@ class Provider
 
   # What the HTTP client returns.
   Response = Struct.new(:status, :body, :headers, keyword_init: true)
+
+  # ДОПУЩЕНИЕ: платформа инжектирует свой HTTP-клиент (допущение 23); этот нужен только для автономного
+  # прогона сгенерированного RSpec (через WebMock) и ручных проверок. JSON-ответы разбираются, остальные
+  # тела возвращаются строкой; заголовки ответа - в нижнем регистре, как их отдаёт Net::HTTP.
+  class HttpClient
+    OPEN_TIMEOUT = 5
+    READ_TIMEOUT = 15
+
+    def get(url, headers: {})
+      perform(Net::HTTP::Get.new(URI(url), headers))
+    end
+
+    def post(url, json: nil, form: nil, headers: {})
+      request = Net::HTTP::Post.new(URI(url), headers)
+      if json
+        request['Content-Type'] = 'application/json'
+        request.body = JSON.generate(json)
+      elsif form
+        request.set_form_data(form)
+      end
+      perform(request)
+    end
+
+    private
+
+    def perform(request)
+      uri = request.uri
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = uri.scheme == 'https'
+      http.open_timeout = OPEN_TIMEOUT
+      http.read_timeout = READ_TIMEOUT
+      response = http.request(request)
+      Response.new(status: response.code.to_i, body: parse_body(response.body), headers: response.each_header.to_h)
+    end
+
+    # JSON bodies are parsed; anything else comes back as the raw String (nil when empty).
+    def parse_body(body)
+      return nil if body.nil? || body.empty?
+
+      JSON.parse(body)
+    rescue JSON::ParserError
+      body
+    end
+  end
 
   class BaseService
     STATUSES = %w[in_progress approved rejected].freeze

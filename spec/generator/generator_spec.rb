@@ -127,6 +127,17 @@ RSpec.describe ProviderIntegrator::Generator do
       end
     end
 
+    it "ships an HTTP client stub in base_contract.rb for local runs (docs/ASSUMPTIONS.md 23)" do
+      contract = GenerationHelpers.novapay_file(:base_contract)
+
+      aggregate_failures do
+        expect(contract).to include("require 'net/http'", "class HttpClient", "def get(url, headers: {})",
+                                    "def post(url, json: nil, form: nil, headers: {})")
+        expect(contract).to include("Response.new(status: response.code.to_i, body: parse_body(response.body), " \
+                                    "headers: response.each_header.to_h)")
+      end
+    end
+
     it "parses with Prism and keeps LF line endings" do
       aggregate_failures do
         expect(Prism.parse(service).errors).to be_empty

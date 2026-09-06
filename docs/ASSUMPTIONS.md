@@ -43,6 +43,7 @@
 | 20 | Возврат `fetch_status` | `Result` (`success(status:, response:)`), а не строка статуса, как в эталоне; `map_status(value)` остаётся приватным хелпером с тем же именем | `TemplateData::StatusMethod` |
 | 21 | `callback_url` / `redirect_url` / OAuth2 `token_url` в теле или конфиге | ENV-константы `<SLUG>_CALLBACK_URL`, `<SLUG>_REDIRECT_URL`, `<SLUG>_TOKEN_URL` (дефолт токена — из `securitySchemes`) | `canonical_contract.yml → env`, `TemplateData::ServiceConstants` |
 | 22 | Стиль сгенерированного Ruby | RuboCop в памяти (stdin API) с `templates/rubocop_generated.yml`: одинарные кавычки, табличные rockets, `STATUS_MAP`/`ERROR_MAP` после `private`, как в эталоне | `Generator::RubyFormatter` |
+| 23 | HTTP-клиент | Платформа инжектирует свой `client`; для автономного прогона сгенерированного RSpec (WebMock) в `base_contract.rb` есть `Provider::HttpClient` на `Net::HTTP`: `get(url, headers:)`, `post(url, json:\|form:, headers:)` -> `Response(status, body, headers)`; JSON-тела разбираются, остальные возвращаются строкой, заголовки ответа в нижнем регистре | `templates/base_contract.rb.erb`, `TemplateData::BaseContract` |
 
 ## 3. Что не выводится из спеки и всегда требует подтверждения
 

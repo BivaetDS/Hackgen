@@ -3,9 +3,18 @@
 module ProviderIntegrator
   module TemplateData
     # Names for base_contract.rb.erb, all taken from canonical_contract.yml: the stub of the
-    # platform contract (BaseService, Result, Operation, Response, exceptions) that lets a generated
-    # service load and run its specs without Space Payments' real code.
+    # platform contract (BaseService, Result, Operation, Response, exceptions) plus the Net::HTTP
+    # client (docs/ASSUMPTIONS.md, допущение 23) that lets a generated service load and run its
+    # spec through WebMock without Space Payments' real code.
     class BaseContract
+      # The stub client class; not a canon name (the canon only knows `client`), so it lives here
+      # and the generated spec reads it from the same constant.
+      HTTP_CLIENT = "HttpClient"
+      REQUIRES = %w[json net/http uri].freeze
+      # How each member of Response is filled from a Net::HTTPResponse, by canon member name.
+      RESPONSE_SOURCES = { "status" => "response.code.to_i", "body" => "parse_body(response.body)",
+                           "headers" => "response.each_header.to_h" }.freeze
+
       def initialize(context)
         @context = context
         @canon = Canon.new
@@ -23,6 +32,8 @@ module ProviderIntegrator
       def default_status = Code.str(canon.default_status)
       def approved = Code.str(canon.statuses.fetch(1))
       def rejected = Code.str(canon.statuses.fetch(2))
+      def requires = REQUIRES
+      def http_client = HTTP_CLIENT
 
       # ["RateLimitError", "UnauthorizedError"] - the exception classes without the namespace.
       def exception_names
@@ -52,9 +63,27 @@ module ProviderIntegrator
       def client_methods = canon.client_helpers.values_at("get", "post", "post_form").compact
       def response_members = canon.client_helpers.fetch("response")
 
+      # "get" / "post": the method names out of the canon signatures ("client.post(url, json:, headers:)").
+      def client_get = client_method_name("get")
+      def client_post = client_method_name("post")
+
+      # "json" / "form": the body keyword of client.post per media type (canon content_types).
+      def json_keyword = canon.client_argument("application/json")
+      def form_keyword = canon.client_argument("application/x-www-form-urlencoded")
+
+      # "status: response.code.to_i, body: parse_body(response.body), headers: ..." in canon member order.
+      def response_arguments
+        response_members.map { |member| "#{member}: #{RESPONSE_SOURCES.fetch(member)}" }.join(", ")
+      end
+
       private
 
       attr_reader :context, :canon
+
+      def client_method_name(key)
+        signature = canon.client_helpers.fetch(key)
+        signature[/\Aclient\.(\w+)\(/, 1] or raise GenerationError, "cannot read the client method out of #{signature}"
+      end
     end
   end
 end
