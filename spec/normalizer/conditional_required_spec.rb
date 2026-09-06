@@ -62,6 +62,18 @@ RSpec.describe ProviderIntegrator::Normalizer::ConditionalRequired do
         end
       end
 
+      # CardPay writes "Обязателен, если type = card." - the sentence's full stop is not part of the value.
+      it "drops the sentence punctuation after the value" do
+        found = analyzer.call(field: field("recipient.card_number",
+                                           description: "Номер карты получателя. Обязателен, если type = card."),
+                              paths:)
+
+        aggregate_failures do
+          expect(found.equals).to eq("card")
+          expect(found.evidence).to eq(["description: Обязателен, если type = card."])
+        end
+      end
+
       it "keeps the plain name when the condition field is a top-level field of a flat schema" do
         found = analyzer.call(field: field("bank_code", description: "Обязателен, если payment_type = account"),
                               paths: %w[amount payment_type bank_code card_number])

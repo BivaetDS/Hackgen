@@ -18,6 +18,22 @@ RSpec.describe ProviderIntegrator::TemplateData::FieldSource do
       expect(result.helper.name).to eq("amount_in_minor_units")
       expect(result.comments).to eq(["Evidence: description: копейках; error example (422): kopecks; minimum: 100000"])
       expect(result.doc).to include("`operation.amount` x 100")
+      expect([result.kind, result.key&.type]).to eq([:amount, "multiply"])
+    end
+  end
+
+  it "labels every source with its kind and key so the generated spec can derive the sent value" do
+    kinds = %w[amount currency external_id recipient.type recipient.phone].to_h do |path|
+      result = source.for(field(path))
+      [path, [result.kind, result.key.is_a?(ProviderIntegrator::Models::Conversion) ? :conversion : result.key]]
+    end
+
+    aggregate_failures do
+      expect(kinds).to eq("amount" => %i[amount conversion], "currency" => [:constant, "RUB"],
+                          "external_id" => [:accessor, "external_id"], "recipient.type" => [:discriminator, "sbp"],
+                          "recipient.phone" => [:requisite, "phone"])
+      expect(source.for(field("recipient.bank_name").with(canonical: nil)).kind).to eq(:omitted)
+      expect(source.for(field("recipient.bank_name").with(canonical: nil, required: true)).kind).to eq(:missing)
     end
   end
 

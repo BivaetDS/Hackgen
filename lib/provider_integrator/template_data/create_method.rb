@@ -33,8 +33,8 @@ module ProviderIntegrator
       def branches = methods ? methods.values : [nil]
 
       def signature_params
-        default = methods ? methods.default : canon.contract_role("create").split("_").first
-        signature = canon.signature("create_request", default_request_method: Code.str(default))
+        default = Code.str(service.default_request_method)
+        signature = canon.signature("create_request", default_request_method: default)
         signature.delete_prefix("create_request(").delete_suffix(")")
       end
 

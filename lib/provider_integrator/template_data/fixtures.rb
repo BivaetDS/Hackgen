@@ -144,29 +144,9 @@ module ProviderIntegrator
         key
       end
 
-      # Canonical status the service will report for +payload+ (event first, then the status field).
+      # Canonical status the service will report for +payload+ (CallbackOutcome, shared with the spec).
       def callback_status(payload)
-        event_status(payload) || field_status(payload)
-      end
-
-      def event_status(payload)
-        webhook = spec.webhook
-        return nil unless webhook.event_field
-
-        event = dig(payload, webhook.event_field)
-        webhook.events.find { |item| item.value == event }&.canonical_status
-      end
-
-      def field_status(payload)
-        webhook = spec.webhook
-        return nil unless webhook.status_field
-
-        status = dig(payload, webhook.status_field).to_s
-        spec.statuses.find { |mapping| mapping.provider == status }&.canonical
-      end
-
-      def dig(payload, path)
-        path.split(".").reduce(payload) { |acc, key| acc.is_a?(Hash) ? acc[key] : nil }
+        CallbackOutcome.status(spec, payload)
       end
 
       # One payload per event value with a canonical status when the spec gives no examples.

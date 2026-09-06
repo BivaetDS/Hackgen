@@ -5,12 +5,18 @@ module ProviderIntegrator
     # Decides where a request field's value comes from on the platform side: an Operation
     # accessor, a credentials entry, an ENV constant, a requisite of the current payout method,
     # a constant from the spec, or nothing (omitted, or nil with a TODO when required). Each
-    # answer carries the Ruby expression for the service and a human description for INTEGRATION.md.
+    # answer carries the Ruby expression for the service, a human description for INTEGRATION.md
+    # and its `kind` (+ `key`), so the generated spec can derive the value the service will send
+    # without parsing the expression back.
     class FieldSource
-      Source = Data.define(:expression, :comments, :doc, :omitted, :env_constant, :helper) do
+      Source = Data.define(:expression, :comments, :doc, :omitted, :env_constant, :helper, :kind, :key) do
         def omitted? = omitted
       end
 
+      # Source kinds: :constant (key = the value), :discriminator (the branch value), :amount (key =
+      # the Conversion or nil), :accessor (key = canonical member), :credential (key = credentials
+      # key), :env (key = canonical), :requisite (key = child name), :missing (nil with a TODO),
+      # :omitted (not sent).
       UNITS_UNKNOWN = "amount units could not be determined from the spec (W401); passed as is"
 
       # +scope+ (a Scope) says which payout method the payload is for and how it is referenced.
@@ -39,11 +45,9 @@ module ProviderIntegrator
       end
 
       def discriminator
-        if scope.branch
-          source(scope.method_source, doc: "константа #{Markdown.code(scope.method_source)} (ветка request_method)")
-        else
-          source(scope.method_source, doc: Markdown.code(scope.method_source))
-        end
+        doc = Markdown.code(scope.method_source)
+        doc = "константа #{doc} (ветка request_method)" if scope.branch
+        source(scope.method_source, doc:, kind: :discriminator, key: scope.branch)
       end
 
       def by_canonical(field)
@@ -61,7 +65,7 @@ module ProviderIntegrator
       def amount(field)
         base = canon.accessor("amount")
         conversion = field.conversion || fallback_conversion_for(field)
-        return source(base, doc: Markdown.code(base)) unless conversion
+        return source(base, doc: Markdown.code(base), kind: :amount) unless conversion
 
         converted(base, conversion, borrowed: field.conversion.nil?)
       end
@@ -76,13 +80,14 @@ module ProviderIntegrator
         return identity_amount(base, conversion) unless helper
 
         comments = conversion_comments(conversion, borrowed)
-        source("#{helper.name}(#{base})", doc: "#{Markdown.code(base)} #{helper.doc}", comments:, helper:)
+        source("#{helper.name}(#{base})", doc: "#{Markdown.code(base)} #{helper.doc}", comments:, helper:,
+                                          kind: :amount, key: conversion)
       end
 
       # identity with value 1 means the units could not be determined (W401): amount passed as is.
       def identity_amount(base, conversion)
         comments = conversion.value == 1 ? [Generator::Confidence.todo(conversion.confidence, UNITS_UNKNOWN)] : []
-        source(base, doc: "#{Markdown.code(base)} (major units, без преобразования)", comments:)
+        source(base, doc: "#{Markdown.code(base)} (major units, без преобразования)", comments:, kind: :amount)
       end
 
       def conversion_comments(conversion, borrowed)
@@ -100,23 +105,24 @@ module ProviderIntegrator
 
       def accessor(canonical)
         expression = canon.accessor(canonical)
-        source(expression, doc: Markdown.code(expression))
+        source(expression, doc: Markdown.code(expression), kind: :accessor, key: canonical)
       end
 
       def credential(key)
         expression = canon.credential(key)
-        source(expression, doc: Markdown.code(expression))
+        source(expression, doc: Markdown.code(expression), kind: :credential, key:)
       end
 
       def env_constant(canonical)
-        source(canonical.upcase, doc: "ENV #{Markdown.code(@context.env_name(canonical))}", env_constant: canonical)
+        source(canonical.upcase, doc: "ENV #{Markdown.code(@context.env_name(canonical))}", env_constant: canonical,
+                                 kind: :env, key: canonical)
       end
 
       def requisite(field)
         child = field.canonical.split(".", 2).last
         expression = canon.requisite_access(scope.method_source, Code.str(child))
         doc = Markdown.code("#{canon.accessor("requisite")}[#{scope.method_source}][#{Code.str(child)}]")
-        source(expression, doc:, comments: conditional_comments(field))
+        source(expression, doc:, comments: conditional_comments(field), kind: :requisite, key: child)
       end
 
       def conditional_comments(field)
@@ -134,21 +140,23 @@ module ProviderIntegrator
         todo = Generator::Confidence.todo(field.confidence,
                                           "required field #{field.provider_path} has no platform source" \
                                           "#{field.canonical ? " for #{field.canonical}" : " (W403)"}")
-        source("nil", doc: "TODO: нет источника на платформе", comments: [todo])
+        source("nil", doc: "TODO: нет источника на платформе", comments: [todo], kind: :missing)
       end
 
       def constant(field)
         literal = Code.literal(field.constant)
-        source(literal, doc: "константа #{Markdown.code(literal)}")
+        source(literal, doc: "константа #{Markdown.code(literal)}", kind: :constant, key: field.constant)
       end
 
       def omitted
         Source.new(expression: nil, comments: [], doc: "не отправляется: нет источника на платформе",
-                   omitted: true, env_constant: nil, helper: nil)
+                   omitted: true, env_constant: nil, helper: nil, kind: :omitted, key: nil)
       end
 
-      def source(expression, doc:, comments: [], env_constant: nil, helper: nil)
-        Source.new(expression:, comments:, doc:, omitted: false, env_constant:, helper:)
+      # A sent field; +extras+ are the optional members (comments, env_constant, helper, key).
+      def source(expression, doc:, kind:, **extras)
+        defaults = { comments: [], env_constant: nil, helper: nil, key: nil }
+        Source.new(expression:, doc:, kind:, omitted: false, **defaults.merge(extras))
       end
     end
   end

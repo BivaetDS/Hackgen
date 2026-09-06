@@ -9,6 +9,19 @@ module ProviderIntegrator
     class PayloadBuilder
       Result = Data.define(:lines, :env_constants, :helpers, :notes, :docs)
 
+      # True when +field+ belongs to the payload of payout method +branch+ of +operation+ (every
+      # field when there is no branch): oneOf variants by their branch, requisites that are only
+      # required for one method by that condition, everything else always.
+      def self.in_branch?(field, branch, operation)
+        return true unless branch
+        return field.branch.value == branch if field.branch
+
+        condition = field.conditional_required
+        return true unless condition && condition.when == operation.request_methods&.discriminator_path
+
+        condition.equals == branch
+      end
+
       # +docs+ rows: [provider path, source description, requirement, note] for INTEGRATION.md.
       def initialize(operation, canon:, context:, scope: Scope.build)
         @operation = operation
@@ -32,17 +45,7 @@ module ProviderIntegrator
 
       # Fields of this branch, in spec order.
       def fields
-        operation.request_fields.select { |field| in_branch?(field) }
-      end
-
-      def in_branch?(field)
-        return true unless branch
-        return field.branch.value == branch if field.branch
-
-        condition = field.conditional_required
-        return true unless condition && condition.when == operation.request_methods&.discriminator_path
-
-        condition.equals == branch
+        operation.request_fields.select { |field| self.class.in_branch?(field, branch, operation) }
       end
 
       # Nested Hash: segment => FieldMapping (leaf) or Hash (container), preserving field order.

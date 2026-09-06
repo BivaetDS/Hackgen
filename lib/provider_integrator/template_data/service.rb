@@ -7,7 +7,7 @@ module ProviderIntegrator
     # walks the lists; every naming decision happens here or in the pieces this class assembles.
     class Service
       attr_reader :context, :canon, :spec, :top_constants, :bottom_constants, :contract_methods, :extra_methods,
-                  :private_methods_data, :payload_docs, :notes
+                  :private_methods_data, :payload_docs, :notes, :helpers
 
       def initialize(context)
         @context = context
@@ -63,6 +63,12 @@ module ProviderIntegrator
         context.create_operation&.request_fields&.find { |field| field.canonical == "amount" }&.conversion
       end
 
+      # The request_method the create signature defaults to: the first payout method of the spec,
+      # else the bare role name ("create") for a service with a single, unnamed method.
+      def default_request_method
+        context.create_operation&.request_methods&.default || canon.contract_role("create").split("_").first
+      end
+
       # Provider path of the error code in error responses (docs/IR_CONTRACT.md 4), or nil.
       def error_code_path
         return @error_code_path if defined?(@error_code_path)
@@ -101,7 +107,8 @@ module ProviderIntegrator
 
       # Piece helpers first, then the shared helpers (built last: they depend on what the pieces asked for).
       def private_methods_of(pieces, extras)
-        pieces.flat_map(&:private_methods_data) + extras.private_methods_data + ServiceHelpers.new(self).methods_data
+        @helpers = ServiceHelpers.new(self)
+        pieces.flat_map(&:private_methods_data) + extras.private_methods_data + @helpers.methods_data
       end
 
       def build_constants

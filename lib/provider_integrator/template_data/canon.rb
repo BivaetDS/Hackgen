@@ -73,6 +73,19 @@ module ProviderIntegrator
         failure_call(entry, details)
       end
 
+      # [":too_many_requests", "'provider.rate_limit'"] - the two arguments of failure for a canonical
+      # error code, as Ruby source, for callers that assert on them (the generated spec).
+      def failure_parts(canonical)
+        entry = @data.dig("error_codes", canonical) or raise GenerationError, "unknown canonical error #{canonical}"
+        failure_arguments(entry)
+      end
+
+      # The same for a code the service returns itself ([":unprocessable_entity", "'unknown_event'"]).
+      def service_failure_parts(code)
+        entry = @data.dig("service_codes", code) or raise GenerationError, "unknown service code #{code}"
+        failure_arguments(entry)
+      end
+
       # Canonical error codes known to the platform, in dictionary order.
       def error_codes = @data.fetch("error_codes").keys
       def service_codes = @data.fetch("service_codes")
@@ -81,8 +94,11 @@ module ProviderIntegrator
       private
 
       def failure_call(entry, details)
-        arguments = [":#{entry.fetch("failure")}", Inflector.ruby_string(entry.fetch("i18n")), details].compact
-        "#{failure}(#{arguments.join(", ")})"
+        "#{failure}(#{[*failure_arguments(entry), details].compact.join(", ")})"
+      end
+
+      def failure_arguments(entry)
+        [":#{entry.fetch("failure")}", Inflector.ruby_string(entry.fetch("i18n"))]
       end
 
       def class_name_parts = @data.dig("base_service", "class_name").split("::")

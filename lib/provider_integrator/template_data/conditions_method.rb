@@ -25,11 +25,16 @@ module ProviderIntegrator
           fields.select { |field| required_in?(field, branch, methods) }.map { |field| child(field) }.uniq
         end
 
+        # Requisite children of the create payload. The discriminator (requisite.type, or whatever
+        # path request_methods branch on) is a constant of the branch, never a value the platform
+        # supplies, so it is not a requisite to check (FieldSource treats it the same way).
         def requisite_fields(operation)
           return [] unless operation
 
+          discriminator = operation.request_methods&.discriminator_path
           operation.request_fields.select do |field|
-            field.canonical.to_s.start_with?(REQUISITE_PREFIX) && field.canonical != "requisite.type"
+            field.canonical.to_s.start_with?(REQUISITE_PREFIX) && field.canonical != "requisite.type" &&
+              field.provider_path != discriminator
           end
         end
 

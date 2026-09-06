@@ -19,6 +19,21 @@ module ProviderIntegrator
          error_code_method, *amount_methods].compact
       end
 
+      # Where Retry-After comes from anywhere in the spec (["body", "header"] subset, sorted); the
+      # generated spec stubs and expects the same sources.
+      def retry_after_sources
+        @retry_after_sources ||= service.spec.operations.flat_map(&:errors).map(&:retry_after).compact.uniq.sort
+      end
+
+      # The response header retry_after_seconds reads (the spec's name for it, else Retry-After).
+      def retry_after_header
+        headers = service.spec.operations.flat_map(&:responses).flat_map(&:headers)
+        headers.find { |header| header.canonical == "retry_after" }&.name || "Retry-After"
+      end
+
+      # The body field retry_after_seconds reads when the source is the body.
+      def retry_after_field = ExamplePaths.retry_after_field(service.spec.operations.flat_map(&:errors))
+
       private
 
       attr_reader :service, :canon, :auth
@@ -169,10 +184,6 @@ module ProviderIntegrator
 
       def details = detail_lines.empty? ? nil : "**details"
 
-      def retry_after_sources
-        @retry_after_sources ||= service.spec.operations.flat_map(&:errors).map(&:retry_after).compact.uniq.sort
-      end
-
       def retry_after_method
         return nil if retry_after_sources.empty?
 
@@ -195,13 +206,6 @@ module ProviderIntegrator
         end
         lines << "(#{values.join(" || ")})&.to_i"
       end
-
-      def retry_after_header
-        headers = service.spec.operations.flat_map(&:responses).flat_map(&:headers)
-        headers.find { |header| header.canonical == "retry_after" }&.name || "Retry-After"
-      end
-
-      def retry_after_field = ExamplePaths.retry_after_field(service.spec.operations.flat_map(&:errors))
 
       def error_code_method
         path = service.error_code_path

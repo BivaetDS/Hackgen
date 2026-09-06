@@ -10,6 +10,10 @@ module ProviderIntegrator
       # One conditional requirement of one field.
       Verdict = Struct.new(:when, :equals, :source, :confidence, :evidence, keyword_init: true)
 
+      # A value read out of prose keeps the sentence's trailing punctuation ("если type = card.");
+      # the punctuation is never part of the enum value.
+      TRAILING_PUNCTUATION = /[.,;:!?]+\z/
+
       def initialize(dictionary: Dictionaries.fields)
         @config = dictionary.fetch("conditional_required")
       end
@@ -77,7 +81,8 @@ module ProviderIntegrator
       end
 
       def verdict(condition, equals, source, evidence)
-        Verdict.new(when: condition, equals: equals.to_s, source:, confidence: confidences.fetch(source), evidence:)
+        Verdict.new(when: condition, equals: equals.to_s.sub(TRAILING_PUNCTUATION, ""), source:,
+                    confidence: confidences.fetch(source), evidence:)
       end
     end
   end
