@@ -1,0 +1,835 @@
+openapi: 3.0.3
+info:
+  title: BearerPay Transfers API
+  description: |
+    BearerPay — шлюз исходящих переводов в USD: ACH, Fedwire и карточные push-переводы (OCT).
+    Мерчант создаёт перевод, а затем самостоятельно опрашивает его состояние: BearerPay не инициирует
+    исходящих HTTP-запросов в сторону мерчанта, поэтому все изменения состояния нужно получать
+    методом GET /transfers/{transfer_id} (рекомендуемый интервал опроса — 30 секунд).
+
+    Все денежные величины в запросах и ответах — целые числа в минимальных единицах валюты.
+  version: 2.4.0
+  termsOfService: https://bearerpay.example/legal/api-terms
+  contact:
+    name: BearerPay Merchant Integrations
+    email: integrations@bearerpay.example
+    url: https://docs.bearerpay.example/transfers
+  license:
+    name: Proprietary
+    url: https://bearerpay.example/legal/api-terms
+
+x-bearerpay-api-release: '2026-04-01'
+x-bearerpay-sandbox-reset: daily
+
+servers:
+  - url: https://sandbox.bearerpay.example/v2
+    description: Sandbox — тестовый контур, реальные деньги не двигаются
+  - url: https://api.bearerpay.example/v2
+    description: Production
+
+tags:
+  - name: Transfers
+    description: Создание, отслеживание и отмена переводов
+  - name: Reference
+    description: Справочные операции — предварительный расчёт комиссии и квитанции
+
+security:
+  - BearerAuth: []
+
+paths:
+  /transfers:
+    post:
+      tags: [Transfers]
+      summary: Создать перевод
+      description: |
+        Создаёт исходящий перевод получателю. Реквизиты получателя передаются плоским набором полей
+        верхнего уровня; состав обязательных реквизитов зависит от destination_type.
+        Перевод создаётся в состоянии NEW и переходит в SENT после передачи в платёжную сеть.
+        Повторная отправка с тем же X-Request-Id в течение 24 часов безопасна: BearerPay вернёт
+        ранее созданный перевод с тем же transfer_id.
+      operationId: createTransfer
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransferRequest'
+            examples:
+              ach_transfer:
+                summary: Перевод по ACH на расчётный счёт
+                value:
+                  amount: 250000
+                  currency: USD
+                  reference: inv-2026-000841
+                  destination_type: ach
+                  account_number: '000123456789'
+                  routing_number: '021000021'
+                  holder_name: Jane R. Miller
+                  purpose_code: SALA
+                  note: Payroll February 2026
+              wire_transfer:
+                summary: Перевод по Fedwire/SWIFT
+                value:
+                  amount: 1500000
+                  currency: USD
+                  reference: inv-2026-000842
+                  destination_type: wire
+                  account_number: '8801234567'
+                  swift_bic: CHASUS33XXX
+                  holder_name: Contoso Logistics LLC
+                  purpose_code: SUPP
+              card_transfer:
+                summary: Push-перевод на карту
+                value:
+                  amount: 45000
+                  currency: USD
+                  reference: inv-2026-000843
+                  destination_type: card
+                  card_number: '4012888888881881'
+                  holder_name: Marcus Lee
+                  purpose_code: OTHR
+      responses:
+        '201':
+          description: Перевод принят к исполнению
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferResponse'
+              example:
+                transfer_id: tr_9k2m4p7q1x3v5z8b
+                reference: inv-2026-000841
+                status: NEW
+                amount: 250000
+                currency: USD
+                fee: 250
+                destination_type: ach
+                account_number_last4: '6789'
+                holder_name: Jane R. Miller
+                created_at: '2026-04-02T09:14:05Z'
+                updated_at: '2026-04-02T09:14:05Z'
+        '400':
+          description: Тело запроса не прошло валидацию
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                error_code: VALIDATION_FAILED
+                error_message: 'amount: minimum transfer amount is 10000 cents (100.00 USD)'
+                request_id: req_2f8b6a5e1d40
+                details:
+                  - field: amount
+                    issue: must be at least 10000
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '402':
+          description: Недостаточно средств на балансе мерчанта в BearerPay
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                error_code: INSUFFICIENT_FUNDS
+                error_message: Merchant funding account does not cover amount and fee
+                request_id: req_71ac903de118
+        '403':
+          description: Мерчант заблокирован комплаенс-службой BearerPay
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                error_code: ACCOUNT_BLOCKED
+                error_message: Merchant account is blocked, contact compliance@bearerpay.example
+                request_id: req_9c0b12ff77a1
+        '409':
+          description: Значение reference уже использовалось этим мерчантом
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                error_code: DUPLICATE_REFERENCE
+                error_message: Transfer with reference inv-2026-000841 already exists
+                request_id: req_4d61e2b0c9aa
+        '422':
+          description: Сумма выходит за пределы лимитов мерчанта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                error_code: AMOUNT_LIMIT_EXCEEDED
+                error_message: Daily outbound limit for destination_type=ach is exceeded
+                request_id: req_08fe4417c2b3
+        '429':
+          $ref: '#/components/responses/Throttled'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          description: Платёжная сеть временно недоступна
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                error_code: PROVIDER_UNAVAILABLE
+                error_message: ACH network window is closed, retry after 15 minutes
+                request_id: req_bb31d0e5a742
+                retry_after_seconds: 900
+
+    get:
+      tags: [Transfers]
+      summary: История переводов
+      description: |
+        Возвращает страницу переводов мерчанта, отсортированную по created_at по убыванию.
+        Постраничный обход курсорный: значение next_cursor из ответа передаётся в параметре cursor.
+      operationId: listTransfers
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Фильтр по состоянию перевода
+          schema:
+            $ref: '#/components/schemas/TransferStatus'
+        - name: reference
+          in: query
+          required: false
+          description: Точное совпадение по идентификатору операции мерчанта
+          schema:
+            type: string
+            maxLength: 40
+          example: inv-2026-000841
+        - name: created_after
+          in: query
+          required: false
+          description: Нижняя граница периода (включительно), ISO 8601
+          schema:
+            type: string
+            format: date-time
+          example: '2026-04-01T00:00:00Z'
+        - name: created_before
+          in: query
+          required: false
+          description: Верхняя граница периода (исключительно), ISO 8601
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          required: false
+          description: Размер страницы
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: cursor
+          in: query
+          required: false
+          description: Курсор следующей страницы из поля next_cursor
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Страница переводов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferListResponse'
+              example:
+                items:
+                  - transfer_id: tr_9k2m4p7q1x3v5z8b
+                    reference: inv-2026-000841
+                    status: DONE
+                    amount: 250000
+                    currency: USD
+                    fee: 250
+                    destination_type: ach
+                    account_number_last4: '6789'
+                    holder_name: Jane R. Miller
+                    created_at: '2026-04-02T09:14:05Z'
+                    updated_at: '2026-04-02T11:02:40Z'
+                    settled_at: '2026-04-02T11:02:40Z'
+                has_more: true
+                next_cursor: eyJvIjoxMDB9
+        '400':
+          description: Некорректные параметры выборки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                error_code: VALIDATION_FAILED
+                error_message: 'limit: must be between 1 and 200'
+                request_id: req_1a2b3c4d5e6f
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/Throttled'
+
+  /transfers/quote:
+    post:
+      tags: [Reference]
+      summary: Рассчитать комиссию перевода
+      description: |
+        Предварительный расчёт комиссии и итогового списания без создания перевода.
+        Котировка действует 15 минут; после истечения комиссия может измениться.
+      operationId: quoteTransferFee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuoteRequest'
+            example:
+              amount: 250000
+              currency: USD
+              destination_type: wire
+      responses:
+        '200':
+          description: Расчёт комиссии
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuoteResponse'
+              example:
+                quote_id: qt_3d5f7h9j1k2l4m6n
+                amount: 250000
+                fee: 1800
+                total_debit: 251800
+                currency: USD
+                destination_type: wire
+                expires_at: '2026-04-02T09:29:05Z'
+                estimated_settlement_date: '2026-04-02'
+        '400':
+          description: Некорректные параметры расчёта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                error_code: VALIDATION_FAILED
+                error_message: 'destination_type: unsupported value'
+                request_id: req_6b7c8d9e0f11
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/Throttled'
+
+  /transfers/{transfer_id}:
+    parameters:
+      - $ref: '#/components/parameters/TransferId'
+    get:
+      tags: [Transfers]
+      summary: Статус перевода
+      description: |
+        Возвращает текущее состояние перевода. Терминальные состояния — DONE и DECLINED;
+        для DECLINED заполняются error_code и error_message с причиной отказа платёжной сети.
+      operationId: getTransferStatus
+      responses:
+        '200':
+          description: Текущее состояние перевода
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferResponse'
+              examples:
+                settled:
+                  summary: Перевод исполнен
+                  value:
+                    transfer_id: tr_9k2m4p7q1x3v5z8b
+                    reference: inv-2026-000841
+                    status: DONE
+                    amount: 250000
+                    currency: USD
+                    fee: 250
+                    destination_type: ach
+                    account_number_last4: '6789'
+                    holder_name: Jane R. Miller
+                    created_at: '2026-04-02T09:14:05Z'
+                    updated_at: '2026-04-02T11:02:40Z'
+                    settled_at: '2026-04-02T11:02:40Z'
+                declined:
+                  summary: Перевод отклонён банком получателя
+                  value:
+                    transfer_id: tr_5c8e1a0d4b7f2g6h
+                    reference: inv-2026-000844
+                    status: DECLINED
+                    amount: 78000
+                    currency: USD
+                    fee: 0
+                    destination_type: ach
+                    account_number_last4: '4321'
+                    holder_name: Oliver Grant
+                    error_code: ACCOUNT_CLOSED
+                    error_message: Receiving bank returned R02 - account closed
+                    created_at: '2026-04-02T08:00:00Z'
+                    updated_at: '2026-04-02T10:12:11Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Перевод не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                error_code: TRANSFER_NOT_FOUND
+                error_message: No transfer with id tr_9k2m4p7q1x3v5z8b
+                request_id: req_c4d5e6f70819
+        '429':
+          $ref: '#/components/responses/Throttled'
+
+  /transfers/{transfer_id}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/TransferId'
+    post:
+      tags: [Transfers]
+      summary: Отменить перевод
+      description: |
+        Отмена возможна только пока перевод находится в состоянии NEW и не передан в платёжную сеть.
+        Для состояний SENT, DONE и DECLINED возвращается 409.
+      operationId: cancelTransfer
+      responses:
+        '200':
+          description: Перевод отменён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferResponse'
+              example:
+                transfer_id: tr_9k2m4p7q1x3v5z8b
+                reference: inv-2026-000841
+                status: DECLINED
+                amount: 250000
+                currency: USD
+                fee: 0
+                destination_type: ach
+                error_code: CANCELED_BY_MERCHANT
+                error_message: Cancelled on merchant request
+                created_at: '2026-04-02T09:14:05Z'
+                updated_at: '2026-04-02T09:16:22Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Перевод не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                error_code: TRANSFER_NOT_FOUND
+                error_message: No transfer with id tr_9k2m4p7q1x3v5z8b
+                request_id: req_d5e6f7081920
+        '409':
+          description: Перевод уже передан в платёжную сеть и не может быть отменён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                error_code: TRANSFER_NOT_CANCELABLE
+                error_message: Transfer in status SENT can no longer be cancelled
+                request_id: req_e6f708192a3b
+
+  /transfers/{transfer_id}/receipt:
+    parameters:
+      - $ref: '#/components/parameters/TransferId'
+    get:
+      tags: [Reference]
+      summary: Квитанция по переводу
+      description: |
+        Ссылка на PDF-квитанцию для бухгалтерии мерчанта. Квитанция формируется только для
+        переводов в состоянии DONE; ссылка действует 60 минут.
+      operationId: downloadTransferReceipt
+      responses:
+        '200':
+          description: Ссылка на квитанцию
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptResponse'
+              example:
+                transfer_id: tr_9k2m4p7q1x3v5z8b
+                receipt_url: https://files.bearerpay.example/receipts/tr_9k2m4p7q1x3v5z8b.pdf
+                content_format: pdf
+                generated_at: '2026-04-02T11:03:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Квитанция ещё не сформирована или перевод не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                error_code: TRANSFER_NOT_FOUND
+                error_message: Receipt is available for transfers in status DONE only
+                request_id: req_f708192a3b4c
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT, выданный в личном кабинете BearerPay (Settings -> API keys). Передаётся в заголовке
+        Authorization: Bearer <token>. Срок жизни токена — 90 дней.
+
+  parameters:
+    RequestId:
+      name: X-Request-Id
+      in: header
+      required: false
+      description: |
+        Ключ идемпотентности запроса (UUID v4). Повторная отправка с тем же значением в течение
+        24 часов не создаёт новый перевод, а возвращает ранее созданный.
+      schema:
+        type: string
+        format: uuid
+      example: 9a1f0c1e-4b7d-4a2f-9d3c-2f8b6a5e1d40
+    TransferId:
+      name: transfer_id
+      in: path
+      required: true
+      description: Идентификатор перевода, присвоенный BearerPay
+      schema:
+        type: string
+        pattern: '^tr_[0-9a-z]{16}$'
+      example: tr_9k2m4p7q1x3v5z8b
+
+  schemas:
+    CreateTransferRequest:
+      type: object
+      required: [amount, currency, reference, destination_type, holder_name, purpose_code]
+      properties:
+        amount:
+          type: integer
+          format: int64
+          description: Сумма перевода в минимальных единицах валюты — в центах (250000 = 2500.00 USD)
+          minimum: 10000
+          maximum: 5000000
+          example: 250000
+        currency:
+          type: string
+          description: Валюта перевода; на текущий момент поддерживается только USD
+          enum: [USD]
+          example: USD
+        reference:
+          type: string
+          description: Идентификатор операции на стороне мерчанта, уникальный в рамках аккаунта
+          maxLength: 40
+          example: inv-2026-000841
+        destination_type:
+          type: string
+          description: |
+            Канал зачисления средств получателю: ach — расчётный счёт (1-2 банковских дня),
+            wire — Fedwire/SWIFT (в день отправки), card — push-перевод на карту (мгновенно).
+          enum: [ach, wire, card]
+          default: ach
+          example: ach
+        holder_name:
+          type: string
+          description: Имя владельца счёта или карты получателя, как оно записано в банке
+          minLength: 2
+          maxLength: 70
+          example: Jane R. Miller
+        account_number:
+          type: string
+          description: Номер счёта получателя. Обязателен, если destination_type = ach
+          pattern: '^[0-9]{4,17}$'
+          example: '000123456789'
+        routing_number:
+          type: string
+          description: ABA routing number банка получателя. Обязателен, если destination_type = ach
+          pattern: '^[0-9]{9}$'
+          example: '021000021'
+        swift_bic:
+          type: string
+          description: SWIFT/BIC банка получателя. Required for destination_type = wire
+          minLength: 8
+          maxLength: 11
+          example: CHASUS33XXX
+        card_number:
+          type: string
+          description: Номер карты получателя. Required for destination_type = card
+          pattern: '^[0-9]{13,19}$'
+          example: '4012888888881881'
+        purpose_code:
+          type: string
+          description: |
+            Код назначения платежа по классификатору NACHA (приложение B к договору):
+            SALA — заработная плата, SUPP — оплата поставщику, OTHR — прочее.
+          maxLength: 4
+          example: SALA
+        note:
+          type: string
+          description: Произвольное назначение платежа, попадает в выписку получателя
+          maxLength: 140
+          example: Payroll February 2026
+
+    TransferResponse:
+      type: object
+      required: [transfer_id, reference, status, amount, currency, created_at]
+      properties:
+        transfer_id:
+          type: string
+          description: Идентификатор перевода в BearerPay
+          example: tr_9k2m4p7q1x3v5z8b
+        reference:
+          type: string
+          description: Идентификатор операции на стороне мерчанта
+          example: inv-2026-000841
+        status:
+          $ref: '#/components/schemas/TransferStatus'
+        amount:
+          type: integer
+          format: int64
+          description: Сумма перевода в центах
+          example: 250000
+        currency:
+          type: string
+          example: USD
+        fee:
+          type: integer
+          format: int64
+          description: Комиссия BearerPay в центах, списывается сверх суммы перевода
+          example: 250
+        destination_type:
+          type: string
+          enum: [ach, wire, card]
+          example: ach
+        account_number_last4:
+          type: string
+          description: Последние четыре знака счёта или карты получателя
+          example: '6789'
+        holder_name:
+          type: string
+          example: Jane R. Miller
+        error_code:
+          type: string
+          description: Код причины отказа, заполняется только для status = DECLINED
+          example: ACCOUNT_CLOSED
+        error_message:
+          type: string
+          description: Текст причины отказа от платёжной сети
+          example: Receiving bank returned R02 - account closed
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-04-02T09:14:05Z'
+        updated_at:
+          type: string
+          format: date-time
+          example: '2026-04-02T11:02:40Z'
+        settled_at:
+          type: string
+          format: date-time
+          description: Момент зачисления средств получателю, только для status = DONE
+          example: '2026-04-02T11:02:40Z'
+
+    TransferStatus:
+      type: string
+      description: |
+        Жизненный цикл перевода: NEW -> SENT -> DONE либо DECLINED.
+        NEW — принят BearerPay и поставлен в очередь отправки;
+        SENT — передан в платёжную сеть, ожидается подтверждение;
+        DONE — средства зачислены получателю;
+        DECLINED — перевод отклонён, причина в error_code.
+      enum: [NEW, SENT, DONE, DECLINED]
+      example: SENT
+
+    TransferListResponse:
+      type: object
+      required: [items, has_more]
+      properties:
+        items:
+          type: array
+          description: Переводы текущей страницы
+          items:
+            $ref: '#/components/schemas/TransferResponse'
+        has_more:
+          type: boolean
+          description: Есть ли следующая страница
+          example: true
+        next_cursor:
+          type: string
+          nullable: true
+          description: Курсор следующей страницы; null, если страница последняя
+          example: eyJvIjoxMDB9
+
+    QuoteRequest:
+      type: object
+      required: [amount, currency, destination_type]
+      properties:
+        amount:
+          type: integer
+          format: int64
+          description: Сумма перевода в центах
+          minimum: 10000
+          example: 250000
+        currency:
+          type: string
+          enum: [USD]
+          example: USD
+        destination_type:
+          type: string
+          enum: [ach, wire, card]
+          example: wire
+
+    QuoteResponse:
+      type: object
+      required: [quote_id, amount, fee, total_debit, currency]
+      properties:
+        quote_id:
+          type: string
+          example: qt_3d5f7h9j1k2l4m6n
+        amount:
+          type: integer
+          format: int64
+          description: Сумма перевода в центах
+          example: 250000
+        fee:
+          type: integer
+          format: int64
+          description: Комиссия BearerPay в центах
+          example: 1800
+        total_debit:
+          type: integer
+          format: int64
+          description: Итоговое списание с баланса мерчанта в центах
+          example: 251800
+        currency:
+          type: string
+          example: USD
+        destination_type:
+          type: string
+          enum: [ach, wire, card]
+          example: wire
+        expires_at:
+          type: string
+          format: date-time
+          description: Момент, после которого котировка недействительна
+          example: '2026-04-02T09:29:05Z'
+        estimated_settlement_date:
+          type: string
+          format: date
+          description: Ожидаемая дата зачисления средств получателю
+          example: '2026-04-02'
+
+    ReceiptResponse:
+      type: object
+      required: [transfer_id, receipt_url]
+      properties:
+        transfer_id:
+          type: string
+          example: tr_9k2m4p7q1x3v5z8b
+        receipt_url:
+          type: string
+          format: uri
+          description: Временная ссылка на файл квитанции, действует 60 минут
+          example: https://files.bearerpay.example/receipts/tr_9k2m4p7q1x3v5z8b.pdf
+        content_format:
+          type: string
+          enum: [pdf]
+          example: pdf
+        generated_at:
+          type: string
+          format: date-time
+          example: '2026-04-02T11:03:00Z'
+
+    ErrorEnvelope:
+      type: object
+      required: [error_code, error_message]
+      properties:
+        error_code:
+          type: string
+          description: Машиночитаемый код ошибки BearerPay
+          enum:
+            - VALIDATION_FAILED
+            - INVALID_TOKEN
+            - ACCOUNT_BLOCKED
+            - INSUFFICIENT_FUNDS
+            - AMOUNT_LIMIT_EXCEEDED
+            - DUPLICATE_REFERENCE
+            - TRANSFER_NOT_FOUND
+            - TRANSFER_NOT_CANCELABLE
+            - THROTTLED
+            - PROVIDER_UNAVAILABLE
+            - INTERNAL_ERROR
+          example: VALIDATION_FAILED
+        error_message:
+          type: string
+          description: Человекочитаемое описание ошибки на английском языке
+          example: 'amount: minimum transfer amount is 10000 cents (100.00 USD)'
+        request_id:
+          type: string
+          description: Идентификатор запроса; указывайте его при обращении в поддержку
+          example: req_2f8b6a5e1d40
+        retry_after_seconds:
+          type: integer
+          description: Через сколько секунд повторить запрос; заполняется для THROTTLED и PROVIDER_UNAVAILABLE
+          example: 5
+        details:
+          type: array
+          description: Разбор ошибок по полям запроса, только для VALIDATION_FAILED
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+
+    ErrorDetail:
+      type: object
+      properties:
+        field:
+          type: string
+          example: amount
+        issue:
+          type: string
+          example: must be at least 10000
+
+  responses:
+    Unauthorized:
+      description: Отсутствует или недействителен Bearer-токен
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            error_code: INVALID_TOKEN
+            error_message: Bearer token is expired or malformed
+            request_id: req_a1b2c3d4e5f6
+    Throttled:
+      description: Превышен лимит запросов (по умолчанию 20 запросов в секунду на мерчанта)
+      headers:
+        Retry-After:
+          description: Через сколько секунд можно повторить запрос
+          schema:
+            type: integer
+          example: 5
+        X-RateLimit-Remaining:
+          description: Остаток запросов в текущем окне
+          schema:
+            type: integer
+          example: 0
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            error_code: THROTTLED
+            error_message: Too many requests, slow down
+            request_id: req_b2c3d4e5f607
+            retry_after_seconds: 5
+    InternalError:
+      description: Внутренняя ошибка BearerPay
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            error_code: INTERNAL_ERROR
+            error_message: Unexpected error, contact support with request_id
+            request_id: req_c3d4e5f60718

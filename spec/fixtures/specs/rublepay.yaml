@@ -1,0 +1,993 @@
+openapi: 3.0.3
+info:
+  title: RublePay Deposit API
+  description: |
+    API приёма платежей (pay-in) сервиса RublePay для интернет-магазинов и подписочных сервисов.
+    Мерчант создаёт депозит, плательщик оплачивает его картой, через СБП или банковским переводом
+    по счёту, RublePay уведомляет мерчанта о каждой смене состояния депозита.
+
+    Все денежные значения передаются строкой в рублях с двумя знаками после десятичной точки
+    (например, "1500.00"). Округление выполняется на стороне мерчанта.
+
+    Тестовый контур не проводит реальных списаний: карта 4111 1111 1111 1111 всегда оплачивается
+    успешно, карта 4000 0000 0000 0002 всегда отклоняется эквайрером.
+  version: "2.4.1"
+  termsOfService: https://rublepay.example/legal/merchant-terms
+  contact:
+    name: RublePay Merchant Support
+    email: support@rublepay.example
+    url: https://docs.rublepay.example
+  license:
+    name: RublePay API Terms
+    url: https://rublepay.example/legal/api
+
+x-doc-revision: "2026-02-14"
+
+servers:
+  - url: https://api.sandbox.rublepay.example/v2
+    description: Тестовый контур (sandbox), ключи с префиксом sk_test_
+  - url: https://api.rublepay.example/v2
+    description: Боевой контур (production)
+
+security:
+  - MerchantKey: []
+
+tags:
+  - name: Deposits
+    description: Создание депозитов и проверка их состояния
+  - name: Refunds
+    description: Возвраты по оплаченным депозитам
+  - name: Notifications
+    description: Уведомления RublePay о смене состояния депозита
+  - name: Directories
+    description: Справочники и вспомогательные расчёты
+
+paths:
+  /deposits:
+    post:
+      tags: [Deposits]
+      summary: Создать депозит
+      description: |
+        Создаёт депозит (заказ на приём платежа) и возвращает ссылку `payment_url`, на которую
+        нужно отправить плательщика. Набор обязательных реквизитов зависит от значения
+        `payment_details.source_type`.
+
+        Идемпотентность: повторный запрос с тем же заголовком `X-Request-Id` в течение 24 часов
+        не создаёт новый депозит, а возвращает код 409 с `error_code = deposit_already_registered`.
+      operationId: initDeposit
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        description: Параметры создаваемого депозита
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDepositRequest'
+            examples:
+              card_deposit:
+                summary: Оплата картой
+                value:
+                  merchant_order_id: "ord-2026-000871"
+                  merchant_id: "shop_10245"
+                  amount: "1500.00"
+                  currency: RUB
+                  description: "Заказ №871 в магазине example.ru"
+                  payment_details:
+                    source_type: card
+                    pan: "4111111111111111"
+                    expiry_month: "07"
+                    expiry_year: "29"
+                    cvc: "123"
+                    cardholder_name: "IVAN PETROV"
+                  payer:
+                    email: "buyer@example.ru"
+                    ip_address: "203.0.113.17"
+                  return_url: "https://example.ru/orders/871/done"
+                  fiscalization: true
+                  receipt_email: "buyer@example.ru"
+              sbp_deposit:
+                summary: Оплата через СБП
+                value:
+                  merchant_order_id: "ord-2026-000872"
+                  merchant_id: "shop_10245"
+                  amount: "349.90"
+                  currency: RUB
+                  payment_details:
+                    source_type: sbp
+                    bank_member_id: "100000000111"
+                    payer_phone: "79161234567"
+                    qr_type: dynamic
+                  notify_url: "https://example.ru/hooks/rublepay"
+                  ttl_minutes: 30
+      responses:
+        '201':
+          description: Депозит создан, плательщика можно направлять на оплату
+          headers:
+            X-RublePay-Trace-Id:
+              description: Идентификатор запроса в логах RublePay; указывайте его в обращениях в поддержку
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositResponse'
+              example:
+                deposit_id: "dp_8c41f0e2"
+                merchant_order_id: "ord-2026-000871"
+                state: created
+                amount: "1500.00"
+                paid_amount: "0.00"
+                currency: RUB
+                payment_url: "https://pay.rublepay.example/d/8c41f0e2"
+                created_at: "2026-02-14T09:15:00Z"
+                updated_at: "2026-02-14T09:15:00Z"
+                expires_at: "2026-02-14T10:15:00Z"
+        '400':
+          description: Тело запроса не разобрано или нарушена схема
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                error_code: malformed_request
+                error_message: "Field payment_details.source_type is required"
+                request_id: "req_0f2a77c1"
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '409':
+          description: Депозит с таким merchant_order_id или X-Request-Id уже зарегистрирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                error_code: deposit_already_registered
+                error_message: "Deposit for merchant_order_id ord-2026-000871 already exists"
+                request_id: "req_0f2a77c2"
+        '422':
+          description: Сумма или реквизиты не проходят проверку бизнес-правил
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                error_code: amount_less_than_min
+                error_message: "Minimum deposit amount is 10.00 RUB"
+                request_id: "req_0f2a77c3"
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /deposits/{deposit_id}:
+    parameters:
+      - $ref: '#/components/parameters/DepositId'
+    get:
+      tags: [Deposits]
+      summary: Проверить состояние депозита
+      description: |
+        Возвращает актуальное состояние депозита. Основной способ узнать о смене состояния —
+        уведомления; опрос допускается не чаще одного запроса в 5 секунд на депозит.
+      operationId: getDepositState
+      responses:
+        '200':
+          description: Текущее состояние депозита
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositResponse'
+              example:
+                deposit_id: "dp_8c41f0e2"
+                merchant_order_id: "ord-2026-000871"
+                state: succeeded
+                amount: "1500.00"
+                paid_amount: "1500.00"
+                currency: RUB
+                payment_url: "https://pay.rublepay.example/d/8c41f0e2"
+                created_at: "2026-02-14T09:15:00Z"
+                updated_at: "2026-02-14T09:17:42Z"
+                expires_at: "2026-02-14T10:15:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /deposits/{deposit_id}/refunds:
+    parameters:
+      - $ref: '#/components/parameters/DepositId'
+    post:
+      tags: [Refunds]
+      summary: Оформить возврат по депозиту
+      description: |
+        Полный или частичный возврат оплаченного депозита. Сумма возврата не может превышать
+        `paid_amount` за вычетом ранее возвращённых сумм. Возврат по СБП зачисляется в течение
+        суток, по карте — до 30 дней в зависимости от банка плательщика.
+      operationId: refundDeposit
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundRequest'
+            example:
+              amount: "500.00"
+              reason: "Частичный возврат по обращению покупателя"
+              merchant_refund_id: "ref-871-1"
+      responses:
+        '200':
+          description: Возврат принят в обработку
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundResponse'
+              example:
+                refund_id: "rf_31b7c0aa"
+                deposit_id: "dp_8c41f0e2"
+                state: created
+                amount: "500.00"
+                currency: RUB
+                created_at: "2026-02-15T11:02:10Z"
+        '400':
+          description: Некорректные параметры возврата
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Возврат невозможен в текущем состоянии депозита
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                error_code: refund_not_allowed
+                error_message: "Deposit in state expired cannot be refunded"
+                request_id: "req_0f2a7801"
+
+  /notifications/deposit:
+    post:
+      tags: [Notifications]
+      summary: Уведомление о смене состояния депозита
+      description: |
+        RublePay отправляет POST-запрос на адрес из поля `notify_url` (или на адрес, указанный
+        в личном кабинете) при каждом переходе депозита в новое состояние.
+        Подпись передаётся в заголовке X-RublePay-Sign: HMAC-SHA512 от сырого тела запроса, hex.
+        Ключом подписи служит секрет уведомлений мерчанта из личного кабинета.
+        Мерчант обязан ответить 200 в течение 10 секунд; иначе уведомление повторяется через
+        1, 5, 15 и 60 минут (не более пяти попыток).
+      operationId: depositNotification
+      security: []
+      parameters:
+        - name: X-RublePay-Sign
+          in: header
+          required: true
+          description: Подпись тела уведомления, см. описание операции
+          schema:
+            type: string
+          example: "6b8f0c1d2e3a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d40a1b2c3d4e5f60718293a4b5c6d7e8f9d4c3b2a1908f7e6d5c4b3a29180f7e6d"
+        - name: X-RublePay-Event-Id
+          in: header
+          required: false
+          description: Идентификатор доставки; используйте его для дедупликации повторных уведомлений
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepositNotification'
+            examples:
+              succeeded:
+                summary: Депозит оплачен полностью
+                value:
+                  event: deposit.succeeded
+                  deposit_id: "dp_8c41f0e2"
+                  merchant_order_id: "ord-2026-000871"
+                  state: succeeded
+                  amount: "1500.00"
+                  paid_amount: "1500.00"
+                  currency: RUB
+                  occurred_at: "2026-02-14T09:17:42Z"
+                  attempt: 1
+              expired:
+                summary: Срок оплаты истёк
+                value:
+                  event: deposit.expired
+                  deposit_id: "dp_9d5210ff"
+                  merchant_order_id: "ord-2026-000873"
+                  state: expired
+                  amount: "890.00"
+                  paid_amount: "0.00"
+                  currency: RUB
+                  occurred_at: "2026-02-14T11:00:00Z"
+                  error_code: payment_window_closed
+                  error_message: "Payer did not complete the payment in time"
+                  attempt: 1
+      responses:
+        '200':
+          description: Уведомление принято мерчантом
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accepted:
+                    type: boolean
+                    description: Признак того, что уведомление обработано
+                    example: true
+              example:
+                accepted: true
+        '400':
+          description: Мерчант не принял уведомление; RublePay повторит доставку
+
+  /fees/quote:
+    post:
+      tags: [Directories]
+      summary: Рассчитать комиссию по будущему депозиту
+      description: |
+        Возвращает комиссию RublePay и сумму к зачислению на баланс мерчанта для указанной суммы
+        и способа оплаты. Расчёт справочный: фактическая комиссия фиксируется в момент оплаты.
+      operationId: calculateDepositFee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeeQuoteRequest'
+            example:
+              amount: "1500.00"
+              currency: RUB
+              source_type: card
+      responses:
+        '200':
+          description: Расчёт комиссии
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeeQuoteResponse'
+              example:
+                amount: "1500.00"
+                fee: "40.50"
+                total_amount: "1459.50"
+                currency: RUB
+                source_type: card
+                tariff_code: "std_card_27"
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '422':
+          description: Способ оплаты не подключён магазину
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                error_code: source_not_enabled
+                error_message: "Source type account is not enabled for this shop"
+                request_id: "req_0f2a7811"
+
+  /directories/sbp-banks:
+    get:
+      tags: [Directories]
+      summary: Список банков — участников СБП
+      description: |
+        Справочник банков СБП с их memberId. Список меняется редко: кэшируйте ответ на сутки
+        и обновляйте по полю `updated_at`.
+      operationId: listSbpBanks
+      parameters:
+        - name: available_only
+          in: query
+          required: false
+          description: Вернуть только банки, доступные для приёма платежей прямо сейчас
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Справочник банков СБП
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SbpBankList'
+              example:
+                banks:
+                  - member_id: "100000000111"
+                    name: "Т-Банк"
+                    available: true
+                  - member_id: "100000000004"
+                    name: "Альфа-Банк"
+                    available: true
+                updated_at: "2026-02-01T00:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+
+components:
+  securitySchemes:
+    MerchantKey:
+      type: apiKey
+      in: query
+      name: api_key
+      description: |
+        Ключ магазина из личного кабинета RublePay. Передаётся query-параметром в каждом запросе:
+        `POST /v2/deposits?api_key=sk_live_...`. Ключи тестового контура начинаются с sk_test_.
+
+  parameters:
+    RequestId:
+      name: X-Request-Id
+      in: header
+      required: false
+      description: |
+        Ключ идемпотентности запроса. Повтор с тем же значением в течение 24 часов не создаёт
+        новую сущность.
+      schema:
+        type: string
+        format: uuid
+      example: "8f6b6a52-0f3c-4f52-9a25-2f1f0f2c1a44"
+    DepositId:
+      name: deposit_id
+      in: path
+      required: true
+      description: Идентификатор депозита в системе RublePay
+      schema:
+        type: string
+      example: "dp_8c41f0e2"
+
+  schemas:
+    DepositState:
+      type: string
+      description: |
+        Состояние депозита:
+        created — депозит создан, ссылка на оплату выдана;
+        awaiting_payment — плательщик открыл платёжную страницу, ждём подтверждения банка;
+        succeeded — депозит оплачен полностью;
+        partially_paid — поступила часть суммы, депозит остаётся открытым;
+        refunded — оплата возвращена плательщику;
+        expired — время жизни ссылки истекло, оплата не поступила.
+      enum:
+        - created
+        - awaiting_payment
+        - succeeded
+        - partially_paid
+        - refunded
+        - expired
+      example: awaiting_payment
+
+    RefundState:
+      type: string
+      description: Состояние возврата.
+      enum:
+        - created
+        - succeeded
+        - rejected
+      example: created
+
+    CreateDepositRequest:
+      type: object
+      required: [merchant_order_id, amount, currency, payment_details]
+      properties:
+        merchant_order_id:
+          type: string
+          description: Идентификатор заказа в системе мерчанта, уникален в пределах магазина.
+          maxLength: 64
+          example: "ord-2026-000871"
+        merchant_id:
+          type: string
+          description: Идентификатор магазина RublePay; обязателен, если ключ выдан на несколько магазинов.
+          example: "shop_10245"
+        amount:
+          type: string
+          description: |
+            Сумма депозита в рублях: строка с двумя знаками после десятичной точки.
+            Минимум 10.00, максимум 300000.00 за один депозит.
+          pattern: '^\d+\.\d{2}$'
+          example: "1500.00"
+        currency:
+          type: string
+          description: Валюта депозита. Поддерживается только российский рубль.
+          enum: [RUB]
+          example: RUB
+        description:
+          type: string
+          description: Назначение платежа; показывается плательщику и попадает в чек.
+          maxLength: 140
+          example: "Заказ №871 в магазине example.ru"
+        payment_details:
+          description: |
+            Источник средств. Состав обязательных полей определяется значением `source_type`.
+          discriminator:
+            propertyName: source_type
+            mapping:
+              card: '#/components/schemas/CardSource'
+              sbp: '#/components/schemas/SbpSource'
+              account: '#/components/schemas/AccountSource'
+          oneOf:
+            - $ref: '#/components/schemas/CardSource'
+            - $ref: '#/components/schemas/SbpSource'
+            - $ref: '#/components/schemas/AccountSource'
+        payer:
+          $ref: '#/components/schemas/Payer'
+        return_url:
+          type: string
+          format: uri
+          description: Адрес, на который RublePay вернёт плательщика после оплаты или отказа.
+          example: "https://example.ru/orders/871/done"
+        notify_url:
+          type: string
+          format: uri
+          description: Адрес для уведомлений; если не задан, берётся адрес из личного кабинета.
+          example: "https://example.ru/hooks/rublepay"
+        fiscalization:
+          type: boolean
+          description: Формировать кассовый чек по 54-ФЗ на стороне RublePay.
+          default: false
+          example: true
+        receipt_email:
+          type: string
+          format: email
+          description: |
+            Адрес для отправки чека плательщику.
+            Обязателен, если fiscalization = true; в остальных случаях игнорируется.
+          example: "buyer@example.ru"
+        ttl_minutes:
+          type: integer
+          description: Время жизни ссылки на оплату в минутах; по истечении депозит переходит в expired.
+          minimum: 5
+          maximum: 1440
+          default: 60
+          example: 30
+
+    CardSource:
+      type: object
+      description: |
+        Оплата банковской картой. Передача номера карты в API доступна мерчантам с сертификатом
+        PCI DSS; остальным RublePay возвращает `payment_url` со своей платёжной формой.
+      required: [source_type, pan, expiry_month, expiry_year, cvc]
+      properties:
+        source_type:
+          type: string
+          description: Способ оплаты.
+          enum: [card]
+          example: card
+        pan:
+          type: string
+          description: Номер карты плательщика без пробелов и дефисов.
+          pattern: '^\d{16,19}$'
+          example: "4111111111111111"
+        expiry_month:
+          type: string
+          description: Месяц окончания срока действия карты, две цифры.
+          pattern: '^(0[1-9]|1[0-2])$'
+          example: "07"
+        expiry_year:
+          type: string
+          description: Год окончания срока действия карты, две последние цифры.
+          pattern: '^\d{2}$'
+          example: "29"
+        cvc:
+          type: string
+          description: Код проверки подлинности карты; RublePay его не сохраняет.
+          pattern: '^\d{3,4}$'
+          example: "123"
+        cardholder_name:
+          type: string
+          description: Имя держателя карты латиницей, как напечатано на карте.
+          example: "IVAN PETROV"
+
+    SbpSource:
+      type: object
+      description: Оплата через Систему быстрых платежей по платёжной ссылке или динамическому QR.
+      required: [source_type, bank_member_id]
+      properties:
+        source_type:
+          type: string
+          description: Способ оплаты.
+          enum: [sbp]
+          example: sbp
+        bank_member_id:
+          type: string
+          description: Идентификатор банка плательщика в СБП (memberId) из справочника /directories/sbp-banks.
+          pattern: '^\d{12}$'
+          example: "100000000111"
+        payer_phone:
+          type: string
+          description: Телефон плательщика в формате 7XXXXXXXXXX; ускоряет подтверждение в приложении банка.
+          pattern: '^7\d{10}$'
+          example: "79161234567"
+        qr_type:
+          type: string
+          description: Тип QR-кода СБП.
+          enum: [dynamic, static]
+          default: dynamic
+          example: dynamic
+
+    AccountSource:
+      type: object
+      description: Оплата по счёту — банковский перевод от юридического лица или ИП.
+      required: [source_type, account_number, bank_bik, inn]
+      properties:
+        source_type:
+          type: string
+          description: Способ оплаты.
+          enum: [account]
+          example: account
+        account_number:
+          type: string
+          description: Расчётный счёт плательщика, 20 цифр.
+          pattern: '^\d{20}$'
+          example: "40702810900000012345"
+        bank_bik:
+          type: string
+          description: БИК банка плательщика, 9 цифр.
+          pattern: '^\d{9}$'
+          example: "044525593"
+        inn:
+          type: string
+          description: ИНН плательщика, 10 или 12 цифр.
+          pattern: '^\d{10}(\d{2})?$'
+          example: "7707083893"
+        payer_name:
+          type: string
+          description: Наименование организации-плательщика, как в банковских реквизитах.
+          example: 'ООО "Ромашка"'
+
+    Payer:
+      type: object
+      description: Сведения о плательщике для антифрода и фискализации.
+      properties:
+        email:
+          type: string
+          format: email
+          description: Электронная почта плательщика.
+          example: "buyer@example.ru"
+        phone:
+          type: string
+          description: Телефон плательщика в формате 7XXXXXXXXXX.
+          pattern: '^7\d{10}$'
+          example: "79161234567"
+        ip_address:
+          type: string
+          description: IP-адрес, с которого плательщик оформляет заказ.
+          example: "203.0.113.17"
+        full_name:
+          type: string
+          description: ФИО плательщика.
+          example: "Иванов Иван Иванович"
+
+    DepositResponse:
+      type: object
+      description: Представление депозита в ответах API.
+      properties:
+        deposit_id:
+          type: string
+          description: Идентификатор депозита в системе RublePay.
+          example: "dp_8c41f0e2"
+        merchant_order_id:
+          type: string
+          description: Идентификатор заказа в системе мерчанта, переданный при создании.
+          example: "ord-2026-000871"
+        state:
+          $ref: '#/components/schemas/DepositState'
+        amount:
+          type: string
+          description: Заявленная сумма депозита в рублях.
+          pattern: '^\d+\.\d{2}$'
+          example: "1500.00"
+        paid_amount:
+          type: string
+          description: Фактически поступившая сумма в рублях; для partially_paid меньше amount.
+          pattern: '^\d+\.\d{2}$'
+          example: "1500.00"
+        currency:
+          type: string
+          enum: [RUB]
+          example: RUB
+        payment_url:
+          type: string
+          format: uri
+          description: Ссылка на платёжную страницу RublePay; действует до expires_at.
+          example: "https://pay.rublepay.example/d/8c41f0e2"
+        error_code:
+          type: string
+          description: Причина отказа, если депозит завершился неуспешно.
+          example: card_declined
+        error_message:
+          type: string
+          description: Человекочитаемое пояснение к error_code.
+          example: "Issuer declined the transaction"
+        created_at:
+          type: string
+          format: date-time
+          description: Момент создания депозита, UTC.
+          example: "2026-02-14T09:15:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Момент последнего изменения состояния, UTC.
+          example: "2026-02-14T09:17:42Z"
+        expires_at:
+          type: string
+          format: date-time
+          description: Момент, после которого депозит переходит в expired.
+          example: "2026-02-14T10:15:00Z"
+
+    DepositNotification:
+      type: object
+      description: Тело уведомления, которое RublePay отправляет мерчанту.
+      required: [event, deposit_id, state, amount, currency, occurred_at]
+      properties:
+        event:
+          type: string
+          description: Тип события.
+          enum:
+            - deposit.awaiting_payment
+            - deposit.partially_paid
+            - deposit.succeeded
+            - deposit.refunded
+            - deposit.expired
+          example: deposit.succeeded
+        deposit_id:
+          type: string
+          description: Идентификатор депозита в системе RublePay.
+          example: "dp_8c41f0e2"
+        merchant_order_id:
+          type: string
+          description: Идентификатор заказа в системе мерчанта.
+          example: "ord-2026-000871"
+        state:
+          $ref: '#/components/schemas/DepositState'
+        amount:
+          type: string
+          description: Заявленная сумма депозита в рублях.
+          example: "1500.00"
+        paid_amount:
+          type: string
+          description: Поступившая сумма в рублях на момент события.
+          example: "1500.00"
+        currency:
+          type: string
+          enum: [RUB]
+          example: RUB
+        error_code:
+          type: string
+          description: Код причины, если депозит завершился неуспешно.
+          example: payment_window_closed
+        error_message:
+          type: string
+          description: Пояснение к error_code.
+          example: "Payer did not complete the payment in time"
+        occurred_at:
+          type: string
+          format: date-time
+          description: Момент наступления события, UTC.
+          example: "2026-02-14T09:17:42Z"
+        attempt:
+          type: integer
+          description: Номер попытки доставки уведомления, начиная с 1.
+          minimum: 1
+          example: 1
+
+    RefundRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: string
+          description: Сумма возврата в рублях, не больше оплаченной суммы депозита.
+          pattern: '^\d+\.\d{2}$'
+          example: "500.00"
+        reason:
+          type: string
+          description: Причина возврата для отчётности мерчанта.
+          maxLength: 255
+          example: "Частичный возврат по обращению покупателя"
+        merchant_refund_id:
+          type: string
+          description: Идентификатор возврата в системе мерчанта.
+          maxLength: 64
+          example: "ref-871-1"
+
+    RefundResponse:
+      type: object
+      properties:
+        refund_id:
+          type: string
+          description: Идентификатор возврата в системе RublePay.
+          example: "rf_31b7c0aa"
+        deposit_id:
+          type: string
+          description: Депозит, по которому оформлен возврат.
+          example: "dp_8c41f0e2"
+        state:
+          $ref: '#/components/schemas/RefundState'
+        amount:
+          type: string
+          description: Сумма возврата в рублях.
+          example: "500.00"
+        currency:
+          type: string
+          enum: [RUB]
+          example: RUB
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-02-15T11:02:10Z"
+
+    FeeQuoteRequest:
+      type: object
+      required: [amount, source_type]
+      properties:
+        amount:
+          type: string
+          description: Сумма депозита в рублях, для которой считается комиссия.
+          pattern: '^\d+\.\d{2}$'
+          example: "1500.00"
+        currency:
+          type: string
+          enum: [RUB]
+          default: RUB
+          example: RUB
+        source_type:
+          type: string
+          description: Способ оплаты, по тарифу которого считается комиссия.
+          enum: [card, sbp, account]
+          example: card
+
+    FeeQuoteResponse:
+      type: object
+      properties:
+        amount:
+          type: string
+          description: Сумма депозита в рублях.
+          example: "1500.00"
+        fee:
+          type: string
+          description: Комиссия RublePay в рублях.
+          example: "40.50"
+        total_amount:
+          type: string
+          description: Сумма к зачислению на баланс мерчанта в рублях.
+          example: "1459.50"
+        currency:
+          type: string
+          enum: [RUB]
+          example: RUB
+        source_type:
+          type: string
+          enum: [card, sbp, account]
+          example: card
+        tariff_code:
+          type: string
+          description: Код тарифа, по которому выполнен расчёт.
+          example: "std_card_27"
+
+    SbpBank:
+      type: object
+      properties:
+        member_id:
+          type: string
+          description: Идентификатор банка в СБП.
+          example: "100000000111"
+        name:
+          type: string
+          description: Название банка.
+          example: "Т-Банк"
+        available:
+          type: boolean
+          description: Принимает ли банк платежи прямо сейчас.
+          example: true
+
+    SbpBankList:
+      type: object
+      properties:
+        banks:
+          type: array
+          description: Банки — участники СБП.
+          items:
+            $ref: '#/components/schemas/SbpBank'
+        updated_at:
+          type: string
+          format: date-time
+          description: Момент последнего обновления справочника.
+          example: "2026-02-01T00:00:00Z"
+
+    ApiError:
+      type: object
+      description: Плоский формат ошибки RublePay.
+      required: [error_code, error_message]
+      properties:
+        error_code:
+          type: string
+          description: Машиночитаемый код ошибки.
+          enum:
+            - malformed_request
+            - merchant_disabled
+            - signature_mismatch
+            - deposit_not_found
+            - deposit_already_registered
+            - amount_less_than_min
+            - deposit_limit_exceeded
+            - card_declined
+            - sbp_bank_unavailable
+            - source_not_enabled
+            - refund_not_allowed
+            - acquirer_unavailable
+            - too_many_requests
+            - internal_error
+          example: malformed_request
+        error_message:
+          type: string
+          description: Пояснение для интеграции; не показывать плательщику.
+          example: "Field payment_details.source_type is required"
+        request_id:
+          type: string
+          description: Идентификатор запроса в логах RublePay.
+          example: "req_0f2a77c1"
+
+    RateLimitError:
+      type: object
+      description: Ошибка превышения частоты запросов.
+      required: [error_code, error_message, retry_in]
+      properties:
+        error_code:
+          type: string
+          enum: [too_many_requests]
+          example: too_many_requests
+        error_message:
+          type: string
+          example: "Request rate limit for the shop is exceeded"
+        retry_in:
+          type: integer
+          description: Через сколько секунд можно повторить запрос.
+          example: 30
+
+  responses:
+    Unauthenticated:
+      description: Ключ магазина не передан, недействителен или магазин отключён
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error_code: merchant_disabled
+            error_message: "Merchant key is revoked or the shop is disabled"
+            request_id: "req_0f2a7700"
+    NotFound:
+      description: Депозит не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error_code: deposit_not_found
+            error_message: "Deposit dp_8c41f0e2 is not found"
+            request_id: "req_0f2a7701"
+    TooManyRequests:
+      description: Превышена частота запросов для магазина
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RateLimitError'
+          example:
+            error_code: too_many_requests
+            error_message: "Request rate limit for the shop is exceeded"
+            retry_in: 30
+    ServiceUnavailable:
+      description: Эквайринговый партнёр временно недоступен
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error_code: acquirer_unavailable
+            error_message: "Acquiring partner is temporarily unavailable, retry later"
+            request_id: "req_0f2a7702"

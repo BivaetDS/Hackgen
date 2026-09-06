@@ -1,0 +1,52 @@
+# Статусы провайдера -> канон Space Payments (in_progress | approved | rejected). Подтверждено экспертами:
+# pending/processing -> in_progress, completed -> approved, failed/cancelled -> rejected, отдельного «отменено» нет.
+# Сравнение (IR_CONTRACT §2.7): значение приводится к нижнему регистру, разделители [-. ] -> "_", затем точное
+# совпадение с synonyms; для событий вебхука (payout.completed) проверяются токены по [._-] начиная с последнего.
+version: 1
+
+canonical: [in_progress, approved, rejected]
+default: in_progress
+
+confidence:
+  dictionary: 0.95
+  token: 0.85          # совпал не последний токен события вебхука
+  description: 0.7     # статус описан текстом ("1 — успешно")
+  numeric_default: 0.5 # числовой статус без описания, по конвенции ниже (+ W204)
+  default: 0.3         # ничего не найдено -> default + W201
+  override: 1.0
+
+synonyms:
+  approved:
+    [completed, complete, success, succeeded, successful, done, paid, payed, settled, executed, approved,
+     confirmed, finished, ok, captured, credited, delivered, fulfilled, processed, paid_out, payed_out, transferred]
+  rejected:
+    [failed, fail, failure, error, errored, declined, decline, rejected, reject, cancelled, canceled, cancel,
+     expired, refused, denied, reversed, chargeback, voided, void, timeout, timed_out, aborted, blocked,
+     not_found, invalid, unsuccessful, refunded, partially_refunded, returned, bounced, abandoned, annulled]
+  in_progress:
+    [pending, processing, in_progress, inprogress, in_process, new, created, accepted, accepted_by_bank, queued,
+     sent, sending, waiting, hold, on_hold, held, scheduled, initiated, started, awaiting, checking, review,
+     in_review, authorized, authorised, authorizing, capturing, partially_paid, registered, received, submitted,
+     unknown, wait, open, active, running, retrying]
+
+# Числовые статусы без текстового описания: типичная конвенция провайдеров; уверенность numeric_default + W204.
+numeric:
+  "0": in_progress
+  "1": approved
+  "2": rejected
+  "3": rejected
+  "-1": rejected
+  "100": in_progress
+  "200": approved
+  "500": rejected
+
+# Слова в description enum-поля вида "1 — успешно, 2 — отклонено": значение -> текст -> слово.
+# Слова сравниваются как префикс токенов текста (split по [^\p{L}\p{N}]+), порядок проверки:
+# rejected -> approved -> in_progress (отрицания длиннее и специфичнее).
+description_patterns:
+  - '(?<value>-?\d+)\s*(?:—|-|–|:|=)\s*(?<text>[\p{L}_ ]+)'
+description_words:
+  rejected: [fail, declined, rejected, error, cancel, unpaid, abandon, expired, "отклон", "ошиб", "отмен", "неуспе",
+             "не выполн", "не оплач", "неоплач", "просроч"]
+  approved: [success, successful, completed, done, paid, approved, settled, "успе", "выполн", "заверш", "оплач"]
+  in_progress: [pending, processing, new, created, wait, queued, "ожид", "обработ", "нов", "созда", "в процессе"]

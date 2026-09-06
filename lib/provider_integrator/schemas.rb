@@ -5,7 +5,8 @@ module ProviderIntegrator
   # ProviderSpec IR. Validation goes through json_schemer; results are plain error strings so
   # callers can put them into events or CLI output without knowing the library.
   module Schemas
-    NAMES = %i[canonical_contract operations fields statuses errors overrides provider_spec].freeze
+    NAMES = %i[canonical_contract operations fields statuses errors overrides provider_spec
+               openapi_document].freeze
     DIR = File.join(LIB_ROOT, "schemas")
 
     class << self

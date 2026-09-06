@@ -1,0 +1,222 @@
+# Фикстура для негативного теста: полностью валидный OpenAPI 3.0.3, все $ref
+# разрешаются, servers и securitySchemes на месте — но единственный HTTP-метод
+# во всём документе это get. Ни POST, ни PUT, ни PATCH: create_request строить не из чего.
+# Ожидаемое событие: E101 (No create operation found).
+openapi: 3.0.3
+info:
+  title: ReadOnlyPay Reference API
+  description: |
+    Справочный API провайдера ReadOnlyPay: курсы конвертации, пороги операций,
+    остаток на счёте партнёра и выписка по книге операций.
+    Сами операции создаются в личном кабинете, а не через API.
+  version: 3.0.1
+  contact:
+    name: ReadOnlyPay Partner Desk
+    email: partners@readonlypay.example
+
+servers:
+  - url: https://api.sandbox.readonlypay.example/reference/v3
+    description: Sandbox
+  - url: https://api.readonlypay.example/reference/v3
+    description: Production
+
+tags:
+  - name: Reference
+    description: Справочные данные
+  - name: Account
+    description: Данные партнёра
+
+security:
+  - PartnerToken: []
+
+paths:
+  /reference/fx-rates:
+    get:
+      tags: [Reference]
+      summary: Курсы конвертации
+      description: Актуальные курсы на момент запроса
+      operationId: listFxRates
+      parameters:
+        - name: base
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [RUB, USD, EUR]
+          example: USD
+      responses:
+        '200':
+          description: Список курсов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FxRate'
+        '401':
+          $ref: '#/components/responses/TokenRejected'
+
+  /reference/thresholds:
+    get:
+      tags: [Reference]
+      summary: Пороги операций
+      description: Минимальные и максимальные суммы в минорных единицах валюты
+      operationId: listThresholds
+      responses:
+        '200':
+          description: Действующие пороги
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Threshold'
+        '401':
+          $ref: '#/components/responses/TokenRejected'
+
+  /account/funds:
+    get:
+      tags: [Account]
+      summary: Остаток на счёте партнёра
+      operationId: readFunds
+      responses:
+        '200':
+          description: Текущий остаток
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Funds'
+        '401':
+          $ref: '#/components/responses/TokenRejected'
+
+  /ledger/entries:
+    get:
+      tags: [Account]
+      summary: Выписка по книге операций
+      description: Постраничная выписка за период
+      operationId: listLedgerEntries
+      parameters:
+        - name: since
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          example: "2026-07-01"
+        - name: page_size
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+          example: 50
+      responses:
+        '200':
+          description: Записи книги операций
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LedgerEntry'
+        '401':
+          $ref: '#/components/responses/TokenRejected'
+
+components:
+  securitySchemes:
+    PartnerToken:
+      type: apiKey
+      in: header
+      name: X-Partner-Token
+      description: Токен партнёра, выдаётся при подключении
+
+  schemas:
+    FxRate:
+      type: object
+      properties:
+        base:
+          type: string
+          example: USD
+        quote:
+          type: string
+          example: EUR
+        rate:
+          type: string
+          description: Курс в виде десятичной строки
+          example: 0.9214
+
+    Threshold:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [disbursement, refund]
+          example: disbursement
+        floor_minor:
+          type: integer
+          description: Минимальная сумма в минорных единицах
+          example: 500
+        ceiling_minor:
+          type: integer
+          description: Максимальная сумма в минорных единицах
+          example: 2500000
+        currency_code:
+          type: string
+          example: USD
+
+    Funds:
+      type: object
+      properties:
+        available_minor:
+          type: integer
+          description: Доступно к списанию, в минорных единицах
+          example: 18450000
+        reserved_minor:
+          type: integer
+          description: Зарезервировано под незавершённые операции
+          example: 320000
+        currency_code:
+          type: string
+          example: USD
+
+    LedgerEntry:
+      type: object
+      properties:
+        entry_no:
+          type: string
+          example: led-9b2e4f71
+        client_ref:
+          type: string
+          example: ref-xyz789
+        posting:
+          type: string
+          enum: [booked, reversed, on_hold]
+        amount_minor:
+          type: integer
+          example: 24999
+        currency_code:
+          type: string
+          example: USD
+        booked_at:
+          type: string
+          format: date-time
+
+    Fault:
+      type: object
+      properties:
+        reason:
+          type: string
+          enum: [token_rejected, too_many_requests, gateway_fault]
+        detail:
+          type: string
+
+  responses:
+    TokenRejected:
+      description: Токен партнёра отклонён
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Fault'
+          example:
+            reason: token_rejected
+            detail: Partner token is not valid

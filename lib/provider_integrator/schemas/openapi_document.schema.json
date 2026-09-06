@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://provider-integrator.local/schemas/openapi_document.schema.json",
+  "title": "OpenAPI 3.x document (structural subset)",
+  "description": "The parts of an OpenAPI document provider-integrator relies on. This is deliberately not the full OpenAPI meta-schema: it checks the shape the pipeline needs and produces short, actionable messages (event E009). openapi3_parser cross-checks 3.0 documents in full.",
+  "type": "object",
+  "required": ["openapi", "info", "paths"],
+  "properties": {
+    "openapi": { "type": "string", "pattern": "^3\\.[01](\\.[0-9]+)?$" },
+    "info": {
+      "type": "object",
+      "required": ["title", "version"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "version": { "type": ["string", "number"] },
+        "description": { "type": "string" }
+      }
+    },
+    "servers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["url"],
+        "properties": { "url": { "type": "string", "minLength": 1 }, "description": { "type": "string" } }
+      }
+    },
+    "paths": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^(/|x-)" },
+      "additionalProperties": { "type": "object" }
+    },
+    "webhooks": { "type": "object" },
+    "components": {
+      "type": "object",
+      "properties": {
+        "schemas": { "type": "object" },
+        "parameters": { "type": "object" },
+        "responses": { "type": "object" },
+        "requestBodies": { "type": "object" },
+        "securitySchemes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["type"],
+            "properties": { "type": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "security": { "type": "array", "items": { "type": "object" } },
+    "tags": { "type": "array", "items": { "type": "object", "required": ["name"] } }
+  }
+}

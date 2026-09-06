@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://provider-integrator.local/schemas/statuses.schema.json",
+  "title": "statuses.yml",
+  "description": "Provider status -> canonical status: synonym lists per canonical status, numeric conventions, description patterns and per-source confidence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version", "canonical", "default", "confidence", "synonyms", "numeric", "description_patterns", "description_words"
+  ],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "canonical": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/canonicalStatus" }
+    },
+    "default": { "$ref": "#/$defs/canonicalStatus" },
+    "confidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dictionary", "token", "description", "numeric_default", "default", "override"],
+      "properties": {
+        "dictionary": { "$ref": "#/$defs/confidence" },
+        "token": { "$ref": "#/$defs/confidence" },
+        "description": { "$ref": "#/$defs/confidence" },
+        "numeric_default": { "$ref": "#/$defs/confidence" },
+        "default": { "$ref": "#/$defs/confidence" },
+        "override": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "synonyms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approved", "rejected", "in_progress"],
+      "properties": {
+        "approved": { "$ref": "#/$defs/normalizedSynonyms" },
+        "rejected": { "$ref": "#/$defs/normalizedSynonyms" },
+        "in_progress": { "$ref": "#/$defs/normalizedSynonyms" }
+      }
+    },
+    "numeric": {
+      "type": "object",
+      "propertyNames": { "pattern": "^-?[0-9]+$" },
+      "additionalProperties": { "$ref": "#/$defs/canonicalStatus" }
+    },
+    "description_patterns": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/namedGroupPattern" }
+    },
+    "description_words": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approved", "rejected", "in_progress"],
+      "properties": {
+        "approved": { "$ref": "#/$defs/stems" },
+        "rejected": { "$ref": "#/$defs/stems" },
+        "in_progress": { "$ref": "#/$defs/stems" }
+      }
+    }
+  },
+  "$defs": {
+    "canonicalStatus": { "enum": ["in_progress", "approved", "rejected"] },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "normalizedSynonyms": {
+      "description": "Already in the normalized form the matcher produces: lower case, [-. ] replaced by _.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9_]+$" }
+    },
+    "stems": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "namedGroupPattern": {
+      "description": "Ruby regex with the named groups value and text.",
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\(\\?<value>.*\\(\\?<text>"
+    }
+  }
+}

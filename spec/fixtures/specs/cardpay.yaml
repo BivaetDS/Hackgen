@@ -1,0 +1,956 @@
+# Синтетическая спека S4 (docs/PLAN.md §9): карточные выплаты, OpenAPI 3.1.0.
+# Что она проверяет в парсере и генераторе:
+#   * 3.1-идиомы: `type: [string, "null"]` вместо ключевого слова 3.0, `const` вместо enum из одного значения,
+#     `examples` (массив) в схемах свойств, `info.summary`;
+#   * два кандидата на роль create — карта и СБП на разных путях (W105): один идёт в create_request,
+#     второй генерируется как дополнительный метод;
+#   * чужой словарь состояний: queued/settled/returned есть в statuses.yml, in_flight и rejected_by_bank —
+#     нет (ожидается W201, а не молчаливая догадка);
+#   * плоский конверт ошибки (error_code/error_message -> flat.error), retry_after и в теле, и в заголовке;
+#   * код ошибки вне словаря (CP_KEY_REVOKED -> W202, откат на HTTP-дефолт) и код, который уточняет
+#     HTTP-дефолт (CP_CHANNEL_UNAVAILABLE на 503 -> retry_later вместо retry_alert_ops);
+#   * условная обязательность из текста описания (W402) и способы выплаты из enum реквизита;
+#   * вебхук отдельной операцией, подпись HMAC-SHA512/base64 в заголовке, событие без канонического
+#     статуса (disbursement.in_flight -> W203);
+#   * имена вне словарей: card_token, member_name, bank_message, previous_state (container_child / nil);
+#   * операции вне контракта: отмена, баланс мерчанта, справочник банков СБП.
+openapi: 3.1.0
+
+info:
+  title: CardPay Disbursement API
+  summary: Выплаты на банковские карты и по СБП для мерчантов CardPay
+  description: |
+    Публичный API процессинга CardPay для массовых выплат физическим лицам.
+    Поддерживаются два канала: выплата на банковскую карту (по номеру карты или по токену
+    ранее сохранённой карты) и выплата по СБП на телефон получателя.
+
+    Общие правила:
+      * все суммы — целые числа в копейках, дробные значения не принимаются;
+      * запрос на создание выплаты должен содержать заголовок `X-Request-Id` (ключ идемпотентности,
+        UUID v4); повтор с тем же значением в течение 24 часов вернёт 409 и ранее созданную выплату;
+      * выплата исполняется асинхронно: API отвечает 202, финальное состояние приходит уведомлением
+        на `notify_url` и доступно через `GET /v2/disbursements/{disbursement_id}`;
+      * лимиты по договору: от 500 ₽ до 600 000 ₽ на операцию, 60 запросов в минуту на ключ.
+  version: 2.4.0
+  termsOfService: https://cardpay.example/legal/api-terms
+  contact:
+    name: CardPay Integration Desk
+    email: integration@cardpay.example
+    url: https://docs.cardpay.example
+  license:
+    name: Proprietary
+    url: https://cardpay.example/legal/api-terms
+
+x-cardpay-api-revision: "2026-06-01"
+
+servers:
+  - url: https://api.sandbox.cardpay.example
+    description: Тестовый контур, деньги не списываются
+  - url: https://api.cardpay.example
+    description: Боевой контур (production)
+
+tags:
+  - name: Disbursements
+    description: Создание, отмена и состояние выплат
+  - name: Merchant
+    description: Баланс и лимиты мерчанта
+  - name: Dictionaries
+    description: Справочники CardPay
+  - name: Notifications
+    description: Входящие уведомления CardPay о смене состояния выплаты
+
+security:
+  - CardPayKey: []
+
+paths:
+  /v2/disbursements/card:
+    post:
+      tags: [Disbursements]
+      summary: Создать выплату на банковскую карту
+      description: |
+        Создаёт выплату на карту МИР/Visa/Mastercard. Карта задаётся либо номером
+        (`destination.type = card`), либо токеном ранее сохранённой карты (`destination.type = card_token`).
+        Ответ 202 означает, что выплата принята в обработку; итог придёт уведомлением на `notify_url`.
+        Минимальная сумма — 500 ₽, максимальная — 600 000 ₽ за операцию.
+      operationId: createCardDisbursement
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardDisbursementRequest'
+            examples:
+              by_card_number:
+                summary: Выплата по номеру карты
+                value:
+                  amount: 125000
+                  currency: RUB
+                  merchant_reference: "ORD-2026-000411"
+                  purpose: "Вознаграждение по договору 41/26"
+                  notify_url: "https://merchant.example/hooks/cardpay"
+                  destination:
+                    type: card
+                    card_number: "4111111111111111"
+                    holder_name: "IVAN IVANOV"
+                    expiry: "09/29"
+                  customer:
+                    phone: "79261234567"
+                    email: "ivanov@example.com"
+                    ip: "203.0.113.17"
+              by_card_token:
+                summary: Выплата по токену сохранённой карты
+                value:
+                  amount: 250000
+                  currency: RUB
+                  merchant_reference: "ORD-2026-000412"
+                  destination:
+                    type: card_token
+                    card_token: "tok_2b9c41ff7a"
+      responses:
+        '202':
+          description: Выплата принята в обработку
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisbursementResponse'
+              example:
+                disbursement_id: "cp_9f1c4d2e77"
+                merchant_reference: "ORD-2026-000411"
+                payout_method: card
+                state: queued
+                amount: 125000
+                currency: RUB
+                fee: 3500
+                failure: null
+                created_at: "2026-08-14T09:12:03Z"
+                settled_at: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
+        '409':
+          description: |
+            Повтор запроса с уже использованным `X-Request-Id`: возвращается ранее созданная выплата,
+            вторая выплата не создаётся.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisbursementResponse'
+              example:
+                disbursement_id: "cp_9f1c4d2e77"
+                merchant_reference: "ORD-2026-000411"
+                payout_method: card
+                state: in_flight
+                amount: 125000
+                currency: RUB
+                fee: 3500
+                failure: null
+                created_at: "2026-08-14T09:12:03Z"
+                settled_at: null
+        '422':
+          description: Сумма вне лимитов договора
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                error_code: CP_AMOUNT_LIMIT_EXCEEDED
+                error_message: "Amount 90000000 exceeds per-transaction limit of 60000000 kopecks"
+                request_id: "req_7c2f10a9"
+                retry_after: null
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ChannelUnavailable'
+
+  /v2/disbursements/sbp:
+    post:
+      tags: [Disbursements]
+      summary: Создать выплату по СБП
+      description: |
+        Создаёт выплату по Системе быстрых платежей на телефон получателя. Банк получателя
+        указывается идентификатором участника СБП (`member_id`), справочник —
+        `GET /v2/dictionaries/sbp-members`. Сумма — в копейках, как и для карточных выплат.
+      operationId: createSbpDisbursement
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SbpDisbursementRequest'
+            examples:
+              to_phone:
+                summary: Выплата на телефон получателя
+                value:
+                  amount: 125000
+                  currency: RUB
+                  merchant_reference: "ORD-2026-000413"
+                  purpose: "Возврат за отменённый заказ"
+                  notify_url: "https://merchant.example/hooks/cardpay"
+                  destination:
+                    phone: "79261234567"
+                    member_id: "100000000004"
+                    member_name: "Т-Банк"
+      responses:
+        '202':
+          description: Выплата принята в обработку
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisbursementResponse'
+              example:
+                disbursement_id: "cp_31ba77c0e4"
+                merchant_reference: "ORD-2026-000413"
+                payout_method: sbp
+                state: queued
+                amount: 125000
+                currency: RUB
+                fee: 1500
+                failure: null
+                created_at: "2026-08-14T10:02:55Z"
+                settled_at: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
+        '409':
+          description: Повтор запроса с уже использованным `X-Request-Id`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisbursementResponse'
+        '422':
+          description: Банк — участник СБП не принимает выплаты этого типа
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                error_code: CP_MEMBER_NOT_SUPPORTED
+                error_message: "SBP member 100000000004 does not support incoming payouts"
+                request_id: "req_7c2f10b4"
+                retry_after: null
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/ChannelUnavailable'
+
+  /v2/disbursements/{disbursement_id}:
+    get:
+      tags: [Disbursements]
+      summary: Получить текущее состояние выплаты
+      description: |
+        Возвращает актуальное состояние выплаты. Рекомендуемый интервал опроса — 30 секунд;
+        уведомление на `notify_url` приходит раньше, опрос нужен как страховка.
+      operationId: getDisbursementState
+      parameters:
+        - name: disbursement_id
+          in: path
+          required: true
+          description: Идентификатор выплаты, присвоенный CardPay
+          schema:
+            type: string
+          example: "cp_9f1c4d2e77"
+      responses:
+        '200':
+          description: Текущее состояние выплаты
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisbursementResponse'
+              example:
+                disbursement_id: "cp_9f1c4d2e77"
+                merchant_reference: "ORD-2026-000411"
+                payout_method: card
+                state: settled
+                amount: 125000
+                currency: RUB
+                fee: 3500
+                failure: null
+                created_at: "2026-08-14T09:12:03Z"
+                settled_at: "2026-08-14T09:14:41Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /v2/disbursements/{disbursement_id}/cancel:
+    post:
+      tags: [Disbursements]
+      summary: Отменить выплату
+      description: |
+        Отмена возможна, пока выплата находится в состоянии `queued`. После отправки в банк
+        (`in_flight`) отмена невозможна — потребуется возврат средств по условиям договора.
+      operationId: cancelDisbursement
+      parameters:
+        - name: disbursement_id
+          in: path
+          required: true
+          description: Идентификатор выплаты, присвоенный CardPay
+          schema:
+            type: string
+          example: "cp_9f1c4d2e77"
+      responses:
+        '200':
+          description: Выплата отменена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisbursementResponse'
+              example:
+                disbursement_id: "cp_9f1c4d2e77"
+                merchant_reference: "ORD-2026-000411"
+                payout_method: card
+                state: returned
+                amount: 125000
+                currency: RUB
+                fee: 0
+                failure: null
+                created_at: "2026-08-14T09:12:03Z"
+                settled_at: null
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Выплату уже нельзя отменить в текущем состоянии
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                error_code: CP_INVALID_STATE
+                error_message: "Disbursement in state in_flight can not be cancelled"
+                request_id: "req_7c2f10c1"
+                retry_after: null
+
+  /v2/merchant/balance:
+    get:
+      tags: [Merchant]
+      summary: Баланс мерчанта
+      description: |
+        Доступный остаток, сумма в резерве под выплаты в обработке и остатки лимитов по договору.
+        Все значения — в копейках.
+      operationId: getMerchantBalance
+      responses:
+        '200':
+          description: Текущий баланс и лимиты
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceResponse'
+              example:
+                available: 1284500000
+                reserved: 37500000
+                currency: RUB
+                limits:
+                  daily_remaining: 4500000000
+                  per_transaction_max: 60000000
+                updated_at: "2026-08-14T09:10:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /v2/dictionaries/sbp-members:
+    get:
+      tags: [Dictionaries]
+      summary: Справочник банков — участников СБП
+      description: |
+        Возвращает участников СБП, доступных для выплат. Значение `member_id` подставляется
+        в `destination.member_id` при создании выплаты по СБП. Справочник обновляется раз в сутки.
+      operationId: listSbpMembers
+      parameters:
+        - name: active_only
+          in: query
+          required: false
+          description: Вернуть только участников, принимающих выплаты прямо сейчас
+          schema:
+            type: boolean
+            default: true
+          example: true
+      responses:
+        '200':
+          description: Список участников СБП
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SbpMemberList'
+              example:
+                members:
+                  - member_id: "100000000004"
+                    member_name: "Т-Банк"
+                    active: true
+                  - member_id: "100000000111"
+                    member_name: "Альфа-Банк"
+                    active: true
+                  - member_id: "100000000008"
+                    member_name: "Совкомбанк"
+                    active: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v2/notifications/disbursement:
+    post:
+      tags: [Notifications]
+      summary: Уведомление о смене состояния выплаты
+      description: |
+        CardPay отправляет POST на `notify_url` мерчанта при каждой смене состояния выплаты.
+        Уведомление подписано: заголовок `X-CardPay-Signature` содержит HMAC-SHA512 от сырого тела
+        запроса на ключе callback_secret, результат закодирован в base64.
+        Ожидаемый ответ — HTTP 200 с телом `{"accepted": true}`. При любом другом коде доставка
+        повторяется до 6 раз с нарастающим интервалом (1 мин, 5 мин, 15 мин, 1 ч, 6 ч, 24 ч).
+        Порядок доставки не гарантируется: ориентируйтесь на поле `state`, а не на последовательность.
+      operationId: disbursementNotification
+      security: []
+      parameters:
+        - name: X-CardPay-Signature
+          in: header
+          required: true
+          description: HMAC-SHA512 от сырого тела запроса на ключе callback_secret, результат в base64
+          schema:
+            type: string
+          example: "n3Yb0Xz1w0pQ6t8k5S1r9m2H7c4A0dQ3f6J8lPq2Zx0="
+        - name: X-CardPay-Delivery
+          in: header
+          required: false
+          description: Номер попытки доставки, начиная с 1
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DisbursementNotification'
+            examples:
+              settled:
+                summary: Средства зачислены получателю
+                value:
+                  event_type: disbursement.settled
+                  disbursement_id: "cp_9f1c4d2e77"
+                  merchant_reference: "ORD-2026-000411"
+                  state: settled
+                  previous_state: in_flight
+                  amount: 125000
+                  currency: RUB
+                  fee: 3500
+                  failure: null
+                  occurred_at: "2026-08-14T09:14:41Z"
+              rejected_by_bank:
+                summary: Банк получателя отказал в зачислении
+                value:
+                  event_type: disbursement.rejected_by_bank
+                  disbursement_id: "cp_9f1c4d2e78"
+                  merchant_reference: "ORD-2026-000412"
+                  state: rejected_by_bank
+                  previous_state: in_flight
+                  amount: 250000
+                  currency: RUB
+                  fee: null
+                  failure:
+                    code: CP_INVALID_CARD
+                    message: "Card declined by issuer"
+                    bank_message: "57 - transaction not permitted to cardholder"
+                  occurred_at: "2026-08-14T09:15:02Z"
+      responses:
+        '200':
+          description: Уведомление принято мерчантом
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accepted]
+                properties:
+                  accepted:
+                    type: boolean
+                    description: Признак того, что уведомление обработано
+                    examples: [true]
+              example:
+                accepted: true
+
+components:
+  securitySchemes:
+    CardPayKey:
+      type: apiKey
+      in: header
+      name: X-CardPay-Key
+      description: |
+        Ключ мерчанта из личного кабинета CardPay. Ключи sandbox и production различаются;
+        отозванный ключ даёт 401 CP_KEY_REVOKED.
+
+  parameters:
+    RequestId:
+      name: X-Request-Id
+      in: header
+      required: true
+      description: |
+        Ключ идемпотентности запроса (UUID v4). Повтор с тем же значением в течение 24 часов
+        возвращает 409 и ранее созданную выплату вместо создания второй.
+      schema:
+        type: string
+        format: uuid
+      example: "6b1f0a5e-4d2c-4c2e-9a4a-8f1f7c6a1d33"
+
+  schemas:
+    CurrencyCode:
+      type: string
+      const: RUB
+      description: Валюта операции. CardPay проводит выплаты только в рублях.
+
+    CardDisbursementRequest:
+      type: object
+      description: Запрос на выплату по банковской карте.
+      required: [amount, currency, merchant_reference, destination]
+      properties:
+        amount:
+          type: integer
+          description: Сумма выплаты в копейках, без учёта комиссии CardPay.
+          minimum: 50000
+          maximum: 60000000
+          examples: [125000]
+        currency:
+          $ref: '#/components/schemas/CurrencyCode'
+        merchant_reference:
+          type: string
+          description: Идентификатор операции в системе мерчанта, уникальный в рамках договора.
+          maxLength: 64
+          examples: ["ORD-2026-000411"]
+        purpose:
+          type: [string, "null"]
+          description: Назначение выплаты, попадает в выписку банка получателя.
+          maxLength: 140
+          examples: ["Вознаграждение по договору 41/26"]
+        notify_url:
+          type: [string, "null"]
+          format: uri
+          description: Адрес для уведомлений. Если не передан, берётся адрес из настроек мерчанта.
+          examples: ["https://merchant.example/hooks/cardpay"]
+        destination:
+          $ref: '#/components/schemas/CardDestination'
+        customer:
+          $ref: '#/components/schemas/CustomerInfo'
+
+    SbpDisbursementRequest:
+      type: object
+      description: Запрос на выплату по СБП.
+      required: [amount, currency, merchant_reference, destination]
+      properties:
+        amount:
+          type: integer
+          description: Сумма выплаты в копейках, без учёта комиссии CardPay.
+          minimum: 50000
+          maximum: 60000000
+          examples: [125000]
+        currency:
+          $ref: '#/components/schemas/CurrencyCode'
+        merchant_reference:
+          type: string
+          description: Идентификатор операции в системе мерчанта, уникальный в рамках договора.
+          maxLength: 64
+          examples: ["ORD-2026-000413"]
+        purpose:
+          type: [string, "null"]
+          description: Назначение выплаты, попадает в выписку банка получателя.
+          maxLength: 140
+          examples: ["Возврат за отменённый заказ"]
+        notify_url:
+          type: [string, "null"]
+          format: uri
+          description: Адрес для уведомлений. Если не передан, берётся адрес из настроек мерчанта.
+          examples: ["https://merchant.example/hooks/cardpay"]
+        destination:
+          $ref: '#/components/schemas/SbpDestination'
+
+    CardDestination:
+      type: object
+      description: Реквизиты карты получателя.
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [card, card_token]
+          description: |
+            Способ адресации карты: `card` — по номеру карты, `card_token` — по токену ранее
+            сохранённой карты.
+          examples: ["card"]
+        card_number:
+          type: [string, "null"]
+          pattern: '^\d{16,19}$'
+          description: Номер карты получателя. Обязателен, если type = card.
+          examples: ["4111111111111111"]
+        card_token:
+          type: [string, "null"]
+          description: Токен ранее сохранённой карты. Обязателен, если type = card_token.
+          examples: ["tok_2b9c41ff7a"]
+        holder_name:
+          type: [string, "null"]
+          description: Держатель карты латиницей, как указано на карте.
+          maxLength: 26
+          examples: ["IVAN IVANOV"]
+        expiry:
+          type: [string, "null"]
+          pattern: '^(0[1-9]|1[0-2])/\d{2}$'
+          description: Срок действия карты в формате MM/YY; требуется отдельными банками-эмитентами.
+          examples: ["09/29"]
+
+    SbpDestination:
+      type: object
+      description: Реквизиты получателя в СБП.
+      required: [phone, member_id]
+      properties:
+        phone:
+          type: string
+          pattern: '^7\d{10}$'
+          description: Телефон получателя, 11 цифр, начинается с 7.
+          examples: ["79261234567"]
+        member_id:
+          type: string
+          description: Идентификатор банка — участника СБП из справочника /v2/dictionaries/sbp-members.
+          examples: ["100000000004"]
+        member_name:
+          type: [string, "null"]
+          description: Название банка. Поле информационное; при расхождении используется member_id.
+          examples: ["Т-Банк"]
+
+    CustomerInfo:
+      type: object
+      description: Сведения о получателе для комплаенс-проверки CardPay.
+      properties:
+        phone:
+          type: [string, "null"]
+          description: Контактный телефон получателя.
+          examples: ["79261234567"]
+        email:
+          type: [string, "null"]
+          format: email
+          description: Электронная почта получателя.
+          examples: ["ivanov@example.com"]
+        ip:
+          type: [string, "null"]
+          description: IP-адрес, с которого получатель подтвердил заявку.
+          examples: ["203.0.113.17"]
+
+    DisbursementState:
+      type: string
+      description: |
+        Состояние выплаты: queued — принята и стоит в очереди, in_flight — отправлена в банк,
+        settled — средства зачислены получателю, returned — возврат от банка получателя,
+        rejected_by_bank — банк получателя отказал в зачислении.
+      enum: [queued, in_flight, settled, returned, rejected_by_bank]
+      examples: ["in_flight"]
+
+    DisbursementResponse:
+      type: object
+      description: Состояние выплаты в CardPay.
+      required: [disbursement_id, payout_method, state, amount, currency]
+      properties:
+        disbursement_id:
+          type: string
+          description: Идентификатор выплаты, присвоенный CardPay.
+          examples: ["cp_9f1c4d2e77"]
+        merchant_reference:
+          type: [string, "null"]
+          description: Идентификатор операции в системе мерчанта, как он был передан в запросе.
+          examples: ["ORD-2026-000411"]
+        payout_method:
+          type: string
+          enum: [card, sbp]
+          description: Канал, которым исполняется выплата.
+          examples: ["card"]
+        state:
+          $ref: '#/components/schemas/DisbursementState'
+        amount:
+          type: integer
+          description: Сумма выплаты в копейках.
+          examples: [125000]
+        currency:
+          $ref: '#/components/schemas/CurrencyCode'
+        fee:
+          type: [integer, "null"]
+          description: Комиссия CardPay в копейках; известна после исполнения выплаты.
+          examples: [3500]
+        failure:
+          $ref: '#/components/schemas/FailureDetails'
+        created_at:
+          type: string
+          format: date-time
+          description: Момент создания выплаты в UTC.
+          examples: ["2026-08-14T09:12:03Z"]
+        settled_at:
+          type: [string, "null"]
+          format: date-time
+          description: Момент зачисления средств получателю в UTC.
+          examples: ["2026-08-14T09:14:41Z"]
+
+    DisbursementNotification:
+      type: object
+      description: Тело уведомления, которое CardPay отправляет на notify_url мерчанта.
+      required: [event_type, disbursement_id, state, amount, currency]
+      properties:
+        event_type:
+          type: string
+          enum:
+            - disbursement.in_flight
+            - disbursement.settled
+            - disbursement.returned
+            - disbursement.rejected_by_bank
+          description: Тип события; совпадает с новым состоянием выплаты.
+          examples: ["disbursement.settled"]
+        disbursement_id:
+          type: string
+          description: Идентификатор выплаты, присвоенный CardPay.
+          examples: ["cp_9f1c4d2e77"]
+        merchant_reference:
+          type: [string, "null"]
+          description: Идентификатор операции в системе мерчанта.
+          examples: ["ORD-2026-000411"]
+        state:
+          $ref: '#/components/schemas/DisbursementState'
+        previous_state:
+          type: [string, "null"]
+          description: Состояние до события; null для первого уведомления по выплате.
+          examples: ["in_flight"]
+        amount:
+          type: integer
+          description: Сумма выплаты в копейках.
+          examples: [125000]
+        currency:
+          $ref: '#/components/schemas/CurrencyCode'
+        fee:
+          type: [integer, "null"]
+          description: Комиссия CardPay в копейках.
+          examples: [3500]
+        failure:
+          $ref: '#/components/schemas/FailureDetails'
+        occurred_at:
+          type: string
+          format: date-time
+          description: Момент наступления события в UTC.
+          examples: ["2026-08-14T09:14:41Z"]
+
+    FailureDetails:
+      type: [object, "null"]
+      description: Причина отказа. Равно null, пока выплата не завершилась ошибкой.
+      properties:
+        code:
+          type: string
+          enum:
+            - CP_INVALID_CARD
+            - CP_CARD_EXPIRED
+            - CP_MEMBER_NOT_SUPPORTED
+            - CP_LOW_BALANCE
+            - CP_AMOUNT_LIMIT_EXCEEDED
+            - CP_CHANNEL_UNAVAILABLE
+            - CP_INTERNAL_ERROR
+          description: Машинный код отказа CardPay.
+          examples: ["CP_INVALID_CARD"]
+        message:
+          type: string
+          description: Описание отказа на английском языке.
+          examples: ["Card declined by issuer"]
+        bank_message:
+          type: [string, "null"]
+          description: Ответ банка получателя как есть; формат не гарантируется.
+          examples: ["57 - transaction not permitted to cardholder"]
+
+    BalanceResponse:
+      type: object
+      description: Баланс и лимиты мерчанта.
+      required: [available, reserved, currency]
+      properties:
+        available:
+          type: integer
+          description: Доступный остаток в копейках.
+          examples: [1284500000]
+        reserved:
+          type: integer
+          description: Заморожено под выплаты в обработке, в копейках.
+          examples: [37500000]
+        currency:
+          $ref: '#/components/schemas/CurrencyCode'
+        limits:
+          type: object
+          description: Остатки лимитов по договору.
+          properties:
+            daily_remaining:
+              type: integer
+              description: Остаток суточного лимита выплат в копейках.
+              examples: [4500000000]
+            per_transaction_max:
+              type: integer
+              description: Максимальная сумма одной выплаты в копейках.
+              examples: [60000000]
+        updated_at:
+          type: string
+          format: date-time
+          description: Момент расчёта баланса в UTC.
+          examples: ["2026-08-14T09:10:00Z"]
+
+    SbpMemberList:
+      type: object
+      description: Справочник банков — участников СБП.
+      required: [members]
+      properties:
+        members:
+          type: array
+          description: Участники СБП в алфавитном порядке.
+          items:
+            type: object
+            required: [member_id, member_name, active]
+            properties:
+              member_id:
+                type: string
+                description: Идентификатор участника СБП.
+                examples: ["100000000004"]
+              member_name:
+                type: string
+                description: Название банка.
+                examples: ["Т-Банк"]
+              active:
+                type: boolean
+                description: Принимает ли участник входящие выплаты прямо сейчас.
+                examples: [true]
+
+    ErrorEnvelope:
+      type: object
+      description: Единый конверт ошибки CardPay для ответов 4xx и 5xx.
+      required: [error_code, error_message]
+      properties:
+        error_code:
+          type: string
+          description: Машинный код ошибки; полный перечень — в разделе «Коды ошибок» документации.
+          examples: ["CP_MALFORMED_REQUEST"]
+        error_message:
+          type: string
+          description: Описание ошибки на английском языке, не предназначено для показа получателю.
+          examples: ["Field destination.card_number is required when destination.type = card"]
+        request_id:
+          type: [string, "null"]
+          description: Идентификатор запроса на стороне CardPay; называйте его при обращении в поддержку.
+          examples: ["req_7c2f10a9"]
+        retry_after:
+          type: [integer, "null"]
+          description: Через сколько секунд имеет смысл повторить запрос; заполняется для 429 и 503.
+          examples: [12]
+        details:
+          type: array
+          description: Разбор ошибок валидации по полям; присутствует только для 400 и 422.
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                description: Путь к полю запроса.
+                examples: ["destination.card_number"]
+              reason:
+                type: string
+                description: Причина отклонения поля.
+                examples: ["required when destination.type = card"]
+
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            error_code: CP_MALFORMED_REQUEST
+            error_message: "Field destination.card_number is required when destination.type = card"
+            request_id: "req_7c2f10a9"
+            retry_after: null
+            details:
+              - field: "destination.card_number"
+                reason: "required when destination.type = card"
+
+    Unauthorized:
+      description: Ключ мерчанта не принят
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            error_code: CP_KEY_REVOKED
+            error_message: "Merchant key is revoked or does not exist"
+            request_id: "req_7c2f10ab"
+            retry_after: null
+
+    InsufficientFunds:
+      description: Недостаточно средств на счёте мерчанта
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            error_code: CP_LOW_BALANCE
+            error_message: "Insufficient merchant balance: available 4200000, requested 12500000"
+            request_id: "req_7c2f10ac"
+            retry_after: null
+
+    NotFound:
+      description: Выплата не найдена
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            error_code: CP_DISBURSEMENT_NOT_FOUND
+            error_message: "Disbursement cp_9f1c4d2e77 not found"
+            request_id: "req_7c2f10ae"
+            retry_after: null
+
+    TooManyRequests:
+      description: Превышен лимит запросов (60 запросов в минуту на ключ)
+      headers:
+        Retry-After:
+          description: Секунд до следующей допустимой попытки
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            error_code: CP_REQUEST_LIMIT
+            error_message: "Rate limit exceeded: 60 requests per minute per key"
+            request_id: "req_7c2f10ad"
+            retry_after: 12
+
+    ChannelUnavailable:
+      description: Канал выплат временно недоступен
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            error_code: CP_CHANNEL_UNAVAILABLE
+            error_message: "Card payout channel is temporarily unavailable, retry later"
+            request_id: "req_7c2f10af"
+            retry_after: 60
+
+    InternalError:
+      description: Внутренняя ошибка CardPay
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            error_code: CP_INTERNAL_ERROR
+            error_message: "Unexpected error, contact support with request_id"
+            request_id: "req_7c2f10b0"
+            retry_after: null

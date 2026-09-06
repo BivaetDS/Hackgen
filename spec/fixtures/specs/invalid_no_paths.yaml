@@ -1,0 +1,84 @@
+# Фикстура для негативного теста: валидный YAML, валидная версия OpenAPI, полный info
+# и components на месте, но ключа paths в документе нет вообще (не пустой — отсутствует).
+# Интегрировать нечего: ни одной операции.
+# Ожидаемое событие: E003 (Document has no paths).
+openapi: 3.0.3
+info:
+  title: PaperPay Invoice API
+  description: |
+    Мок-спека провайдера PaperPay.
+    Опубликован только справочник моделей: сами эндпоинты остались в PDF
+    и в машиночитаемую спеку не попали.
+  version: 2.1.0
+  contact:
+    name: PaperPay Support Desk
+    email: support@paperpay.example
+
+servers:
+  - url: https://sandbox.paperpay.example/rest
+    description: Sandbox
+  - url: https://live.paperpay.example/rest
+    description: Production
+
+tags:
+  - name: Invoices
+    description: Выставление и оплата счетов
+
+components:
+  securitySchemes:
+    MerchantKeyQuery:
+      type: apiKey
+      in: query
+      name: access_key
+      description: Ключ доступа магазина, передаётся строкой запроса
+
+  schemas:
+    IssueInvoiceBody:
+      type: object
+      required: [gross_cents, iso_currency, order_ref]
+      properties:
+        gross_cents:
+          type: integer
+          description: Сумма счёта в центах
+          minimum: 500
+          example: 24999
+        iso_currency:
+          type: string
+          enum: [USD]
+          example: USD
+        order_ref:
+          type: string
+          description: Номер заказа в системе магазина
+          maxLength: 40
+          example: inv-2026-0042
+
+    InvoiceView:
+      type: object
+      properties:
+        invoice_no:
+          type: string
+          example: PP-88213
+        order_ref:
+          type: string
+          example: inv-2026-0042
+        stage:
+          type: string
+          enum: [draft, issued, paid, void, expired]
+        gross_cents:
+          type: integer
+          example: 24999
+        iso_currency:
+          type: string
+          example: USD
+        issued_at:
+          type: string
+          format: date-time
+
+    FaultBody:
+      type: object
+      properties:
+        fault:
+          type: string
+          enum: [bad_request_body, quota_exceeded, upstream_failure]
+        detail:
+          type: string

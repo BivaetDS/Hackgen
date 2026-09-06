@@ -1,0 +1,247 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://provider-integrator.local/schemas/fields.schema.json",
+  "title": "fields.yml",
+  "description": "Canonical field names with synonyms, scopes and containers, flat requisite/error fields, parameter roles, money-unit signals, conditional-required patterns, request-method and webhook field roles.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version", "confidence", "canonical", "flat", "parameters", "money_units", "conditional_required", "request_methods",
+    "webhook"
+  ],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "confidence": {
+      "description": "Per-resolution-step confidence (docs/IR_CONTRACT.md 2.3).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exact", "flat_requisite", "suffix", "context", "container_child", "override"],
+      "properties": {
+        "exact": { "$ref": "#/$defs/confidence" },
+        "flat_requisite": { "$ref": "#/$defs/confidence" },
+        "suffix": { "$ref": "#/$defs/confidence" },
+        "context": { "$ref": "#/$defs/confidence" },
+        "container_child": { "$ref": "#/$defs/confidence" },
+        "override": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "canonical": {
+      "description": "Canonical field name -> synonyms; containers carry children (resolved as <container>.<child>).",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "$ref": "#/$defs/snakeName" },
+      "additionalProperties": { "$ref": "#/$defs/canonicalField" }
+    },
+    "flat": {
+      "description": "Top-level fields of container-less schemas that belong to requisite or error.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requisite", "error", "error_context", "scalar_error_is_code"],
+      "properties": {
+        "requisite": { "$ref": "#/$defs/childSynonyms" },
+        "error": { "$ref": "#/$defs/childSynonyms" },
+        "error_context": {
+          "description": "Only inside error responses and webhook payloads (confidence.context).",
+          "$ref": "#/$defs/childSynonyms"
+        },
+        "scalar_error_is_code": {
+          "description": "A scalar error/err field maps to error.code instead of the container.",
+          "type": "boolean"
+        }
+      }
+    },
+    "parameters": {
+      "description": "Parameter roles; an entry without _ is a token stem, with _ an exact name. Checked in key order.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["idempotency_key", "signature", "auth"],
+      "properties": {
+        "idempotency_key": { "$ref": "#/$defs/synonyms" },
+        "signature": { "$ref": "#/$defs/synonyms" },
+        "auth": { "$ref": "#/$defs/synonyms" }
+      }
+    },
+    "money_units": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minor", "major", "minor_threshold", "major_threshold", "currency_exponents"],
+      "properties": {
+        "minor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "description_stems", "description_weight", "error_example_weight", "minimum_multiple_of", "minimum_at_least",
+            "minimum_weight"
+          ],
+          "properties": {
+            "description_stems": { "$ref": "#/$defs/stems" },
+            "description_weight": { "$ref": "#/$defs/weight" },
+            "error_example_weight": { "$ref": "#/$defs/weight" },
+            "minimum_multiple_of": { "type": "integer", "minimum": 1 },
+            "minimum_at_least": { "type": "integer", "minimum": 1 },
+            "minimum_weight": { "$ref": "#/$defs/weight" }
+          }
+        },
+        "major": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "description_stems", "description_weight", "format_stems", "format_weight", "pattern_stems", "pattern_weight",
+            "multiple_of_fraction_weight", "string_type_weight"
+          ],
+          "properties": {
+            "description_stems": { "$ref": "#/$defs/stems" },
+            "description_weight": { "$ref": "#/$defs/weight" },
+            "format_stems": { "$ref": "#/$defs/synonyms" },
+            "format_weight": { "$ref": "#/$defs/weight" },
+            "pattern_stems": {
+              "description": "Substrings of the amount field's pattern that mean a decimal fraction.",
+              "$ref": "#/$defs/stems"
+            },
+            "pattern_weight": { "$ref": "#/$defs/weight" },
+            "multiple_of_fraction_weight": { "$ref": "#/$defs/weight" },
+            "string_type_weight": { "$ref": "#/$defs/weight" }
+          }
+        },
+        "minor_threshold": { "$ref": "#/$defs/weight" },
+        "major_threshold": { "$ref": "#/$defs/weight" },
+        "currency_exponents": {
+          "type": "object",
+          "required": ["default"],
+          "propertyNames": { "pattern": "^(default|[A-Z]{3})$" },
+          "properties": {
+            "default": { "$ref": "#/$defs/exponent" }
+          },
+          "additionalProperties": { "$ref": "#/$defs/exponent" }
+        }
+      }
+    },
+    "conditional_required": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["confidence", "description_patterns"],
+      "properties": {
+        "confidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["discriminator", "if_then", "description", "override"],
+          "properties": {
+            "discriminator": { "$ref": "#/$defs/confidence" },
+            "if_then": { "$ref": "#/$defs/confidence" },
+            "description": { "$ref": "#/$defs/confidence" },
+            "override": { "$ref": "#/$defs/confidence" }
+          }
+        },
+        "description_patterns": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "description": "Ruby regex with the named groups when and equals.",
+            "type": "string",
+            "pattern": "\\(\\?<when>.*\\(\\?<equals>"
+          }
+        }
+      }
+    },
+    "request_methods": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["confidence", "known_methods"],
+      "properties": {
+        "confidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enum", "discriminator", "one_of", "override"],
+          "properties": {
+            "enum": { "$ref": "#/$defs/confidence" },
+            "discriminator": { "$ref": "#/$defs/confidence" },
+            "one_of": { "$ref": "#/$defs/confidence" },
+            "override": { "$ref": "#/$defs/confidence" }
+          }
+        },
+        "known_methods": {
+          "description": "Payout method names recognised in oneOf branch names and path tokens.",
+          "$ref": "#/$defs/synonyms"
+        }
+      }
+    },
+    "webhook": {
+      "description": "Payload field names playing the event, status and signature roles, in priority order.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event_field", "status_field", "signature_field"],
+      "properties": {
+        "event_field": { "$ref": "#/$defs/synonyms" },
+        "status_field": { "$ref": "#/$defs/synonyms" },
+        "signature_field": { "$ref": "#/$defs/synonyms" }
+      }
+    }
+  },
+  "$defs": {
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "weight": { "type": "integer", "minimum": 0 },
+    "exponent": { "type": "integer", "minimum": 1 },
+    "snakeName": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "fieldScope": { "enum": ["request", "response", "webhook", "parameter"] },
+    "synonyms": {
+      "description": "Field/parameter names already normalized to snake_case, as the matcher compares them.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/snakeName" }
+    },
+    "stems": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "childSynonyms": {
+      "description": "Child name of a container -> synonyms.",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "$ref": "#/$defs/snakeName" },
+      "additionalProperties": { "$ref": "#/$defs/synonyms" }
+    },
+    "canonicalField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["synonyms"],
+      "properties": {
+        "synonyms": { "$ref": "#/$defs/synonyms" },
+        "request_synonyms": {
+          "description": "Extra synonyms that apply only to request bodies (an id in a create request is the merchant reference).",
+          "$ref": "#/$defs/synonyms"
+        },
+        "exclude": {
+          "description": "Exact names that never map to this field even though they look like a synonym.",
+          "$ref": "#/$defs/synonyms"
+        },
+        "scope": {
+          "description": "Where the synonyms apply; absent means everywhere.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/fieldScope" }
+        },
+        "money": { "type": "boolean" },
+        "suffixes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^_[a-z0-9_]+$" }
+        },
+        "credentials_key": {
+          "description": "credentials key whose value the generated service sends in this field.",
+          "$ref": "#/$defs/snakeName"
+        },
+        "container": { "type": "boolean" },
+        "children": { "$ref": "#/$defs/childSynonyms" }
+      },
+      "dependentRequired": { "children": ["container"] },
+      "if": { "properties": { "container": { "const": true } }, "required": ["container"] },
+      "then": { "required": ["children"], "not": { "anyOf": [{ "required": ["money"] }, { "required": ["credentials_key"] }] } }
+    }
+  }
+}

@@ -1,0 +1,99 @@
+# Ошибки (IR_CONTRACT §2.8): HTTP-код -> канонический код + действие платформы; провайдерские коды (из примеров
+# и enum) уточняют канон. Действия из canonical_contract.yml (actions). PLAN §5: 400/422 terminal_reject;
+# 401/403 fatal_block_provider; 402 retry_later; 404 unknown_state; 409 conflict; 429 retry_with_backoff;
+# 5xx retry_alert_ops. Провайдерский код побеждает HTTP-дефолт, кроме случая, когда HTTP 429/5xx (временная
+# ошибка транспорта), а действие по коду терминальное: тогда остаётся HTTP-дефолт (см. http_guard).
+version: 1
+
+confidence:
+  example: 0.95
+  enum: 0.8
+  http_default: 0.6
+  override: 1.0
+
+http:
+  "400": { canonical: validation_error,     action: terminal_reject }
+  "401": { canonical: invalid_credentials,  action: fatal_block_provider }
+  "402": { canonical: insufficient_balance, action: retry_later }
+  "403": { canonical: invalid_credentials,  action: fatal_block_provider }
+  "404": { canonical: not_found,            action: unknown_state }
+  "405": { canonical: validation_error,     action: terminal_reject }
+  "408": { canonical: internal_error,       action: retry_later }
+  "409": { canonical: conflict,             action: conflict }
+  "410": { canonical: not_found,            action: unknown_state }
+  "415": { canonical: validation_error,     action: terminal_reject }
+  "422": { canonical: validation_error,     action: terminal_reject }
+  "423": { canonical: conflict,             action: conflict }
+  "429": { canonical: rate_limit,           action: retry_with_backoff }
+  "500": { canonical: internal_error,       action: retry_alert_ops }
+  "502": { canonical: internal_error,       action: retry_alert_ops }
+  "503": { canonical: internal_error,       action: retry_alert_ops }
+  "504": { canonical: internal_error,       action: retry_alert_ops }
+  default_4xx: { canonical: validation_error, action: terminal_reject }
+  default_5xx: { canonical: internal_error,   action: retry_alert_ops }
+
+# Для этих HTTP-кодов терминальное действие по провайдерскому коду не принимается: остаётся HTTP-дефолт.
+http_guard:
+  statuses: ["429", "500", "502", "503", "504"]
+  terminal_actions: [terminal_reject, fatal_block_provider]
+
+# Провайдерский код ошибки (нижний регистр, разделители -> "_") сравнивается с основами по порядку записей
+# (основа — подстрока кода); первая совпавшая запись побеждает. note попадает в evidence и INTEGRATION.md.
+provider_codes:
+  - name: rate_limit
+    stems: [rate_limit, ratelimit, too_many_requests, too_many, throttl, request_limit, requests_limit, quota,
+            too_frequent, frequency, calls_limit]
+    canonical: rate_limit
+    action: retry_with_backoff
+  - name: invalid_credentials
+    stems: [unauthorized, unauthorised, unauthenticated, invalid_key, invalid_api_key, invalid_token, forbidden,
+            access_denied, auth_, authentication, invalid_signature, invalid_credentials, insufficient_scope,
+            insufficient_permission, invalid_grant, invalid_client, invalid_scope, token_expired, expired_token,
+            token_invalid, access_token, api_key, sign_, account_blocked, merchant_blocked, merchant_disabled]
+    canonical: invalid_credentials
+    action: fatal_block_provider
+  - name: recipient_rejected
+    stems: [blocked, blacklist, fraud, compliance, aml, sanction, suspicious, risk, card_expired, expired_card,
+            not_supported, country, recipient_not_found, account_not_found, invalid_account, invalid_recipient,
+            invalid_phone, invalid_card, card_not_found, wrong_account, invalid_requisite, invalid_bank,
+            bank_not_found]
+    canonical: validation_error
+    action: terminal_reject
+    note: "отказ по получателю/комплаенсу — исправить реквизиты, не повторять запрос"
+  - name: insufficient_balance
+    stems: [insufficient, no_funds, not_enough, low_balance, balance_exceeded, insufficient_funds]
+    canonical: insufficient_balance
+    action: retry_later
+  - name: amount_limit
+    stems: [amount_limit, limit_exceeded, exceeds_limit, max_amount, min_amount, amount_too, over_limit, daily_limit]
+    canonical: validation_error
+    action: terminal_reject
+    note: "возможен суточный/разовый лимит провайдера — проверить договор (PLAN §4, допущение 7)"
+  - name: duplicate
+    stems: [duplicate, already_exists, already_processed, idempoten, conflict, invalid_status, wrong_status,
+            invalid_state, already_]
+    canonical: conflict
+    action: conflict
+  - name: not_found
+    stems: [not_found, notfound, no_such, does_not_exist, unknown_payout, unknown_payment, unknown_transfer,
+            unknown_operation, missing_payout]
+    canonical: not_found
+    action: unknown_state
+  - name: unavailable
+    stems: [unavailable, temporar, try_later, try_again, maintenance, timeout, timed_out, service_down, busy]
+    canonical: internal_error
+    action: retry_later
+  - name: internal_error
+    stems: [internal, server_error, unexpected, unknown_error, system_error, processing_error, technical]
+    canonical: internal_error
+    action: retry_alert_ops
+  - name: validation_error
+    stems: [validation, invalid, bad_request, malformed, missing, required, format, unsupported, not_allowed,
+            wrong, incorrect]
+    canonical: validation_error
+    action: terminal_reject
+
+# Откуда читать Retry-After: заголовок или поле тела ответа (имена сравниваются после snake_case-нормализации).
+retry_after:
+  headers: [retry_after, x_retry_after]
+  body_fields: [retry_after, retry_in, retry_after_seconds, retry_after_ms, retry_in_ms, wait_seconds]

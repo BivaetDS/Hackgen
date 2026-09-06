@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://provider-integrator.local/schemas/operations.schema.json",
+  "title": "operations.yml",
+  "description": "Operation-kind classification: kinds, scoring weights and thresholds, stem synonyms per source with exclusions, structural rules, direction keywords, path-parameter roles.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version", "kinds", "in_contract", "weights", "thresholds", "extension_key", "synonyms", "structural", "direction",
+    "path_parameters"
+  ],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "kinds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/kind" }
+    },
+    "in_contract": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/kind" }
+    },
+    "weights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation_id_strong", "operation_id_weak", "path", "tag", "text"],
+      "properties": {
+        "operation_id_strong": { "$ref": "#/$defs/weight" },
+        "operation_id_weak": { "$ref": "#/$defs/weight" },
+        "path": { "$ref": "#/$defs/weight" },
+        "tag": { "$ref": "#/$defs/weight" },
+        "text": { "$ref": "#/$defs/weight" }
+      }
+    },
+    "thresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unknown_below", "low_confidence_below", "structural_only_cap"],
+      "properties": {
+        "unknown_below": { "$ref": "#/$defs/confidence" },
+        "low_confidence_below": { "$ref": "#/$defs/confidence" },
+        "structural_only_cap": {
+          "description": "Confidence ceiling for a kind whose only signal is a structural rule.",
+          "$ref": "#/$defs/confidence"
+        }
+      }
+    },
+    "extension_key": { "type": "string", "pattern": "^x-[a-z0-9-]+$" },
+    "synonyms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["create", "status", "cancel", "balance", "webhook", "refund", "list"],
+      "properties": {
+        "create": { "$ref": "#/$defs/kindSynonyms" },
+        "status": { "$ref": "#/$defs/kindSynonyms" },
+        "cancel": { "$ref": "#/$defs/kindSynonyms" },
+        "balance": { "$ref": "#/$defs/kindSynonyms" },
+        "webhook": { "$ref": "#/$defs/kindSynonyms" },
+        "refund": { "$ref": "#/$defs/kindSynonyms" },
+        "list": { "$ref": "#/$defs/kindSynonyms" }
+      }
+    },
+    "structural": {
+      "description": "Request-shape rules per kind (score = weights.path when no path stem of the kind matched).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["create", "status", "cancel", "list"],
+      "properties": {
+        "create": { "$ref": "#/$defs/structuralRule" },
+        "status": { "$ref": "#/$defs/structuralRule" },
+        "cancel": { "$ref": "#/$defs/structuralRule" },
+        "list": { "$ref": "#/$defs/structuralRule" }
+      }
+    },
+    "direction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["withdraw", "deposit", "default"],
+      "properties": {
+        "withdraw": { "$ref": "#/$defs/nonEmptyStems" },
+        "deposit": { "$ref": "#/$defs/nonEmptyStems" },
+        "default": { "enum": ["withdraw", "deposit"] }
+      }
+    },
+    "path_parameters": {
+      "description": "Which path parameter is the provider operation id: last snake_case token in id_stems, unless a token is in not_provider_id_stems.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id_stems", "not_provider_id_stems"],
+      "properties": {
+        "id_stems": { "$ref": "#/$defs/nonEmptyTokens" },
+        "not_provider_id_stems": { "$ref": "#/$defs/nonEmptyTokens" }
+      }
+    }
+  },
+  "$defs": {
+    "kind": { "enum": ["create", "status", "cancel", "balance", "webhook", "refund", "list"] },
+    "weight": { "type": "integer", "minimum": 0 },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "stem": { "type": "string", "minLength": 1 },
+    "stems": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/stem" }
+    },
+    "nonEmptyStems": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/stem" }
+    },
+    "nonEmptyTokens": {
+      "description": "Lower-case tokens of a snake_case name, already normalized as the matcher compares them.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9]*$" }
+    },
+    "kindSynonyms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strong", "weak", "path", "text"],
+      "properties": {
+        "strong": { "$ref": "#/$defs/stems" },
+        "weak": { "$ref": "#/$defs/stems" },
+        "path": { "$ref": "#/$defs/stems" },
+        "text": { "$ref": "#/$defs/stems" },
+        "exclude_tokens": {
+          "description": "Exact tokens that never count as a stem match for this kind (statement is not state).",
+          "$ref": "#/$defs/nonEmptyStems"
+        },
+        "exclude_operation_id_tokens": {
+          "description": "operationId stems that veto this kind from every source (registerWebhook is not an incoming webhook).",
+          "$ref": "#/$defs/nonEmptyStems"
+        }
+      }
+    },
+    "structuralRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "path_has_id"],
+      "properties": {
+        "method": { "enum": ["get", "post", "put", "patch", "delete"] },
+        "requires_body": { "type": "boolean" },
+        "path_has_id": { "type": "boolean" },
+        "excluded_path_stems": { "$ref": "#/$defs/nonEmptyStems" }
+      }
+    }
+  }
+}

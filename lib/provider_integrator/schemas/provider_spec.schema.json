@@ -1,0 +1,521 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://provider-integrator.local/schemas/provider_spec.schema.json",
+  "title": "ProviderSpec IR (ir_version 1)",
+  "description": "Canonical JSON form of ProviderIntegrator::Models::ProviderSpec as specified in docs/IR_CONTRACT.md section 1. Every model carries every member (nil explicitly); one $def per model.",
+  "$ref": "#/$defs/ProviderSpec",
+  "$defs": {
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "evidence": { "type": "array", "items": { "type": "string" } },
+    "nullableString": { "type": ["string", "null"] },
+    "stringList": { "type": "array", "items": { "type": "string" } },
+    "httpStatus": {
+      "description": "HTTP status code; 0 stands for the OpenAPI `default` response (recorded with kind other).",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 599
+    },
+    "httpMethod": { "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE"] },
+    "kind": { "enum": ["create", "status", "cancel", "balance", "webhook", "refund", "list", "unknown"] },
+    "canonicalStatus": { "enum": ["in_progress", "approved", "rejected"] },
+    "canonicalErrorCode": {
+      "enum": [
+        "validation_error", "invalid_credentials", "insufficient_balance", "rate_limit", "internal_error", "not_found",
+        "conflict"
+      ]
+    },
+    "action": {
+      "enum": [
+        "terminal_reject", "fatal_block_provider", "retry_later", "retry_with_backoff", "retry_alert_ops",
+        "unknown_state", "idempotent_success", "conflict"
+      ]
+    },
+    "authType": { "enum": ["api_key", "http_bearer", "http_basic", "oauth2_client_credentials", "oauth2", "none", "unknown"] },
+    "authLocation": { "enum": ["header", "query", "cookie", null] },
+    "schemaType": { "enum": ["string", "integer", "number", "boolean", "object", "array", null] },
+    "providerPath": { "type": "string", "pattern": "^[^.\\s]+(\\[\\])?(\\.[^.\\s]+(\\[\\])?)*$" },
+    "canonicalField": {
+      "description": "Every name fields.yml can produce: top-level canonical fields, <container>.<child> for declared children, or a <container>.<snake_name> fallback (source container).",
+      "anyOf": [
+        {
+          "enum": [
+            "amount", "currency", "external_id", "provider_operation_id", "merchant_account", "status", "description",
+            "callback_url", "redirect_url", "created_at", "updated_at", "completed_at", "event", "balance", "hold", "fee",
+            "requisite", "error", "customer",
+            "requisite.type", "requisite.phone", "requisite.bank_code", "requisite.bank_name", "requisite.card_number",
+            "requisite.account_number", "requisite.wallet_id", "requisite.name", "requisite.first_name",
+            "requisite.last_name", "requisite.middle_name", "requisite.inn", "requisite.email",
+            "error.code", "error.message", "error.details",
+            "customer.id", "customer.email", "customer.phone", "customer.ip", "customer.name"
+          ]
+        },
+        { "type": "string", "pattern": "^(requisite|error|customer)\\.[a-z0-9_]+$" },
+        { "type": "null" }
+      ]
+    },
+    "enumValues": { "type": ["array", "null"], "minItems": 1 },
+    "jsonObject": { "type": "object" },
+    "jsonPointer": { "type": ["string", "null"], "pattern": "^#(/|$)" },
+
+    "ProviderSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ir_version", "provider", "spec_format", "servers", "authentication", "operations", "statuses", "webhook",
+        "gateway_config", "overrides_applied", "events", "extensions"
+      ],
+      "properties": {
+        "ir_version": { "const": 1 },
+        "provider": { "$ref": "#/$defs/Provider" },
+        "spec_format": { "$ref": "#/$defs/SpecFormat" },
+        "servers": { "type": "array", "items": { "$ref": "#/$defs/Server" } },
+        "authentication": { "$ref": "#/$defs/Authentication" },
+        "operations": { "type": "array", "items": { "$ref": "#/$defs/Operation" } },
+        "statuses": { "type": "array", "items": { "$ref": "#/$defs/StatusMapping" } },
+        "webhook": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/Webhook" }] },
+        "gateway_config": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/GatewayConfig" }] },
+        "overrides_applied": { "type": "array", "items": { "$ref": "#/$defs/OverrideApplied" } },
+        "events": { "type": "array", "items": { "$ref": "#/$defs/Event" } },
+        "extensions": {
+          "type": "object",
+          "propertyNames": { "pattern": "^x-" }
+        }
+      }
+    },
+
+    "Provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "slug", "version", "description"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "slug": { "type": "string", "pattern": "^[a-z0-9]+$" },
+        "version": { "type": "string" },
+        "description": { "$ref": "#/$defs/nullableString" }
+      }
+    },
+
+    "SpecFormat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["openapi", "converted_from"],
+      "properties": {
+        "openapi": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$" },
+        "converted_from": { "enum": ["2.0", null] }
+      }
+    },
+
+    "Server": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "description", "environment"],
+      "properties": {
+        "url": { "type": "string", "minLength": 1 },
+        "description": { "$ref": "#/$defs/nullableString" },
+        "environment": { "enum": ["sandbox", "production", "unknown"] }
+      }
+    },
+
+    "Authentication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type", "scheme_name", "location", "name", "bearer_format", "token_url", "scopes", "credentials_key",
+        "confidence", "evidence", "source", "alternatives"
+      ],
+      "properties": {
+        "type": { "$ref": "#/$defs/authType" },
+        "scheme_name": { "$ref": "#/$defs/nullableString" },
+        "location": { "$ref": "#/$defs/authLocation" },
+        "name": { "$ref": "#/$defs/nullableString" },
+        "bearer_format": { "$ref": "#/$defs/nullableString" },
+        "token_url": { "$ref": "#/$defs/nullableString" },
+        "scopes": { "$ref": "#/$defs/stringList" },
+        "credentials_key": { "$ref": "#/$defs/nullableString" },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "evidence": { "$ref": "#/$defs/evidence" },
+        "source": { "enum": ["security_schemes", "override"] },
+        "alternatives": { "type": "array", "items": { "$ref": "#/$defs/AuthAlternative" } }
+      }
+    },
+
+    "AuthAlternative": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scheme_name", "type", "location", "name"],
+      "properties": {
+        "scheme_name": { "type": "string", "minLength": 1 },
+        "type": { "$ref": "#/$defs/authType" },
+        "location": { "$ref": "#/$defs/authLocation" },
+        "name": { "$ref": "#/$defs/nullableString" }
+      }
+    },
+
+    "Operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind", "in_contract", "canonical_method", "operation_id", "method", "path", "summary", "description", "tags",
+        "security", "public", "classification", "idempotency", "parameters", "request_body", "request_fields",
+        "response_fields", "responses", "success_codes", "idempotent_duplicate_codes", "errors", "request_methods",
+        "confidence"
+      ],
+      "properties": {
+        "kind": { "$ref": "#/$defs/kind" },
+        "in_contract": { "type": "boolean" },
+        "canonical_method": { "type": ["string", "null"], "pattern": "^[a-z_][a-z0-9_]*$" },
+        "operation_id": { "type": "string", "minLength": 1 },
+        "method": { "$ref": "#/$defs/httpMethod" },
+        "path": { "type": "string", "pattern": "^/" },
+        "summary": { "$ref": "#/$defs/nullableString" },
+        "description": { "$ref": "#/$defs/nullableString" },
+        "tags": { "$ref": "#/$defs/stringList" },
+        "security": { "$ref": "#/$defs/stringList" },
+        "public": { "type": "boolean" },
+        "classification": { "$ref": "#/$defs/Classification" },
+        "idempotency": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/Idempotency" }] },
+        "parameters": { "type": "array", "items": { "$ref": "#/$defs/Parameter" } },
+        "request_body": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/RequestBody" }] },
+        "request_fields": { "type": "array", "items": { "$ref": "#/$defs/FieldMapping" } },
+        "response_fields": { "type": "array", "items": { "$ref": "#/$defs/FieldMapping" } },
+        "responses": { "type": "array", "items": { "$ref": "#/$defs/Response" } },
+        "success_codes": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/httpStatus" } },
+        "idempotent_duplicate_codes": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/httpStatus" } },
+        "errors": { "type": "array", "items": { "$ref": "#/$defs/ErrorMapping" } },
+        "request_methods": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/RequestMethods" }] },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+
+    "Classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["confidence", "source", "scores", "evidence"],
+      "properties": {
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "source": { "enum": ["scoring", "extension", "override", "callbacks"] },
+        "scores": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["create", "status", "cancel", "balance", "webhook", "refund", "list"],
+          "properties": {
+            "create": { "type": "integer", "minimum": 0 },
+            "status": { "type": "integer", "minimum": 0 },
+            "cancel": { "type": "integer", "minimum": 0 },
+            "balance": { "type": "integer", "minimum": 0 },
+            "webhook": { "type": "integer", "minimum": 0 },
+            "refund": { "type": "integer", "minimum": 0 },
+            "list": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+
+    "Idempotency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["location", "name", "required", "format"],
+      "properties": {
+        "location": { "enum": ["header", "query", "body"] },
+        "name": { "type": "string", "minLength": 1 },
+        "required": { "type": "boolean" },
+        "format": { "$ref": "#/$defs/nullableString" }
+      }
+    },
+
+    "Parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "in", "required", "type", "format", "description", "example", "enum", "canonical"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "in": { "enum": ["path", "query", "header", "cookie"] },
+        "required": { "type": "boolean" },
+        "type": { "$ref": "#/$defs/schemaType" },
+        "format": { "$ref": "#/$defs/nullableString" },
+        "description": { "$ref": "#/$defs/nullableString" },
+        "example": true,
+        "enum": { "$ref": "#/$defs/enumValues" },
+        "canonical": { "enum": ["provider_operation_id", "idempotency_key", "signature", "auth", null] }
+      }
+    },
+
+    "RequestBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["content_type", "required", "schema_name", "example", "examples"],
+      "properties": {
+        "content_type": { "type": "string", "minLength": 1 },
+        "required": { "type": "boolean" },
+        "schema_name": { "$ref": "#/$defs/nullableString" },
+        "example": true,
+        "examples": { "$ref": "#/$defs/jsonObject" }
+      }
+    },
+
+    "FieldMapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider_path", "canonical", "type", "format", "required", "nullable", "enum", "constant", "pattern", "minimum",
+        "maximum", "min_length", "max_length", "description", "example", "default", "conversion", "conditional_required",
+        "branch", "confidence", "evidence", "source"
+      ],
+      "properties": {
+        "provider_path": { "$ref": "#/$defs/providerPath" },
+        "canonical": { "$ref": "#/$defs/canonicalField" },
+        "type": { "$ref": "#/$defs/schemaType" },
+        "format": { "$ref": "#/$defs/nullableString" },
+        "required": { "type": "boolean" },
+        "nullable": { "type": "boolean" },
+        "enum": { "$ref": "#/$defs/enumValues" },
+        "constant": true,
+        "pattern": { "$ref": "#/$defs/nullableString" },
+        "minimum": { "type": ["number", "null"] },
+        "maximum": { "type": ["number", "null"] },
+        "min_length": { "type": ["integer", "null"], "minimum": 0 },
+        "max_length": { "type": ["integer", "null"], "minimum": 0 },
+        "description": { "$ref": "#/$defs/nullableString" },
+        "example": true,
+        "default": true,
+        "conversion": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/Conversion" }] },
+        "conditional_required": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/ConditionalRequired" }] },
+        "branch": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/Branch" }] },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "evidence": { "$ref": "#/$defs/evidence" },
+        "source": { "enum": ["override", "dictionary", "container", "none"] }
+      }
+    },
+
+    "Conversion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "value", "unit_from", "unit_to", "confidence", "evidence", "source"],
+      "properties": {
+        "type": { "enum": ["multiply", "divide", "to_decimal_string", "identity"] },
+        "value": { "type": ["integer", "null"], "minimum": 1 },
+        "unit_from": { "enum": ["major"] },
+        "unit_to": { "enum": ["minor", "major"] },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "evidence": { "$ref": "#/$defs/evidence" },
+        "source": { "enum": ["scoring", "override"] }
+      }
+    },
+
+    "ConditionalRequired": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["when", "equals", "source", "confidence", "evidence"],
+      "properties": {
+        "when": { "$ref": "#/$defs/providerPath" },
+        "equals": { "type": ["string", "number", "boolean"] },
+        "source": { "enum": ["description", "discriminator", "if_then", "override"] },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+
+    "Branch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["discriminator_path", "value"],
+      "properties": {
+        "discriminator_path": { "$ref": "#/$defs/providerPath" },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    },
+
+    "Response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["http", "description", "schema_name", "kind", "content_type", "example", "headers"],
+      "properties": {
+        "http": { "$ref": "#/$defs/httpStatus" },
+        "description": { "$ref": "#/$defs/nullableString" },
+        "schema_name": { "$ref": "#/$defs/nullableString" },
+        "kind": { "enum": ["success", "idempotent_duplicate", "error", "other"] },
+        "content_type": { "$ref": "#/$defs/nullableString" },
+        "example": true,
+        "headers": { "type": "array", "items": { "$ref": "#/$defs/ResponseHeader" } }
+      },
+      "if": { "properties": { "http": { "const": 0 } } },
+      "then": { "properties": { "kind": { "const": "other" } } }
+    },
+
+    "ResponseHeader": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "description", "canonical"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "$ref": "#/$defs/schemaType" },
+        "description": { "$ref": "#/$defs/nullableString" },
+        "canonical": { "enum": ["retry_after", null] }
+      }
+    },
+
+    "ErrorMapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "http", "provider_code", "canonical", "action", "retry_after", "description", "example", "confidence", "evidence",
+        "source"
+      ],
+      "properties": {
+        "http": { "$ref": "#/$defs/httpStatus" },
+        "provider_code": { "$ref": "#/$defs/nullableString" },
+        "canonical": { "$ref": "#/$defs/canonicalErrorCode" },
+        "action": { "$ref": "#/$defs/action" },
+        "retry_after": { "enum": ["header", "body", null] },
+        "description": { "$ref": "#/$defs/nullableString" },
+        "example": true,
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "evidence": { "$ref": "#/$defs/evidence" },
+        "source": { "enum": ["example", "enum", "http_default", "override"] }
+      }
+    },
+
+    "RequestMethods": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["discriminator_path", "values", "default", "source", "confidence"],
+      "properties": {
+        "discriminator_path": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/providerPath" }] },
+        "values": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "default": { "type": "string", "minLength": 1 },
+        "source": { "enum": ["enum", "discriminator", "one_of", "override"] },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+
+    "StatusMapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "canonical", "confidence", "source", "evidence"],
+      "properties": {
+        "provider": { "type": "string", "minLength": 1 },
+        "canonical": { "$ref": "#/$defs/canonicalStatus" },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "source": { "enum": ["dictionary", "token", "description", "numeric_default", "default", "override"] },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+
+    "Webhook": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path", "method", "operation_id", "summary", "source", "confidence", "evidence", "signature", "event_field",
+        "events", "status_field", "id_field", "external_id_field", "error_code_path", "error_message_path",
+        "payload_fields", "examples", "response"
+      ],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "method": { "$ref": "#/$defs/httpMethod" },
+        "operation_id": { "$ref": "#/$defs/nullableString" },
+        "summary": { "$ref": "#/$defs/nullableString" },
+        "source": {
+          "enum": ["path_heuristic", "tag_heuristic", "operation_id_heuristic", "callbacks", "extension", "override"]
+        },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "evidence": { "$ref": "#/$defs/evidence" },
+        "signature": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/Signature" }] },
+        "event_field": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/providerPath" }] },
+        "events": { "type": "array", "items": { "$ref": "#/$defs/WebhookEvent" } },
+        "status_field": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/providerPath" }] },
+        "id_field": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/providerPath" }] },
+        "external_id_field": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/providerPath" }] },
+        "error_code_path": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/providerPath" }] },
+        "error_message_path": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/providerPath" }] },
+        "payload_fields": { "type": "array", "items": { "$ref": "#/$defs/FieldMapping" } },
+        "examples": { "$ref": "#/$defs/jsonObject" },
+        "response": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/WebhookResponse" }] }
+      }
+    },
+
+    "Signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["location", "name", "algorithm", "encoding", "message", "secret", "confidence", "evidence", "source"],
+      "properties": {
+        "location": { "enum": ["header", "body", "query"] },
+        "name": { "type": "string", "minLength": 1 },
+        "algorithm": {
+          "enum": [
+            "hmac-sha256", "hmac-sha512", "hmac-sha1", "hmac-md5", "sha256", "sha512", "sha1", "md5", "rsa-sha256",
+            "ed25519", "unknown"
+          ]
+        },
+        "encoding": { "enum": ["hex", "base64", "unknown"] },
+        "message": { "enum": ["raw_body", "concatenated_fields", "unknown"] },
+        "secret": { "type": "string", "pattern": "^[a-z_][a-z0-9_]*$" },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "evidence": { "$ref": "#/$defs/evidence" },
+        "source": { "enum": ["parameter", "field", "description", "override"] }
+      }
+    },
+
+    "WebhookEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "canonical_status", "confidence", "source"],
+      "properties": {
+        "value": { "type": "string", "minLength": 1 },
+        "canonical_status": { "enum": ["in_progress", "approved", "rejected", null] },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "source": { "enum": ["dictionary", "token", "override"] }
+      }
+    },
+
+    "WebhookResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["http", "example"],
+      "properties": {
+        "http": { "$ref": "#/$defs/httpStatus" },
+        "example": true
+      }
+    },
+
+    "GatewayConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["external_method", "gateway", "direction", "currency", "method", "confidence", "evidence"],
+      "properties": {
+        "external_method": { "type": "string", "minLength": 1 },
+        "gateway": { "type": "string", "minLength": 1 },
+        "direction": { "enum": ["withdraw", "deposit"] },
+        "currency": { "$ref": "#/$defs/nullableString" },
+        "method": { "type": "string", "minLength": 1 },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+
+    "OverrideApplied": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "target", "value", "note"],
+      "properties": {
+        "key": { "enum": ["operations", "amount_unit", "required_if", "signature", "status_map", "error_actions"] },
+        "target": { "type": "string", "minLength": 1 },
+        "value": { "type": ["string", "object"] },
+        "note": { "$ref": "#/$defs/nullableString" }
+      }
+    },
+
+    "Event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "level", "message", "location", "details"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[EWI][0-9]{3}$" },
+        "level": { "enum": ["error", "warning", "info"] },
+        "message": { "type": "string", "minLength": 1 },
+        "location": { "$ref": "#/$defs/jsonPointer" },
+        "details": { "type": ["object", "null"] }
+      }
+    }
+  }
+}

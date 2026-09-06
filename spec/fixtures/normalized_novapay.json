@@ -1,0 +1,3292 @@
+{
+  "authentication": {
+    "alternatives": [],
+    "bearer_format": null,
+    "confidence": 1.0,
+    "credentials_key": "api_key",
+    "evidence": [
+      "securitySchemes.ApiKeyAuth: apiKey in header X-API-Key",
+      "security: ApiKeyAuth used by 4 of 5 operations"
+    ],
+    "location": "header",
+    "name": "X-API-Key",
+    "scheme_name": "ApiKeyAuth",
+    "scopes": [],
+    "source": "security_schemes",
+    "token_url": null,
+    "type": "api_key"
+  },
+  "events": [
+    {
+      "code": "W301",
+      "details": {
+        "default_encoding": "hex",
+        "default_message": "raw_body",
+        "encoding": "unknown",
+        "message": "raw_body",
+        "name": "X-NovaPay-Signature"
+      },
+      "level": "warning",
+      "location": "#/paths/~1webhooks~1payout/post/parameters/0",
+      "message": "HMAC canonicalization for X-NovaPay-Signature is not specified (encoding unknown, message raw_body); the generator assumes hex digest over raw_body"
+    },
+    {
+      "code": "W402",
+      "details": {
+        "equals": "sbp",
+        "field": "recipient.bank_code",
+        "operation_id": "createPayout",
+        "when": "recipient.type"
+      },
+      "level": "warning",
+      "location": "#/components/schemas/Recipient/properties/bank_code",
+      "message": "Conditional requirement inferred from description: recipient.bank_code is required when recipient.type equals sbp (createPayout)"
+    },
+    {
+      "code": "W402",
+      "details": {
+        "equals": "card",
+        "field": "recipient.card_number",
+        "operation_id": "createPayout",
+        "when": "recipient.type"
+      },
+      "level": "warning",
+      "location": "#/components/schemas/Recipient/properties/card_number",
+      "message": "Conditional requirement inferred from description: recipient.card_number is required when recipient.type equals card (createPayout)"
+    },
+    {
+      "code": "I101",
+      "details": {
+        "confidence": 0.9,
+        "kind": "balance",
+        "method": "GET",
+        "operation_id": "getBalance",
+        "path": "/balance"
+      },
+      "level": "info",
+      "location": "#/paths/~1balance/get",
+      "message": "Operation getBalance (GET /balance) classified as balance with confidence 0.9"
+    },
+    {
+      "code": "I101",
+      "details": {
+        "confidence": 0.9,
+        "kind": "create",
+        "method": "POST",
+        "operation_id": "createPayout",
+        "path": "/payouts"
+      },
+      "level": "info",
+      "location": "#/paths/~1payouts/post",
+      "message": "Operation createPayout (POST /payouts) classified as create with confidence 0.9"
+    },
+    {
+      "code": "I101",
+      "details": {
+        "confidence": 0.9,
+        "kind": "status",
+        "method": "GET",
+        "operation_id": "getPayoutStatus",
+        "path": "/payouts/{payout_id}"
+      },
+      "level": "info",
+      "location": "#/paths/~1payouts~1{payout_id}/get",
+      "message": "Operation getPayoutStatus (GET /payouts/{payout_id}) classified as status with confidence 0.9"
+    },
+    {
+      "code": "I101",
+      "details": {
+        "confidence": 0.9,
+        "kind": "cancel",
+        "method": "POST",
+        "operation_id": "cancelPayout",
+        "path": "/payouts/{payout_id}/cancel"
+      },
+      "level": "info",
+      "location": "#/paths/~1payouts~1{payout_id}~1cancel/post",
+      "message": "Operation cancelPayout (POST /payouts/{payout_id}/cancel) classified as cancel with confidence 0.9"
+    },
+    {
+      "code": "I101",
+      "details": {
+        "confidence": 0.92,
+        "kind": "webhook",
+        "method": "POST",
+        "operation_id": "payoutWebhook",
+        "path": "/webhooks/payout"
+      },
+      "level": "info",
+      "location": "#/paths/~1webhooks~1payout/post",
+      "message": "Operation payoutWebhook (POST /webhooks/payout) classified as webhook with confidence 0.92"
+    },
+    {
+      "code": "I201",
+      "details": {
+        "count": 5,
+        "mapping": {
+          "cancelled": "rejected",
+          "completed": "approved",
+          "failed": "rejected",
+          "pending": "in_progress",
+          "processing": "in_progress"
+        }
+      },
+      "level": "info",
+      "location": null,
+      "message": "Status mapping recorded (5 statuses): pending -> in_progress, processing -> in_progress, completed -> approved, failed -> rejected, cancelled -> rejected"
+    },
+    {
+      "code": "I301",
+      "details": {
+        "algorithm": "hmac-sha256",
+        "encoding": "unknown",
+        "message": "raw_body",
+        "name": "X-NovaPay-Signature",
+        "placement": "header",
+        "secret": "callback_secret"
+      },
+      "level": "info",
+      "location": "#/paths/~1webhooks~1payout/post/parameters/0",
+      "message": "Signature convention recorded: X-NovaPay-Signature (header), algorithm hmac-sha256, encoding unknown, message raw_body, secret callback_secret"
+    },
+    {
+      "code": "I401",
+      "details": {
+        "field": "amount",
+        "multiplier": 100,
+        "operation_id": "createPayout",
+        "score": 8,
+        "signals": [
+          "description: копейках",
+          "error example (422): kopecks",
+          "minimum: 100000"
+        ],
+        "unit": "minor"
+      },
+      "level": "info",
+      "location": "#/components/schemas/CreatePayoutRequest/properties/amount",
+      "message": "Amount field amount in createPayout uses minor units (multiplier 100, score 8); signals: description: копейках, error example (422): kopecks, minimum: 100000"
+    },
+    {
+      "code": "I403",
+      "details": {
+        "confidence": 0.9,
+        "evidence": [
+          "currency: RUB (enum constant)",
+          "request method: sbp (default of recipient.type)",
+          "direction: withdraw (token 'payout' in operationId createPayout)"
+        ],
+        "external_method": "sbp_payout",
+        "gateway": "RUB_SBP_WITHDRAW"
+      },
+      "level": "info",
+      "location": null,
+      "message": "Gateway config recorded: external_method sbp_payout, gateway RUB_SBP_WITHDRAW (confidence 0.9); evidence: currency: RUB (enum constant), request method: sbp (default of recipient.type), direction: withdraw (token 'payout' in operationId createPayout)"
+    },
+    {
+      "code": "W102",
+      "details": {
+        "kind": "balance",
+        "method": "GET",
+        "operation_id": "getBalance",
+        "path": "/balance"
+      },
+      "level": "info",
+      "location": "#/paths/~1balance/get",
+      "message": "Operation getBalance (GET /balance) is outside the BaseService contract (kind balance); generated as an extra method"
+    },
+    {
+      "code": "W102",
+      "details": {
+        "kind": "cancel",
+        "method": "POST",
+        "operation_id": "cancelPayout",
+        "path": "/payouts/{payout_id}/cancel"
+      },
+      "level": "info",
+      "location": "#/paths/~1payouts~1{payout_id}~1cancel/post",
+      "message": "Operation cancelPayout (POST /payouts/{payout_id}/cancel) is outside the BaseService contract (kind cancel); generated as an extra method"
+    }
+  ],
+  "extensions": {},
+  "gateway_config": {
+    "confidence": 0.9,
+    "currency": "RUB",
+    "direction": "withdraw",
+    "evidence": [
+      "currency: RUB (enum constant)",
+      "request method: sbp (default of recipient.type)",
+      "direction: withdraw (token 'payout' in operationId createPayout)"
+    ],
+    "external_method": "sbp_payout",
+    "gateway": "RUB_SBP_WITHDRAW",
+    "method": "sbp"
+  },
+  "ir_version": 1,
+  "operations": [
+    {
+      "canonical_method": "create_request",
+      "classification": {
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'create' -> create (+5)",
+          "structure POST with body and no path id -> create (+3)",
+          "text 'создать' -> create (+1)"
+        ],
+        "scores": {
+          "balance": 0,
+          "cancel": 0,
+          "create": 9,
+          "list": 0,
+          "refund": 0,
+          "status": 0,
+          "webhook": 0
+        },
+        "source": "scoring"
+      },
+      "confidence": 0.9,
+      "description": "Создаёт новую выплату на счёт получателя через СБП.\nСумма передаётся в копейках. Минимальная сумма — 1000 RUB (100000 коп.).",
+      "errors": [
+        {
+          "action": "terminal_reject",
+          "canonical": "validation_error",
+          "confidence": 0.8,
+          "description": "Некорректный запрос",
+          "evidence": [
+            "enum PayoutError.code: validation_error",
+            "errors.yml: HTTP 400 -> validation_error (terminal_reject)"
+          ],
+          "example": null,
+          "http": 400,
+          "provider_code": "validation_error",
+          "retry_after": null,
+          "source": "enum"
+        },
+        {
+          "action": "fatal_block_provider",
+          "canonical": "invalid_credentials",
+          "confidence": 0.95,
+          "description": "Невалидный API-ключ",
+          "evidence": [
+            "example (401): code unauthorized",
+            "errors.yml: unauthorized -> invalid_credentials (fatal_block_provider)"
+          ],
+          "example": {
+            "error": {
+              "code": "unauthorized",
+              "message": "Invalid API key"
+            }
+          },
+          "http": 401,
+          "provider_code": "unauthorized",
+          "retry_after": null,
+          "source": "example"
+        },
+        {
+          "action": "retry_later",
+          "canonical": "insufficient_balance",
+          "confidence": 0.95,
+          "description": "Недостаточно средств на балансе провайдера",
+          "evidence": [
+            "example (402): code insufficient_balance",
+            "errors.yml: insufficient_balance -> insufficient_balance (retry_later)"
+          ],
+          "example": {
+            "error": {
+              "code": "insufficient_balance",
+              "message": "Insufficient provider balance"
+            }
+          },
+          "http": 402,
+          "provider_code": "insufficient_balance",
+          "retry_after": null,
+          "source": "example"
+        },
+        {
+          "action": "terminal_reject",
+          "canonical": "validation_error",
+          "confidence": 0.95,
+          "description": "Ошибка валидации",
+          "evidence": [
+            "example (422): code validation_error",
+            "errors.yml: validation_error -> validation_error (terminal_reject)"
+          ],
+          "example": {
+            "error": {
+              "code": "validation_error",
+              "details": [
+                {
+                  "field": "amount",
+                  "message": "minimum is 100000"
+                }
+              ],
+              "message": "Amount must be at least 100000 kopecks"
+            }
+          },
+          "http": 422,
+          "provider_code": "validation_error",
+          "retry_after": null,
+          "source": "example"
+        },
+        {
+          "action": "retry_with_backoff",
+          "canonical": "rate_limit",
+          "confidence": 0.95,
+          "description": "Превышен лимит запросов",
+          "evidence": [
+            "example (429): code rate_limit_exceeded",
+            "errors.yml: rate_limit_exceeded -> rate_limit (retry_with_backoff)"
+          ],
+          "example": {
+            "error": {
+              "code": "rate_limit_exceeded",
+              "message": "Rate limit exceeded, retry after 60 seconds"
+            }
+          },
+          "http": 429,
+          "provider_code": "rate_limit_exceeded",
+          "retry_after": "header",
+          "source": "example"
+        },
+        {
+          "action": "retry_alert_ops",
+          "canonical": "internal_error",
+          "confidence": 0.8,
+          "description": "Внутренняя ошибка провайдера",
+          "evidence": [
+            "enum PayoutError.code: internal_error",
+            "errors.yml: HTTP 500 -> internal_error (retry_alert_ops)"
+          ],
+          "example": null,
+          "http": 500,
+          "provider_code": "internal_error",
+          "retry_after": null,
+          "source": "enum"
+        }
+      ],
+      "idempotency": {
+        "format": "uuid",
+        "location": "header",
+        "name": "Idempotency-Key",
+        "required": false
+      },
+      "idempotent_duplicate_codes": [
+        409
+      ],
+      "in_contract": true,
+      "kind": "create",
+      "method": "POST",
+      "operation_id": "createPayout",
+      "parameters": [
+        {
+          "canonical": "idempotency_key",
+          "description": "Ключ идемпотентности для предотвращения дублей",
+          "enum": null,
+          "example": null,
+          "format": "uuid",
+          "in": "header",
+          "name": "Idempotency-Key",
+          "required": false,
+          "type": "string"
+        }
+      ],
+      "path": "/payouts",
+      "public": false,
+      "request_body": {
+        "content_type": "application/json",
+        "example": {
+          "amount": 1500000,
+          "currency": "RUB",
+          "external_id": "op_abc123",
+          "recipient": {
+            "bank_code": "044525225",
+            "bank_name": "Сбербанк",
+            "phone": "79001234567",
+            "type": "sbp"
+          }
+        },
+        "examples": {
+          "sbp_payout": {
+            "amount": 1500000,
+            "currency": "RUB",
+            "external_id": "op_abc123",
+            "recipient": {
+              "bank_code": "044525225",
+              "bank_name": "Сбербанк",
+              "phone": "79001234567",
+              "type": "sbp"
+            }
+          }
+        },
+        "required": true,
+        "schema_name": "CreatePayoutRequest"
+      },
+      "request_fields": [
+        {
+          "branch": null,
+          "canonical": "amount",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": {
+            "confidence": 0.89,
+            "evidence": [
+              "description: копейках",
+              "error example (422): kopecks",
+              "minimum: 100000"
+            ],
+            "source": "scoring",
+            "type": "multiply",
+            "unit_from": "major",
+            "unit_to": "minor",
+            "value": 100
+          },
+          "default": null,
+          "description": "Сумма в копейках",
+          "enum": null,
+          "evidence": [
+            "fields.yml: amount -> amount"
+          ],
+          "example": 1500000,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": 100000,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "amount",
+          "required": true,
+          "source": "dictionary",
+          "type": "integer"
+        },
+        {
+          "branch": null,
+          "canonical": "currency",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": "RUB",
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": [
+            "RUB"
+          ],
+          "evidence": [
+            "fields.yml: currency -> currency"
+          ],
+          "example": "RUB",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "currency",
+          "required": true,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "external_id",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": "ID операции на стороне мерчанта",
+          "enum": null,
+          "evidence": [
+            "fields.yml: external_id -> external_id"
+          ],
+          "example": "op_abc123",
+          "format": null,
+          "max_length": 64,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "external_id",
+          "required": true,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: recipient -> requisite"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "recipient",
+          "required": true,
+          "source": "dictionary",
+          "type": "object"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite.type",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": [
+            "sbp",
+            "card"
+          ],
+          "evidence": [
+            "fields.yml: requisite child type -> requisite.type"
+          ],
+          "example": "sbp",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "recipient.type",
+          "required": true,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite.phone",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": "Телефон получателя (11 цифр, начинается с 7)",
+          "enum": null,
+          "evidence": [
+            "fields.yml: requisite child phone -> requisite.phone"
+          ],
+          "example": "79001234567",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": "^7\\d{10}$",
+          "provider_path": "recipient.phone",
+          "required": true,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite.bank_code",
+          "conditional_required": {
+            "confidence": 0.6,
+            "equals": "sbp",
+            "evidence": [
+              "description: обязателен для type=sbp"
+            ],
+            "source": "description",
+            "when": "recipient.type"
+          },
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": "БИК банка (обязателен для type=sbp)",
+          "enum": null,
+          "evidence": [
+            "fields.yml: requisite child bank_code -> requisite.bank_code"
+          ],
+          "example": "044525225",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "recipient.bank_code",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite.bank_name",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: requisite child bank_name -> requisite.bank_name"
+          ],
+          "example": "Сбербанк",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "recipient.bank_name",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite.card_number",
+          "conditional_required": {
+            "confidence": 0.6,
+            "equals": "card",
+            "evidence": [
+              "description: обязателен для type=card"
+            ],
+            "source": "description",
+            "when": "recipient.type"
+          },
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": "Номер карты (обязателен для type=card)",
+          "enum": null,
+          "evidence": [
+            "fields.yml: requisite child card_number -> requisite.card_number"
+          ],
+          "example": "4111111111111111",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "recipient.card_number",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        }
+      ],
+      "request_methods": {
+        "confidence": 0.9,
+        "default": "sbp",
+        "discriminator_path": "recipient.type",
+        "source": "enum",
+        "values": [
+          "sbp",
+          "card"
+        ]
+      },
+      "response_fields": [
+        {
+          "branch": null,
+          "canonical": "provider_operation_id",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: id -> provider_operation_id"
+          ],
+          "example": "np_7f3a9b2c",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "id",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "external_id",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: external_id -> external_id"
+          ],
+          "example": "op_abc123",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "external_id",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "status",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": [
+            "pending",
+            "processing",
+            "completed",
+            "failed",
+            "cancelled"
+          ],
+          "evidence": [
+            "fields.yml: status -> status"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "status",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "amount",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: amount -> amount"
+          ],
+          "example": 1500000,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "amount",
+          "required": false,
+          "source": "dictionary",
+          "type": "integer"
+        },
+        {
+          "branch": null,
+          "canonical": "currency",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: currency -> currency"
+          ],
+          "example": "RUB",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "currency",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: recipient -> requisite"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "recipient",
+          "required": false,
+          "source": "dictionary",
+          "type": "object"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite.type",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": [
+            "sbp",
+            "card"
+          ],
+          "evidence": [
+            "fields.yml: requisite child type -> requisite.type"
+          ],
+          "example": "sbp",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "recipient.type",
+          "required": true,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite.phone",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": "Телефон получателя (11 цифр, начинается с 7)",
+          "enum": null,
+          "evidence": [
+            "fields.yml: requisite child phone -> requisite.phone"
+          ],
+          "example": "79001234567",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": "^7\\d{10}$",
+          "provider_path": "recipient.phone",
+          "required": true,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite.bank_code",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": "БИК банка (обязателен для type=sbp)",
+          "enum": null,
+          "evidence": [
+            "fields.yml: requisite child bank_code -> requisite.bank_code"
+          ],
+          "example": "044525225",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "recipient.bank_code",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite.bank_name",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: requisite child bank_name -> requisite.bank_name"
+          ],
+          "example": "Сбербанк",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "recipient.bank_name",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite.card_number",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": "Номер карты (обязателен для type=card)",
+          "enum": null,
+          "evidence": [
+            "fields.yml: requisite child card_number -> requisite.card_number"
+          ],
+          "example": "4111111111111111",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "recipient.card_number",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "error",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: error -> error"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "error",
+          "required": false,
+          "source": "dictionary",
+          "type": "object"
+        },
+        {
+          "branch": null,
+          "canonical": "error.code",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": [
+            "validation_error",
+            "insufficient_balance",
+            "recipient_not_found",
+            "bank_unavailable",
+            "amount_limit_exceeded",
+            "rate_limit_exceeded",
+            "internal_error"
+          ],
+          "evidence": [
+            "fields.yml: error child code -> error.code"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "error.code",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "error.message",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: error child message -> error.message"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "error.message",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "created_at",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: created_at -> created_at"
+          ],
+          "example": null,
+          "format": "date-time",
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "created_at",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "completed_at",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: completed_at -> completed_at"
+          ],
+          "example": null,
+          "format": "date-time",
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "completed_at",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        }
+      ],
+      "responses": [
+        {
+          "content_type": "application/json",
+          "description": "Выплата создана",
+          "example": {
+            "amount": 1500000,
+            "created_at": "2026-07-30T10:00:00Z",
+            "currency": "RUB",
+            "external_id": "op_abc123",
+            "id": "np_7f3a9b2c",
+            "status": "pending"
+          },
+          "headers": [],
+          "http": 201,
+          "kind": "success",
+          "schema_name": "PayoutResponse"
+        },
+        {
+          "content_type": "application/json",
+          "description": "Некорректный запрос",
+          "example": null,
+          "headers": [],
+          "http": 400,
+          "kind": "error",
+          "schema_name": "ErrorResponse"
+        },
+        {
+          "content_type": "application/json",
+          "description": "Невалидный API-ключ",
+          "example": {
+            "error": {
+              "code": "unauthorized",
+              "message": "Invalid API key"
+            }
+          },
+          "headers": [],
+          "http": 401,
+          "kind": "error",
+          "schema_name": "ErrorResponse"
+        },
+        {
+          "content_type": "application/json",
+          "description": "Недостаточно средств на балансе провайдера",
+          "example": {
+            "error": {
+              "code": "insufficient_balance",
+              "message": "Insufficient provider balance"
+            }
+          },
+          "headers": [],
+          "http": 402,
+          "kind": "error",
+          "schema_name": "ErrorResponse"
+        },
+        {
+          "content_type": "application/json",
+          "description": "Дубликат по idempotency key",
+          "example": {
+            "amount": 1500000,
+            "currency": "RUB",
+            "external_id": "op_abc123",
+            "id": "np_7f3a9b2c",
+            "recipient": {
+              "bank_code": "044525225",
+              "bank_name": "Сбербанк",
+              "card_number": "4111111111111111",
+              "phone": "79001234567",
+              "type": "sbp"
+            }
+          },
+          "headers": [],
+          "http": 409,
+          "kind": "idempotent_duplicate",
+          "schema_name": "PayoutResponse"
+        },
+        {
+          "content_type": "application/json",
+          "description": "Ошибка валидации",
+          "example": {
+            "error": {
+              "code": "validation_error",
+              "details": [
+                {
+                  "field": "amount",
+                  "message": "minimum is 100000"
+                }
+              ],
+              "message": "Amount must be at least 100000 kopecks"
+            }
+          },
+          "headers": [],
+          "http": 422,
+          "kind": "error",
+          "schema_name": "ErrorResponse"
+        },
+        {
+          "content_type": "application/json",
+          "description": "Превышен лимит запросов",
+          "example": {
+            "error": {
+              "code": "rate_limit_exceeded",
+              "message": "Rate limit exceeded, retry after 60 seconds"
+            }
+          },
+          "headers": [
+            {
+              "canonical": "retry_after",
+              "description": "Секунд до повторной попытки",
+              "name": "Retry-After",
+              "type": "integer"
+            }
+          ],
+          "http": 429,
+          "kind": "error",
+          "schema_name": "ErrorResponse"
+        },
+        {
+          "content_type": "application/json",
+          "description": "Внутренняя ошибка провайдера",
+          "example": null,
+          "headers": [],
+          "http": 500,
+          "kind": "error",
+          "schema_name": "ErrorResponse"
+        }
+      ],
+      "security": [
+        "ApiKeyAuth"
+      ],
+      "success_codes": [
+        201,
+        409
+      ],
+      "summary": "Создать выплату",
+      "tags": [
+        "Payouts"
+      ]
+    },
+    {
+      "canonical_method": "fetch_status",
+      "classification": {
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'status' -> status (+5)",
+          "structure GET with path id -> status (+3)",
+          "text 'статус' -> status (+1)"
+        ],
+        "scores": {
+          "balance": 0,
+          "cancel": 0,
+          "create": 0,
+          "list": 0,
+          "refund": 0,
+          "status": 9,
+          "webhook": 0
+        },
+        "source": "scoring"
+      },
+      "confidence": 0.9,
+      "description": null,
+      "errors": [
+        {
+          "action": "fatal_block_provider",
+          "canonical": "invalid_credentials",
+          "confidence": 0.95,
+          "description": "Невалидный API-ключ",
+          "evidence": [
+            "example (401): code unauthorized",
+            "errors.yml: unauthorized -> invalid_credentials (fatal_block_provider)"
+          ],
+          "example": {
+            "error": {
+              "code": "unauthorized",
+              "message": "Invalid API key"
+            }
+          },
+          "http": 401,
+          "provider_code": "unauthorized",
+          "retry_after": null,
+          "source": "example"
+        },
+        {
+          "action": "unknown_state",
+          "canonical": "not_found",
+          "confidence": 0.95,
+          "description": "Выплата не найдена",
+          "evidence": [
+            "example (404): code not_found",
+            "errors.yml: not_found -> not_found (unknown_state)"
+          ],
+          "example": {
+            "error": {
+              "code": "not_found",
+              "message": "Payout not found"
+            }
+          },
+          "http": 404,
+          "provider_code": "not_found",
+          "retry_after": null,
+          "source": "example"
+        }
+      ],
+      "idempotency": null,
+      "idempotent_duplicate_codes": [],
+      "in_contract": true,
+      "kind": "status",
+      "method": "GET",
+      "operation_id": "getPayoutStatus",
+      "parameters": [
+        {
+          "canonical": "provider_operation_id",
+          "description": null,
+          "enum": null,
+          "example": "np_7f3a9b2c",
+          "format": null,
+          "in": "path",
+          "name": "payout_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/payouts/{payout_id}",
+      "public": false,
+      "request_body": null,
+      "request_fields": [],
+      "request_methods": null,
+      "response_fields": [
+        {
+          "branch": null,
+          "canonical": "provider_operation_id",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: id -> provider_operation_id"
+          ],
+          "example": "np_7f3a9b2c",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "id",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "external_id",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: external_id -> external_id"
+          ],
+          "example": "op_abc123",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "external_id",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "status",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": [
+            "pending",
+            "processing",
+            "completed",
+            "failed",
+            "cancelled"
+          ],
+          "evidence": [
+            "fields.yml: status -> status"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "status",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "amount",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: amount -> amount"
+          ],
+          "example": 1500000,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "amount",
+          "required": false,
+          "source": "dictionary",
+          "type": "integer"
+        },
+        {
+          "branch": null,
+          "canonical": "currency",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: currency -> currency"
+          ],
+          "example": "RUB",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "currency",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: recipient -> requisite"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "recipient",
+          "required": false,
+          "source": "dictionary",
+          "type": "object"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite.type",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": [
+            "sbp",
+            "card"
+          ],
+          "evidence": [
+            "fields.yml: requisite child type -> requisite.type"
+          ],
+          "example": "sbp",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "recipient.type",
+          "required": true,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite.phone",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": "Телефон получателя (11 цифр, начинается с 7)",
+          "enum": null,
+          "evidence": [
+            "fields.yml: requisite child phone -> requisite.phone"
+          ],
+          "example": "79001234567",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": "^7\\d{10}$",
+          "provider_path": "recipient.phone",
+          "required": true,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite.bank_code",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": "БИК банка (обязателен для type=sbp)",
+          "enum": null,
+          "evidence": [
+            "fields.yml: requisite child bank_code -> requisite.bank_code"
+          ],
+          "example": "044525225",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "recipient.bank_code",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite.bank_name",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: requisite child bank_name -> requisite.bank_name"
+          ],
+          "example": "Сбербанк",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "recipient.bank_name",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite.card_number",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": "Номер карты (обязателен для type=card)",
+          "enum": null,
+          "evidence": [
+            "fields.yml: requisite child card_number -> requisite.card_number"
+          ],
+          "example": "4111111111111111",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "recipient.card_number",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "error",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: error -> error"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "error",
+          "required": false,
+          "source": "dictionary",
+          "type": "object"
+        },
+        {
+          "branch": null,
+          "canonical": "error.code",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": [
+            "validation_error",
+            "insufficient_balance",
+            "recipient_not_found",
+            "bank_unavailable",
+            "amount_limit_exceeded",
+            "rate_limit_exceeded",
+            "internal_error"
+          ],
+          "evidence": [
+            "fields.yml: error child code -> error.code"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "error.code",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "error.message",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: error child message -> error.message"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "error.message",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "created_at",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: created_at -> created_at"
+          ],
+          "example": null,
+          "format": "date-time",
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "created_at",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "completed_at",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: completed_at -> completed_at"
+          ],
+          "example": null,
+          "format": "date-time",
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "completed_at",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        }
+      ],
+      "responses": [
+        {
+          "content_type": "application/json",
+          "description": "Статус выплаты",
+          "example": {
+            "amount": 1500000,
+            "currency": "RUB",
+            "external_id": "op_abc123",
+            "id": "np_7f3a9b2c",
+            "recipient": {
+              "bank_code": "044525225",
+              "bank_name": "Сбербанк",
+              "card_number": "4111111111111111",
+              "phone": "79001234567",
+              "type": "sbp"
+            }
+          },
+          "headers": [],
+          "http": 200,
+          "kind": "success",
+          "schema_name": "PayoutResponse"
+        },
+        {
+          "content_type": "application/json",
+          "description": "Невалидный API-ключ",
+          "example": {
+            "error": {
+              "code": "unauthorized",
+              "message": "Invalid API key"
+            }
+          },
+          "headers": [],
+          "http": 401,
+          "kind": "error",
+          "schema_name": "ErrorResponse"
+        },
+        {
+          "content_type": "application/json",
+          "description": "Выплата не найдена",
+          "example": {
+            "error": {
+              "code": "not_found",
+              "message": "Payout not found"
+            }
+          },
+          "headers": [],
+          "http": 404,
+          "kind": "error",
+          "schema_name": "ErrorResponse"
+        }
+      ],
+      "security": [
+        "ApiKeyAuth"
+      ],
+      "success_codes": [
+        200
+      ],
+      "summary": "Получить статус выплаты",
+      "tags": [
+        "Payouts"
+      ]
+    },
+    {
+      "canonical_method": "cancel_request",
+      "classification": {
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'cancel' -> cancel (+5)",
+          "path token 'cancel' -> cancel (+3)",
+          "text 'отменить' -> cancel (+1)"
+        ],
+        "scores": {
+          "balance": 0,
+          "cancel": 9,
+          "create": 0,
+          "list": 0,
+          "refund": 0,
+          "status": 0,
+          "webhook": 0
+        },
+        "source": "scoring"
+      },
+      "confidence": 0.9,
+      "description": "Отмена возможна только в статусах pending и processing",
+      "errors": [
+        {
+          "action": "conflict",
+          "canonical": "conflict",
+          "confidence": 0.95,
+          "description": "Невозможно отменить в текущем статусе",
+          "evidence": [
+            "example (409): code invalid_status",
+            "errors.yml: invalid_status -> conflict (conflict)"
+          ],
+          "example": {
+            "error": {
+              "code": "invalid_status",
+              "message": "Cannot cancel payout in status completed"
+            }
+          },
+          "http": 409,
+          "provider_code": "invalid_status",
+          "retry_after": null,
+          "source": "example"
+        }
+      ],
+      "idempotency": null,
+      "idempotent_duplicate_codes": [],
+      "in_contract": false,
+      "kind": "cancel",
+      "method": "POST",
+      "operation_id": "cancelPayout",
+      "parameters": [
+        {
+          "canonical": "provider_operation_id",
+          "description": null,
+          "enum": null,
+          "example": null,
+          "format": null,
+          "in": "path",
+          "name": "payout_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/payouts/{payout_id}/cancel",
+      "public": false,
+      "request_body": null,
+      "request_fields": [],
+      "request_methods": null,
+      "response_fields": [
+        {
+          "branch": null,
+          "canonical": "provider_operation_id",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: id -> provider_operation_id"
+          ],
+          "example": "np_7f3a9b2c",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "id",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "external_id",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: external_id -> external_id"
+          ],
+          "example": "op_abc123",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "external_id",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "status",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": [
+            "pending",
+            "processing",
+            "completed",
+            "failed",
+            "cancelled"
+          ],
+          "evidence": [
+            "fields.yml: status -> status"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "status",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "amount",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: amount -> amount"
+          ],
+          "example": 1500000,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "amount",
+          "required": false,
+          "source": "dictionary",
+          "type": "integer"
+        },
+        {
+          "branch": null,
+          "canonical": "currency",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: currency -> currency"
+          ],
+          "example": "RUB",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "currency",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: recipient -> requisite"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "recipient",
+          "required": false,
+          "source": "dictionary",
+          "type": "object"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite.type",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": [
+            "sbp",
+            "card"
+          ],
+          "evidence": [
+            "fields.yml: requisite child type -> requisite.type"
+          ],
+          "example": "sbp",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "recipient.type",
+          "required": true,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite.phone",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": "Телефон получателя (11 цифр, начинается с 7)",
+          "enum": null,
+          "evidence": [
+            "fields.yml: requisite child phone -> requisite.phone"
+          ],
+          "example": "79001234567",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": "^7\\d{10}$",
+          "provider_path": "recipient.phone",
+          "required": true,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite.bank_code",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": "БИК банка (обязателен для type=sbp)",
+          "enum": null,
+          "evidence": [
+            "fields.yml: requisite child bank_code -> requisite.bank_code"
+          ],
+          "example": "044525225",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "recipient.bank_code",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite.bank_name",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: requisite child bank_name -> requisite.bank_name"
+          ],
+          "example": "Сбербанк",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "recipient.bank_name",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "requisite.card_number",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": "Номер карты (обязателен для type=card)",
+          "enum": null,
+          "evidence": [
+            "fields.yml: requisite child card_number -> requisite.card_number"
+          ],
+          "example": "4111111111111111",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "recipient.card_number",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "error",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: error -> error"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "error",
+          "required": false,
+          "source": "dictionary",
+          "type": "object"
+        },
+        {
+          "branch": null,
+          "canonical": "error.code",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": [
+            "validation_error",
+            "insufficient_balance",
+            "recipient_not_found",
+            "bank_unavailable",
+            "amount_limit_exceeded",
+            "rate_limit_exceeded",
+            "internal_error"
+          ],
+          "evidence": [
+            "fields.yml: error child code -> error.code"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "error.code",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "error.message",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: error child message -> error.message"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "error.message",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "created_at",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: created_at -> created_at"
+          ],
+          "example": null,
+          "format": "date-time",
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "created_at",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "completed_at",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: completed_at -> completed_at"
+          ],
+          "example": null,
+          "format": "date-time",
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "completed_at",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        }
+      ],
+      "responses": [
+        {
+          "content_type": "application/json",
+          "description": "Выплата отменена",
+          "example": {
+            "amount": 1500000,
+            "currency": "RUB",
+            "external_id": "op_abc123",
+            "id": "np_7f3a9b2c",
+            "recipient": {
+              "bank_code": "044525225",
+              "bank_name": "Сбербанк",
+              "card_number": "4111111111111111",
+              "phone": "79001234567",
+              "type": "sbp"
+            }
+          },
+          "headers": [],
+          "http": 200,
+          "kind": "success",
+          "schema_name": "PayoutResponse"
+        },
+        {
+          "content_type": "application/json",
+          "description": "Невозможно отменить в текущем статусе",
+          "example": {
+            "error": {
+              "code": "invalid_status",
+              "message": "Cannot cancel payout in status completed"
+            }
+          },
+          "headers": [],
+          "http": 409,
+          "kind": "error",
+          "schema_name": "ErrorResponse"
+        }
+      ],
+      "security": [
+        "ApiKeyAuth"
+      ],
+      "success_codes": [
+        200
+      ],
+      "summary": "Отменить выплату",
+      "tags": [
+        "Payouts"
+      ]
+    },
+    {
+      "canonical_method": "process_callback",
+      "classification": {
+        "confidence": 0.92,
+        "evidence": [
+          "operationId token 'webhook' -> webhook (+5)",
+          "path token 'webhooks' -> webhook (+3)",
+          "tag 'Webhooks' -> webhook (+2)",
+          "text 'webhook' -> webhook (+1)"
+        ],
+        "scores": {
+          "balance": 0,
+          "cancel": 0,
+          "create": 0,
+          "list": 0,
+          "refund": 0,
+          "status": 0,
+          "webhook": 11
+        },
+        "source": "scoring"
+      },
+      "confidence": 0.92,
+      "description": "NovaPay отправляет POST-запрос на URL, указанный при регистрации.\nПодпись передаётся в заголовке X-NovaPay-Signature (HMAC-SHA256).",
+      "errors": [],
+      "idempotency": null,
+      "idempotent_duplicate_codes": [],
+      "in_contract": true,
+      "kind": "webhook",
+      "method": "POST",
+      "operation_id": "payoutWebhook",
+      "parameters": [
+        {
+          "canonical": "signature",
+          "description": "HMAC-SHA256 подпись тела запроса",
+          "enum": null,
+          "example": null,
+          "format": null,
+          "in": "header",
+          "name": "X-NovaPay-Signature",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/webhooks/payout",
+      "public": true,
+      "request_body": {
+        "content_type": "application/json",
+        "example": {
+          "completed_at": "2026-07-30T10:05:00Z",
+          "event": "payout.completed",
+          "external_id": "op_abc123",
+          "payout_id": "np_7f3a9b2c",
+          "status": "completed"
+        },
+        "examples": {
+          "completed": {
+            "completed_at": "2026-07-30T10:05:00Z",
+            "event": "payout.completed",
+            "external_id": "op_abc123",
+            "payout_id": "np_7f3a9b2c",
+            "status": "completed"
+          },
+          "failed": {
+            "error": {
+              "code": "recipient_not_found",
+              "message": "Recipient account not found"
+            },
+            "event": "payout.failed",
+            "external_id": "op_abc123",
+            "payout_id": "np_7f3a9b2c",
+            "status": "failed"
+          }
+        },
+        "required": true,
+        "schema_name": "WebhookPayload"
+      },
+      "request_fields": [
+        {
+          "branch": null,
+          "canonical": "event",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": [
+            "payout.completed",
+            "payout.failed",
+            "payout.processing",
+            "payout.cancelled"
+          ],
+          "evidence": [
+            "fields.yml: event -> event"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "event",
+          "required": true,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "provider_operation_id",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: payout_id -> provider_operation_id"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "payout_id",
+          "required": true,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "external_id",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: external_id -> external_id"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "external_id",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "status",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": [
+            "pending",
+            "processing",
+            "completed",
+            "failed",
+            "cancelled"
+          ],
+          "evidence": [
+            "fields.yml: status -> status"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "status",
+          "required": true,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "completed_at",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: completed_at -> completed_at"
+          ],
+          "example": null,
+          "format": "date-time",
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "completed_at",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "error",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: error -> error"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "error",
+          "required": false,
+          "source": "dictionary",
+          "type": "object"
+        },
+        {
+          "branch": null,
+          "canonical": "error.code",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": [
+            "validation_error",
+            "insufficient_balance",
+            "recipient_not_found",
+            "bank_unavailable",
+            "amount_limit_exceeded",
+            "rate_limit_exceeded",
+            "internal_error"
+          ],
+          "evidence": [
+            "fields.yml: error child code -> error.code"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "error.code",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "error.message",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: error child message -> error.message"
+          ],
+          "example": null,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "error.message",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        }
+      ],
+      "request_methods": null,
+      "response_fields": [
+        {
+          "branch": null,
+          "canonical": null,
+          "conditional_required": null,
+          "confidence": 0.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [],
+          "example": true,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "received",
+          "required": false,
+          "source": "none",
+          "type": "boolean"
+        }
+      ],
+      "responses": [
+        {
+          "content_type": "application/json",
+          "description": "Webhook принят",
+          "example": {
+            "received": true
+          },
+          "headers": [],
+          "http": 200,
+          "kind": "success",
+          "schema_name": null
+        }
+      ],
+      "security": [],
+      "success_codes": [
+        200
+      ],
+      "summary": "Webhook уведомление о смене статуса",
+      "tags": [
+        "Webhooks"
+      ]
+    },
+    {
+      "canonical_method": "fetch_balance",
+      "classification": {
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'balance' -> balance (+5)",
+          "path token 'balance' -> balance (+3)",
+          "text 'баланс' -> balance (+1)"
+        ],
+        "scores": {
+          "balance": 9,
+          "cancel": 0,
+          "create": 0,
+          "list": 0,
+          "refund": 0,
+          "status": 0,
+          "webhook": 0
+        },
+        "source": "scoring"
+      },
+      "confidence": 0.9,
+      "description": null,
+      "errors": [],
+      "idempotency": null,
+      "idempotent_duplicate_codes": [],
+      "in_contract": false,
+      "kind": "balance",
+      "method": "GET",
+      "operation_id": "getBalance",
+      "parameters": [],
+      "path": "/balance",
+      "public": false,
+      "request_body": null,
+      "request_fields": [],
+      "request_methods": null,
+      "response_fields": [
+        {
+          "branch": null,
+          "canonical": "balance",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": "Баланс в копейках",
+          "enum": null,
+          "evidence": [
+            "fields.yml: balance -> balance"
+          ],
+          "example": 500000000,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "balance",
+          "required": false,
+          "source": "dictionary",
+          "type": "integer"
+        },
+        {
+          "branch": null,
+          "canonical": "currency",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": null,
+          "enum": null,
+          "evidence": [
+            "fields.yml: currency -> currency"
+          ],
+          "example": "RUB",
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "currency",
+          "required": false,
+          "source": "dictionary",
+          "type": "string"
+        },
+        {
+          "branch": null,
+          "canonical": "hold",
+          "conditional_required": null,
+          "confidence": 1.0,
+          "constant": null,
+          "conversion": null,
+          "default": null,
+          "description": "Замороженная сумма",
+          "enum": null,
+          "evidence": [
+            "fields.yml: hold -> hold"
+          ],
+          "example": 15000000,
+          "format": null,
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "nullable": false,
+          "pattern": null,
+          "provider_path": "hold",
+          "required": false,
+          "source": "dictionary",
+          "type": "integer"
+        }
+      ],
+      "responses": [
+        {
+          "content_type": "application/json",
+          "description": "Текущий баланс",
+          "example": {
+            "balance": 500000000,
+            "currency": "RUB",
+            "hold": 15000000
+          },
+          "headers": [],
+          "http": 200,
+          "kind": "success",
+          "schema_name": null
+        }
+      ],
+      "security": [
+        "ApiKeyAuth"
+      ],
+      "success_codes": [
+        200
+      ],
+      "summary": "Баланс провайдера",
+      "tags": [
+        "Payouts"
+      ]
+    }
+  ],
+  "overrides_applied": [],
+  "provider": {
+    "description": "Mock API платёжного провайдера NovaPay для хакатона Space Payments.\nПоддерживает создание выплат через СБП, проверку статуса и webhook-уведомления.",
+    "slug": "novapay",
+    "title": "NovaPay Payout API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "description": "Sandbox",
+      "environment": "sandbox",
+      "url": "https://api.sandbox.novapay.example/v1"
+    },
+    {
+      "description": "Production",
+      "environment": "production",
+      "url": "https://api.novapay.example/v1"
+    }
+  ],
+  "spec_format": {
+    "converted_from": null,
+    "openapi": "3.0.3"
+  },
+  "statuses": [
+    {
+      "canonical": "in_progress",
+      "confidence": 0.95,
+      "evidence": [
+        "statuses.yml: pending -> in_progress"
+      ],
+      "provider": "pending",
+      "source": "dictionary"
+    },
+    {
+      "canonical": "in_progress",
+      "confidence": 0.95,
+      "evidence": [
+        "statuses.yml: processing -> in_progress"
+      ],
+      "provider": "processing",
+      "source": "dictionary"
+    },
+    {
+      "canonical": "approved",
+      "confidence": 0.95,
+      "evidence": [
+        "statuses.yml: completed -> approved"
+      ],
+      "provider": "completed",
+      "source": "dictionary"
+    },
+    {
+      "canonical": "rejected",
+      "confidence": 0.95,
+      "evidence": [
+        "statuses.yml: failed -> rejected"
+      ],
+      "provider": "failed",
+      "source": "dictionary"
+    },
+    {
+      "canonical": "rejected",
+      "confidence": 0.95,
+      "evidence": [
+        "statuses.yml: cancelled -> rejected"
+      ],
+      "provider": "cancelled",
+      "source": "dictionary"
+    }
+  ],
+  "webhook": {
+    "confidence": 0.92,
+    "error_code_path": "error.code",
+    "error_message_path": "error.message",
+    "event_field": "event",
+    "events": [
+      {
+        "canonical_status": "approved",
+        "confidence": 0.95,
+        "source": "dictionary",
+        "value": "payout.completed"
+      },
+      {
+        "canonical_status": "rejected",
+        "confidence": 0.95,
+        "source": "dictionary",
+        "value": "payout.failed"
+      },
+      {
+        "canonical_status": "in_progress",
+        "confidence": 0.95,
+        "source": "dictionary",
+        "value": "payout.processing"
+      },
+      {
+        "canonical_status": "rejected",
+        "confidence": 0.95,
+        "source": "dictionary",
+        "value": "payout.cancelled"
+      }
+    ],
+    "evidence": [
+      "operationId token 'webhook' -> webhook (+5)",
+      "path token 'webhooks' -> webhook (+3)",
+      "tag 'Webhooks' -> webhook (+2)",
+      "text 'webhook' -> webhook (+1)"
+    ],
+    "examples": {
+      "completed": {
+        "completed_at": "2026-07-30T10:05:00Z",
+        "event": "payout.completed",
+        "external_id": "op_abc123",
+        "payout_id": "np_7f3a9b2c",
+        "status": "completed"
+      },
+      "failed": {
+        "error": {
+          "code": "recipient_not_found",
+          "message": "Recipient account not found"
+        },
+        "event": "payout.failed",
+        "external_id": "op_abc123",
+        "payout_id": "np_7f3a9b2c",
+        "status": "failed"
+      }
+    },
+    "external_id_field": "external_id",
+    "id_field": "payout_id",
+    "method": "POST",
+    "operation_id": "payoutWebhook",
+    "path": "/webhooks/payout",
+    "payload_fields": [
+      {
+        "branch": null,
+        "canonical": "event",
+        "conditional_required": null,
+        "confidence": 1.0,
+        "constant": null,
+        "conversion": null,
+        "default": null,
+        "description": null,
+        "enum": [
+          "payout.completed",
+          "payout.failed",
+          "payout.processing",
+          "payout.cancelled"
+        ],
+        "evidence": [
+          "fields.yml: event -> event"
+        ],
+        "example": null,
+        "format": null,
+        "max_length": null,
+        "maximum": null,
+        "min_length": null,
+        "minimum": null,
+        "nullable": false,
+        "pattern": null,
+        "provider_path": "event",
+        "required": true,
+        "source": "dictionary",
+        "type": "string"
+      },
+      {
+        "branch": null,
+        "canonical": "provider_operation_id",
+        "conditional_required": null,
+        "confidence": 1.0,
+        "constant": null,
+        "conversion": null,
+        "default": null,
+        "description": null,
+        "enum": null,
+        "evidence": [
+          "fields.yml: payout_id -> provider_operation_id"
+        ],
+        "example": null,
+        "format": null,
+        "max_length": null,
+        "maximum": null,
+        "min_length": null,
+        "minimum": null,
+        "nullable": false,
+        "pattern": null,
+        "provider_path": "payout_id",
+        "required": true,
+        "source": "dictionary",
+        "type": "string"
+      },
+      {
+        "branch": null,
+        "canonical": "external_id",
+        "conditional_required": null,
+        "confidence": 1.0,
+        "constant": null,
+        "conversion": null,
+        "default": null,
+        "description": null,
+        "enum": null,
+        "evidence": [
+          "fields.yml: external_id -> external_id"
+        ],
+        "example": null,
+        "format": null,
+        "max_length": null,
+        "maximum": null,
+        "min_length": null,
+        "minimum": null,
+        "nullable": false,
+        "pattern": null,
+        "provider_path": "external_id",
+        "required": false,
+        "source": "dictionary",
+        "type": "string"
+      },
+      {
+        "branch": null,
+        "canonical": "status",
+        "conditional_required": null,
+        "confidence": 1.0,
+        "constant": null,
+        "conversion": null,
+        "default": null,
+        "description": null,
+        "enum": [
+          "pending",
+          "processing",
+          "completed",
+          "failed",
+          "cancelled"
+        ],
+        "evidence": [
+          "fields.yml: status -> status"
+        ],
+        "example": null,
+        "format": null,
+        "max_length": null,
+        "maximum": null,
+        "min_length": null,
+        "minimum": null,
+        "nullable": false,
+        "pattern": null,
+        "provider_path": "status",
+        "required": true,
+        "source": "dictionary",
+        "type": "string"
+      },
+      {
+        "branch": null,
+        "canonical": "completed_at",
+        "conditional_required": null,
+        "confidence": 1.0,
+        "constant": null,
+        "conversion": null,
+        "default": null,
+        "description": null,
+        "enum": null,
+        "evidence": [
+          "fields.yml: completed_at -> completed_at"
+        ],
+        "example": null,
+        "format": "date-time",
+        "max_length": null,
+        "maximum": null,
+        "min_length": null,
+        "minimum": null,
+        "nullable": false,
+        "pattern": null,
+        "provider_path": "completed_at",
+        "required": false,
+        "source": "dictionary",
+        "type": "string"
+      },
+      {
+        "branch": null,
+        "canonical": "error",
+        "conditional_required": null,
+        "confidence": 1.0,
+        "constant": null,
+        "conversion": null,
+        "default": null,
+        "description": null,
+        "enum": null,
+        "evidence": [
+          "fields.yml: error -> error"
+        ],
+        "example": null,
+        "format": null,
+        "max_length": null,
+        "maximum": null,
+        "min_length": null,
+        "minimum": null,
+        "nullable": false,
+        "pattern": null,
+        "provider_path": "error",
+        "required": false,
+        "source": "dictionary",
+        "type": "object"
+      },
+      {
+        "branch": null,
+        "canonical": "error.code",
+        "conditional_required": null,
+        "confidence": 1.0,
+        "constant": null,
+        "conversion": null,
+        "default": null,
+        "description": null,
+        "enum": [
+          "validation_error",
+          "insufficient_balance",
+          "recipient_not_found",
+          "bank_unavailable",
+          "amount_limit_exceeded",
+          "rate_limit_exceeded",
+          "internal_error"
+        ],
+        "evidence": [
+          "fields.yml: error child code -> error.code"
+        ],
+        "example": null,
+        "format": null,
+        "max_length": null,
+        "maximum": null,
+        "min_length": null,
+        "minimum": null,
+        "nullable": false,
+        "pattern": null,
+        "provider_path": "error.code",
+        "required": false,
+        "source": "dictionary",
+        "type": "string"
+      },
+      {
+        "branch": null,
+        "canonical": "error.message",
+        "conditional_required": null,
+        "confidence": 1.0,
+        "constant": null,
+        "conversion": null,
+        "default": null,
+        "description": null,
+        "enum": null,
+        "evidence": [
+          "fields.yml: error child message -> error.message"
+        ],
+        "example": null,
+        "format": null,
+        "max_length": null,
+        "maximum": null,
+        "min_length": null,
+        "minimum": null,
+        "nullable": false,
+        "pattern": null,
+        "provider_path": "error.message",
+        "required": false,
+        "source": "dictionary",
+        "type": "string"
+      }
+    ],
+    "response": {
+      "example": {
+        "received": true
+      },
+      "http": 200
+    },
+    "signature": {
+      "algorithm": "hmac-sha256",
+      "confidence": 0.9,
+      "encoding": "unknown",
+      "evidence": [
+        "parameter X-NovaPay-Signature (header): HMAC-SHA256 подпись тела запроса",
+        "operation description: Подпись передаётся в заголовке X-NovaPay-Signature (HMAC-SHA256)"
+      ],
+      "location": "header",
+      "message": "raw_body",
+      "name": "X-NovaPay-Signature",
+      "secret": "callback_secret",
+      "source": "parameter"
+    },
+    "source": "path_heuristic",
+    "status_field": "status",
+    "summary": "Webhook уведомление о смене статуса"
+  }
+}

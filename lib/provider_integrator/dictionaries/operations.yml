@@ -1,0 +1,108 @@
+# Классификация операций OpenAPI по ролям контракта (PLAN §5, правила — docs/IR_CONTRACT.md §2.1).
+# Взвешенный скоринг по источникам: operationId, путь/HTTP-форма, тег, summary/description. Синонимы —
+# основы слов (stems), сравнение префиксное по токенам в нижнем регистре (creat ~ create/created/creating;
+# "созда" ~ создать/создаёт). exclude_tokens — точные токены, которые НЕ считаются совпадением основы
+# (statement ≠ state). Текст (summary/description) только подтверждает kind, у которого уже есть балл от
+# operationId/пути/тега; слабые синонимы operationId считаются только вместе со структурным/путевым сигналом
+# того же kind и только если ни у одного kind не совпала сильная основа.
+version: 1
+
+kinds: [create, status, cancel, balance, webhook, refund, list]
+in_contract: [create, status, webhook]
+
+weights:
+  operation_id_strong: 5
+  operation_id_weak: 2
+  path: 3                  # основа в сегменте пути ИЛИ структурное правило (одно из двух, не оба)
+  tag: 2
+  text: 1                  # summary или description, один раз на kind, только как подтверждение
+
+# confidence = (best - second) / (best + 1); ниже unknown_below -> kind unknown + W101;
+# ниже low_confidence_below -> kind сохраняется, но W101. Kind, у которого единственный сигнал —
+# структурное правило, ограничен structural_only_cap (-> W101): форма запроса без имени — слабое доказательство.
+thresholds:
+  unknown_below: 0.3
+  low_confidence_below: 0.6
+  structural_only_cap: 0.5
+
+# Явное указание роли в спеке имеет приоритет над скорингом (confidence 1.0, source extension).
+extension_key: x-space-payments-operation
+
+synonyms:
+  create:
+    strong: [creat, init, submit, place, start, make, execut, perform, checkout, "созда", "иниц", "оформ", "отправ", "провест"]
+    # Доменные существительные: считаются только при структурном сигнале create (POST с телом без {id}).
+    weak: [payout, payment, pay, transfer, withdraw, disburs, deposit, send, order, invoice]
+    path: []
+    text: [creat, new, init, submit, checkout, "созда", "иниц", "новая", "новую", "оформ"]
+    exclude_tokens: [issuer, issuers]
+  status:
+    strong: [status, state]
+    weak: [get, fetch, retriev, check, show, lookup, find, info, query, read]
+    path: [status, state, info]
+    text: [status, state, "статус", "состоян"]
+    exclude_tokens: [statement, statements]
+  cancel:
+    strong: [cancel, void, revoke, abort, delet, remov]
+    weak: []
+    path: [cancel, void, revoke, abort]
+    text: [cancel, void, revoke, delet, "отмен", "аннул", "удал"]
+  balance:
+    strong: [balance]
+    weak: [funds]
+    path: [balance, funds]
+    text: [balance, funds, "баланс", "остат", "средств"]
+  webhook:
+    strong: [webhook, callback, notif, ipn, hook]
+    weak: [event]
+    path: [webhook, callback, notif, ipn, hook]
+    text: [webhook, callback, notif, "уведомл", "нотиф", "колбэк"]
+    # Операции управления вебхуками (registerWebhook, deleteWebhook) — не входящее уведомление:
+    # при таком токене в operationId kind webhook не получает баллов ни из одного источника.
+    exclude_operation_id_tokens: [register, subscri, unsubscri, creat, delet, updat, list, manag, configur, set]
+  refund:
+    strong: [refund, revers, chargeback]
+    weak: [return]
+    path: [refund, revers, chargeback]
+    text: [refund, revers, chargeback, "возврат", "отзыв"]
+  list:
+    strong: [list, search, histor]
+    weak: [all]
+    path: []
+    text: [list, search, histor, "список", "истори", "поиск"]
+
+# Структурные правила: дают вес path, если ни одна основа пути не совпала для этого kind.
+structural:
+  create:
+    method: post
+    requires_body: true
+    path_has_id: false
+    # POST с телом на путь вебхука/отмены/возврата/авторизации/справочников — не create.
+    excluded_path_stems: [webhook, callback, notif, ipn, hook, cancel, void, revoke, refund, revers, chargeback,
+                          oauth, token, auth, login, session, subscri, status, state, info, balance, funds, list,
+                          search, histor, statement, validat, verif, check, calc, fee, commission, rate, quote]
+  status:
+    method: get
+    path_has_id: true
+  cancel:
+    method: delete
+    path_has_id: true
+  list:
+    method: get
+    path_has_id: false
+    excluded_path_stems: [balance, funds, status, state, info, webhook, callback, notif, rate, fee, commission,
+                          quote, health, ping, oauth, token, auth, statement]
+
+# Направление денежного потока (для ProviderGateway config, IR_CONTRACT §2.10): ищется в operationId,
+# пути, тегах create-операции (основные источники), затем в summary, description и info.title (−0.3 к уверенности).
+direction:
+  withdraw: [payout, withdraw, transfer, disburs, "выплат", "вывод", "перевод", "выдач"]
+  deposit: [deposit, payin, topup, acquir, checkout, accept, collect, incoming, receiv, invoice, purchase,
+            "депозит", "пополн", "внес", "приём", "прием", "приним", "зачисл", "эквайр"]
+  default: withdraw
+
+# Path-параметры: последний токен snake_case-имени из id_stems -> provider_operation_id, кроме имён с токеном
+# из not_provider_id_stems (идентификаторы мерчанта/клиента) и синонимов external_id из fields.yml.
+path_parameters:
+  id_stems: [id, uuid, number]
+  not_provider_id_stems: [merchant, account, customer, shop, terminal, client, user, project]

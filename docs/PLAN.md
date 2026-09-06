@@ -159,7 +159,11 @@ g.success?  g.files  # [{path:, sha256:}]   g.events
 | I301 | info | Зафиксирована конвенция подписи вебхука (критичный вывод — сообщается всегда) |
 | I401 | info | Зафиксированы единицы суммы с перечислением сигналов (критичный вывод — сообщается всегда) |
 | I402 | info | Зафиксирована условная обязательность, выведенная структурно (discriminator/if-then/override) |
+| I403 | info | Зафиксирован ProviderGateway config с evidence (видимый вывод — сообщается всегда) |
 | I601 | info | Применён override из `overrides.yml` |
+| W106 | warning | Не найдена status-операция — `fetch_status` сгенерирован заглушкой |
+| W204 | warning | Числовой статус без описания сопоставлен по конвенции `statuses.yml → numeric` — подтвердить у провайдера |
+| W405 | warning | Направление операции (withdraw/deposit) не найдено в спеке — принято значение по умолчанию для ProviderGateway config |
 
 Уровни: `error` — результат невозможен; `warning` — результат есть, нужна проверка; `info` — дополнительно найдено. В `--strict` warnings → exit 4.
 
@@ -172,7 +176,7 @@ g.success?  g.files  # [{path:, sha256:}]   g.events
 **`dictionaries/canonical_contract.yml`** (всё, что невыводимо из спеки, реконструировано по эталону ТЗ):
 
 ```yaml
-methods: [check_conditions, create_request, fetch_status, process_callback]
+methods: [create_request, fetch_status, process_callback, check_conditions]   # порядок эталона ТЗ
 statuses: [in_progress, approved, rejected]
 error_codes: [validation_error, invalid_credentials, insufficient_balance, rate_limit, internal_error, not_found]
 helpers:
@@ -212,7 +216,7 @@ gateway_config: { external_method: "<method>_payout", gateway: "<CUR>_<METHOD>_W
 **Overrides — общий механизм, не хардкод.** Эксперты подтвердили: файл переопределений не считается привязкой к провайдеру, если это механизм с фиксированными ключами. Схема `overrides.yml` (валидируется json_schemer, ключи общие для всех провайдеров):
 
 ```yaml
-operations:            { createPayout: create, getBalance: extra }         # kind операции
+operations:            { createPayout: create, getBalance: balance }      # kind операции (unknown → доп. метод)
 amount_unit:           { "CreatePayoutRequest.amount": minor }              # minor|major
 required_if:           [{ field: recipient.bank_code, when: recipient.type, equals: sbp }]
 signature:             { header: X-NovaPay-Signature, algorithm: hmac-sha256, encoding: hex, message: raw_body }

@@ -1,0 +1,130 @@
+# Канон Space Payments, реконструированный по эталону из docs/TZ.md и ответам экспертов (docs/PLAN.md §4).
+# Единственное место, где живут имена платформенной стороны: методы BaseService, статусы, коды ошибок,
+# хелперы, доступ к полям Operation, credentials, шаблоны ProviderGateway. Шаблоны получают эти значения
+# через TemplateData и никогда не хардкодят их. Допущения перечислены в docs/ASSUMPTIONS.md.
+version: 1
+
+base_service:
+  class_name: Provider::BaseService
+  # Порядок = порядок методов в сгенерированном сервисе (как в эталоне ТЗ).
+  methods: [create_request, fetch_status, process_callback, check_conditions]
+  signatures:
+    create_request: "create_request(operation, request_method = %{default_request_method})"
+    fetch_status: "fetch_status(operation)"
+    process_callback: "process_callback(payload)"
+    check_conditions: "check_conditions(operation, request_method)"
+
+# kind операции -> метод контракта, который она реализует.
+contract_roles:
+  create: create_request
+  status: fetch_status
+  webhook: process_callback
+
+# Публичные методы вне контракта по kind (PLAN §4, допущение 5). unknown и вторые кандидаты контрактных
+# kind -> имя из operationId.
+extra_methods:
+  cancel: cancel_request
+  balance: fetch_balance
+  refund: refund_request
+  list: list_requests
+
+statuses: [in_progress, approved, rejected]
+default_status: in_progress
+
+# Канонический код ошибки провайдера -> символ первого аргумента failure и i18n-ключ второго (допущение 3).
+error_codes:
+  validation_error:     { failure: unprocessable_entity, i18n: provider.validation_error }
+  invalid_credentials:  { failure: unauthorized,         i18n: provider.invalid_credentials }
+  insufficient_balance: { failure: provider_error,       i18n: provider.insufficient_balance }
+  rate_limit:           { failure: too_many_requests,    i18n: provider.rate_limit }
+  internal_error:       { failure: provider_error,       i18n: provider.internal_error }
+  not_found:            { failure: provider_error,       i18n: provider.not_found }
+  conflict:             { failure: unprocessable_entity, i18n: provider.conflict }
+
+# Коды, которые сгенерированный сервис возвращает сам (эталон: failure(:unprocessable_entity, 'unknown_event')).
+service_codes:
+  unknown_event:              { failure: unprocessable_entity, i18n: unknown_event }
+  amount_too_low:             { failure: unprocessable_entity, i18n: amount_too_low }
+  amount_too_high:            { failure: unprocessable_entity, i18n: amount_too_high }
+  missing_requisite:          { failure: unprocessable_entity, i18n: missing_requisite }
+  unsupported_request_method: { failure: unprocessable_entity, i18n: unsupported_request_method }
+  invalid_signature:          { failure: unauthorized,         i18n: invalid_signature }
+  unexpected_response:        { failure: provider_error,       i18n: provider.unexpected_response }
+
+# Действие платформы по ошибке -> подпись в INTEGRATION.md (формулировки эталона ТЗ) и семантика ретрая.
+actions:
+  terminal_reject:      { label: "reject",                             retry: false }
+  fatal_block_provider: { label: "alert ops, block provider",          retry: false }
+  retry_later:          { label: "retry later",                        retry: true }
+  retry_with_backoff:   { label: "retry with backoff",                 retry: true }
+  retry_alert_ops:      { label: "retry, alert ops",                   retry: true }
+  unknown_state:        { label: "check status, do not retry blindly", retry: false }
+  idempotent_success:   { label: "treat as success (duplicate)",       retry: false }
+  conflict:             { label: "reject, check status",               retry: false }
+
+# Хелперы BaseService, видимые в эталоне; генератор использует ровно эти имена.
+helpers:
+  client:
+    post: "client.post(url, json:, headers:)"
+    post_form: "client.post(url, form:, headers:)"   # допущение: form-urlencoded тела (Swagger 2.0 провайдеры)
+    get: "client.get(url, headers:)"
+    response: [status, body, headers]
+    # media type тела запроса -> именованный аргумент client.post
+    content_types:
+      application/json: json
+      application/x-www-form-urlencoded: form
+  result:
+    success: success
+    failure: failure
+    failed_predicate: failed?
+  callbacks:
+    approve: approve_operation
+    reject: reject_operation
+  exceptions:
+    rate_limit: Provider::RateLimitError
+    invalid_credentials: Provider::UnauthorizedError
+  # Общий для всех провайдеров хеш секретов платформы.
+  credentials: credentials
+
+# Объект Operation платформы, каким его видит сгенерированный сервис (допущение 1). amount — в major units.
+operation:
+  amount_unit: major
+  accessors:
+    external_id: operation.id
+    amount: operation.amount
+    currency: operation.currency
+    provider_operation_id: operation.provider_operation_id
+    requisite: operation.payout_requisite
+  # Реквизиты — один хеш с ключом по способу выплаты: operation.payout_requisite.dig('sbp', 'phone').
+  requisite_access: "operation.payout_requisite.dig(%{method}, %{field})"
+
+# Ключи credentials по типу авторизации, для подписи вебхука и для идентификатора мерчанта в теле запроса.
+credentials:
+  api_key: [api_key]
+  http_bearer: [token]
+  http_basic: [login, password]
+  oauth2_client_credentials: [client_id, client_secret]
+  oauth2: [client_id, client_secret]
+  callback_secret: callback_secret
+  merchant_account: merchant_id
+
+env:
+  base_url: "%{SLUG}_BASE_URL"
+
+# ProviderGateway config по направлению операции (эталон: sbp_payout / RUB_SBP_WITHDRAW).
+gateway_config:
+  withdraw: { external_method: "%{method}_payout",  gateway: "%{CURRENCY}_%{METHOD}_WITHDRAW" }
+  deposit:  { external_method: "%{method}_deposit", gateway: "%{CURRENCY}_%{METHOD}_DEPOSIT" }
+
+# Конвенция payload для process_callback (подтверждено экспертами: payload — уже разобранный JSON).
+callback_payload:
+  raw_body_key: raw_body
+  headers_key: headers
+  body_key: body
+
+# Дефолты подписи вебхука, применяемые, когда спека молчит (всегда с W301 + I301).
+signature_defaults:
+  algorithm: hmac-sha256
+  encoding: hex
+  message: raw_body
+  secret: callback_secret

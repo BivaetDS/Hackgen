@@ -1,0 +1,321 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://provider-integrator.local/schemas/canonical_contract.schema.json",
+  "title": "canonical_contract.yml",
+  "description": "Space Payments canon: BaseService methods, statuses, error and service codes with actions, helpers, credentials and gateway templates.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version", "base_service", "contract_roles", "extra_methods", "statuses", "default_status", "error_codes",
+    "service_codes", "actions", "helpers", "operation", "credentials", "env", "gateway_config", "callback_payload",
+    "signature_defaults"
+  ],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "base_service": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["class_name", "methods", "signatures"],
+      "properties": {
+        "class_name": { "$ref": "#/$defs/rubyConstant" },
+        "methods": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/contractMethod" }
+        },
+        "signatures": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["create_request", "fetch_status", "process_callback", "check_conditions"],
+          "properties": {
+            "create_request": { "$ref": "#/$defs/nonEmptyString" },
+            "fetch_status": { "$ref": "#/$defs/nonEmptyString" },
+            "process_callback": { "$ref": "#/$defs/nonEmptyString" },
+            "check_conditions": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        }
+      }
+    },
+    "contract_roles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["create", "status", "webhook"],
+      "properties": {
+        "create": { "$ref": "#/$defs/contractMethod" },
+        "status": { "$ref": "#/$defs/contractMethod" },
+        "webhook": { "$ref": "#/$defs/contractMethod" }
+      }
+    },
+    "extra_methods": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cancel", "balance", "refund", "list"],
+      "properties": {
+        "cancel": { "$ref": "#/$defs/rubyMethodName" },
+        "balance": { "$ref": "#/$defs/rubyMethodName" },
+        "refund": { "$ref": "#/$defs/rubyMethodName" },
+        "list": { "$ref": "#/$defs/rubyMethodName" }
+      }
+    },
+    "statuses": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/canonicalStatus" }
+    },
+    "default_status": { "$ref": "#/$defs/canonicalStatus" },
+    "error_codes": {
+      "description": "Canonical provider error code -> failure symbol and i18n key; the key set is the canonicalErrorCode enum of the IR.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "validation_error", "invalid_credentials", "insufficient_balance", "rate_limit", "internal_error", "not_found",
+        "conflict"
+      ],
+      "properties": {
+        "validation_error": { "$ref": "#/$defs/errorCode" },
+        "invalid_credentials": { "$ref": "#/$defs/errorCode" },
+        "insufficient_balance": { "$ref": "#/$defs/errorCode" },
+        "rate_limit": { "$ref": "#/$defs/errorCode" },
+        "internal_error": { "$ref": "#/$defs/errorCode" },
+        "not_found": { "$ref": "#/$defs/errorCode" },
+        "conflict": { "$ref": "#/$defs/errorCode" }
+      }
+    },
+    "service_codes": {
+      "description": "Codes the generated service returns on its own (the reference: failure(:unprocessable_entity, \"unknown_event\")).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unknown_event", "amount_too_low", "amount_too_high", "missing_requisite", "unsupported_request_method",
+        "invalid_signature", "unexpected_response"
+      ],
+      "properties": {
+        "unknown_event": { "$ref": "#/$defs/serviceCode" },
+        "amount_too_low": { "$ref": "#/$defs/serviceCode" },
+        "amount_too_high": { "$ref": "#/$defs/serviceCode" },
+        "missing_requisite": { "$ref": "#/$defs/serviceCode" },
+        "unsupported_request_method": { "$ref": "#/$defs/serviceCode" },
+        "invalid_signature": { "$ref": "#/$defs/serviceCode" },
+        "unexpected_response": { "$ref": "#/$defs/serviceCode" }
+      }
+    },
+    "actions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "terminal_reject", "fatal_block_provider", "retry_later", "retry_with_backoff", "retry_alert_ops",
+        "unknown_state", "idempotent_success", "conflict"
+      ],
+      "properties": {
+        "terminal_reject": { "$ref": "#/$defs/action" },
+        "fatal_block_provider": { "$ref": "#/$defs/action" },
+        "retry_later": { "$ref": "#/$defs/action" },
+        "retry_with_backoff": { "$ref": "#/$defs/action" },
+        "retry_alert_ops": { "$ref": "#/$defs/action" },
+        "unknown_state": { "$ref": "#/$defs/action" },
+        "idempotent_success": { "$ref": "#/$defs/action" },
+        "conflict": { "$ref": "#/$defs/action" }
+      }
+    },
+    "helpers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["client", "result", "callbacks", "exceptions", "credentials"],
+      "properties": {
+        "client": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["post", "post_form", "get", "response", "content_types"],
+          "properties": {
+            "post": { "$ref": "#/$defs/nonEmptyString" },
+            "post_form": { "$ref": "#/$defs/nonEmptyString" },
+            "get": { "$ref": "#/$defs/nonEmptyString" },
+            "response": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/rubyMethodName" }
+            },
+            "content_types": {
+              "description": "Request-body media type -> keyword argument of the client call (json: for post, form: for post_form).",
+              "type": "object",
+              "minProperties": 1,
+              "propertyNames": { "$ref": "#/$defs/mediaType" },
+              "additionalProperties": { "$ref": "#/$defs/bodyKeyword" }
+            }
+          }
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["success", "failure", "failed_predicate"],
+          "properties": {
+            "success": { "$ref": "#/$defs/rubyMethodName" },
+            "failure": { "$ref": "#/$defs/rubyMethodName" },
+            "failed_predicate": { "type": "string", "pattern": "^[a-z_][a-z0-9_]*\\?$" }
+          }
+        },
+        "callbacks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["approve", "reject"],
+          "properties": {
+            "approve": { "$ref": "#/$defs/rubyMethodName" },
+            "reject": { "$ref": "#/$defs/rubyMethodName" }
+          }
+        },
+        "exceptions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rate_limit", "invalid_credentials"],
+          "properties": {
+            "rate_limit": { "$ref": "#/$defs/rubyConstant" },
+            "invalid_credentials": { "$ref": "#/$defs/rubyConstant" }
+          }
+        },
+        "credentials": { "$ref": "#/$defs/rubyMethodName" }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["amount_unit", "accessors", "requisite_access"],
+      "properties": {
+        "amount_unit": { "enum": ["major", "minor"] },
+        "accessors": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["external_id", "amount", "currency", "provider_operation_id", "requisite"],
+          "properties": {
+            "external_id": { "$ref": "#/$defs/rubyExpression" },
+            "amount": { "$ref": "#/$defs/rubyExpression" },
+            "currency": { "$ref": "#/$defs/rubyExpression" },
+            "provider_operation_id": { "$ref": "#/$defs/rubyExpression" },
+            "requisite": { "$ref": "#/$defs/rubyExpression" }
+          }
+        },
+        "requisite_access": { "type": "string", "pattern": "%\\{method\\}.*%\\{field\\}" }
+      }
+    },
+    "credentials": {
+      "description": "credentials keys per authentication type, the webhook secret and the merchant identifier sent in request bodies.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "api_key", "http_bearer", "http_basic", "oauth2_client_credentials", "oauth2", "callback_secret",
+        "merchant_account"
+      ],
+      "properties": {
+        "api_key": { "$ref": "#/$defs/credentialKeys" },
+        "http_bearer": { "$ref": "#/$defs/credentialKeys" },
+        "http_basic": { "$ref": "#/$defs/credentialKeys" },
+        "oauth2_client_credentials": { "$ref": "#/$defs/credentialKeys" },
+        "oauth2": { "$ref": "#/$defs/credentialKeys" },
+        "callback_secret": { "$ref": "#/$defs/rubyMethodName" },
+        "merchant_account": { "$ref": "#/$defs/rubyMethodName" }
+      }
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_url"],
+      "properties": {
+        "base_url": { "type": "string", "pattern": "^%\\{SLUG\\}[A-Z0-9_]*$" }
+      }
+    },
+    "gateway_config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["withdraw", "deposit"],
+      "properties": {
+        "withdraw": { "$ref": "#/$defs/gatewayTemplate" },
+        "deposit": { "$ref": "#/$defs/gatewayTemplate" }
+      }
+    },
+    "callback_payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_body_key", "headers_key", "body_key"],
+      "properties": {
+        "raw_body_key": { "$ref": "#/$defs/rubyMethodName" },
+        "headers_key": { "$ref": "#/$defs/rubyMethodName" },
+        "body_key": { "$ref": "#/$defs/rubyMethodName" }
+      }
+    },
+    "signature_defaults": {
+      "description": "Applied when the spec is silent, so never unknown: the IR Signature enums minus unknown.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "encoding", "message", "secret"],
+      "properties": {
+        "algorithm": {
+          "enum": [
+            "hmac-sha256", "hmac-sha512", "hmac-sha1", "hmac-md5", "sha256", "sha512", "sha1", "md5", "rsa-sha256",
+            "ed25519"
+          ]
+        },
+        "encoding": { "enum": ["hex", "base64"] },
+        "message": { "enum": ["raw_body", "concatenated_fields"] },
+        "secret": { "$ref": "#/$defs/rubyMethodName" }
+      }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "rubyMethodName": { "type": "string", "pattern": "^[a-z_][a-z0-9_]*$" },
+    "rubyConstant": { "type": "string", "pattern": "^[A-Z][A-Za-z0-9]*(::[A-Z][A-Za-z0-9]*)*$" },
+    "rubyExpression": { "type": "string", "pattern": "^[a-z_][a-z0-9_]*(\\.[a-z_][a-z0-9_]*)*$" },
+    "mediaType": { "type": "string", "pattern": "^[a-z]+/[a-z0-9.+-]+$" },
+    "bodyKeyword": { "enum": ["json", "form"] },
+    "contractMethod": { "enum": ["create_request", "fetch_status", "process_callback", "check_conditions"] },
+    "canonicalStatus": { "enum": ["in_progress", "approved", "rejected"] },
+    "failureSymbol": {
+      "description": "First argument of the BaseService failure helper (docs/TZ.md reference service).",
+      "enum": ["unprocessable_entity", "unauthorized", "too_many_requests", "provider_error"]
+    },
+    "errorCode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["failure", "i18n"],
+      "properties": {
+        "failure": { "$ref": "#/$defs/failureSymbol" },
+        "i18n": { "type": "string", "pattern": "^[a-z_][a-z0-9_]*(\\.[a-z_][a-z0-9_]*)+$" }
+      }
+    },
+    "serviceCode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["failure", "i18n"],
+      "properties": {
+        "failure": { "$ref": "#/$defs/failureSymbol" },
+        "i18n": { "type": "string", "pattern": "^[a-z_][a-z0-9_]*(\\.[a-z_][a-z0-9_]*)*$" }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "retry"],
+      "properties": {
+        "label": { "$ref": "#/$defs/nonEmptyString" },
+        "retry": { "type": "boolean" }
+      }
+    },
+    "credentialKeys": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/rubyMethodName" }
+    },
+    "gatewayTemplate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["external_method", "gateway"],
+      "properties": {
+        "external_method": { "type": "string", "pattern": "%\\{method\\}" },
+        "gateway": { "type": "string", "pattern": "%\\{CURRENCY\\}.*%\\{METHOD\\}" }
+      }
+    }
+  }
+}

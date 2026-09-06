@@ -1,0 +1,620 @@
+swagger: "2.0"
+info:
+  title: Kassira Merchant API
+  description: |
+    Протокол обмена Kassira для мерчантов, редакция 2.4.
+
+    Все запросы, кроме входящих уведомлений, передаются методом POST в формате
+    application/x-www-form-urlencoded; ответ всегда возвращается в JSON, кодировка UTF-8.
+    Тестовый контур доступен на api-test.kassira.example — протокол совпадает полностью,
+    отличается только адрес и выданный токен.
+
+    Схема выгружена из внутренней вики и поддерживается вручную: примеры вызовов и
+    расчёта подписи приведены в PDF-руководстве «Kassira. Подключение мерчанта», а не здесь.
+  version: "2.4"
+  contact:
+    name: Отдел подключения мерчантов Kassira
+    email: merchants@kassira.example
+host: api.kassira.example
+basePath: /merchant/v2
+schemes:
+  - https
+consumes:
+  - application/x-www-form-urlencoded
+produces:
+  - application/json
+
+tags:
+  - name: Payments
+    description: Платёжные поручения
+  - name: Merchant
+    description: Данные договора мерчанта
+  - name: Dictionaries
+    description: Справочники протокола
+  - name: Callbacks
+    description: Уведомления Kassira о смене состояния поручения
+
+securityDefinitions:
+  MerchantToken:
+    type: apiKey
+    name: X-Merchant-Token
+    in: header
+    description: |
+      Токен договора из личного кабинета мерчанта. Передаётся в каждом запросе к API.
+      При смене токена старое значение действует ещё 24 часа.
+
+security:
+  - MerchantToken: []
+
+parameters:
+  RequestId:
+    name: X-Request-Id
+    in: header
+    required: false
+    type: string
+    maxLength: 64
+    description: |
+      Уникальный идентификатор запроса на стороне мерчанта — защита от дублей при повторной
+      отправке. Повторный запрос с тем же значением не создаёт новое поручение, а возвращает
+      ранее созданное.
+
+paths:
+  /payment/create:
+    post:
+      tags:
+        - Payments
+      summary: Создание платёжного поручения
+      description: |
+        Регистрирует платёжное поручение на перевод средств получателю и ставит его в очередь обработки.
+        Поручение создаётся в состоянии REGISTERED, списание проходит асинхронно, итоговое состояние
+        приходит уведомлением на адрес callback_url.
+
+        Набор обязательных реквизитов зависит от значения payment_type: карта, расчётный счёт или
+        телефон получателя. Незаполненные реквизиты чужого способа зачисления игнорируются.
+      parameters:
+        - $ref: '#/parameters/RequestId'
+        - name: merchant_id
+          in: formData
+          required: true
+          type: string
+          description: Идентификатор мерчанта в системе Kassira.
+        - name: contract_num
+          in: formData
+          required: true
+          type: string
+          description: |
+            Номер договора, по которому проводится поручение. Выдаётся при подключении;
+            у мерчанта может быть несколько договоров с разными лимитами.
+        - name: order_id
+          in: formData
+          required: true
+          type: string
+          maxLength: 40
+          description: Номер операции в системе мерчанта, уникальный в рамках договора.
+        - name: sum
+          in: formData
+          required: true
+          type: integer
+          format: int64
+          minimum: 10000
+          description: Сумма списания в копейках, целое число без разделителей.
+        - name: cur
+          in: formData
+          required: true
+          type: string
+          enum:
+            - RUB
+          description: Валюта поручения. В редакции 2.4 поддерживается только RUB.
+        - name: payment_type
+          in: formData
+          required: true
+          type: string
+          enum:
+            - card
+            - account
+            - phone
+          description: Способ зачисления средств получателю.
+        - name: pan
+          in: formData
+          required: false
+          type: string
+          pattern: '^\d{16,19}$'
+          description: |
+            Номер карты получателя без пробелов. Обязателен, если payment_type = card;
+            для остальных способов зачисления игнорируется.
+        - name: account_no
+          in: formData
+          required: false
+          type: string
+          pattern: '^\d{20}$'
+          description: |
+            Расчётный счёт получателя, 20 цифр. Обязателен, если payment_type = account;
+            проверяется вместе с БИК.
+        - name: bik
+          in: formData
+          required: false
+          type: string
+          pattern: '^\d{9}$'
+          description: |
+            БИК банка получателя, 9 цифр. Обязателен, если payment_type = account;
+            банк должен присутствовать в справочнике /dictionary/banks.
+        - name: phone_number
+          in: formData
+          required: false
+          type: string
+          pattern: '^79\d{9}$'
+          description: |
+            Телефон получателя в формате 79XXXXXXXXX. Обязателен, если payment_type = phone;
+            номер должен быть привязан к банку из справочника.
+        - name: payee_name
+          in: formData
+          required: false
+          type: string
+          maxLength: 120
+          description: ФИО получателя полностью. Проверяется банком при зачислении на счёт.
+        - name: purpose
+          in: formData
+          required: false
+          type: string
+          maxLength: 210
+          description: Назначение платежа, печатается в выписке банка получателя.
+        - name: callback_url
+          in: formData
+          required: false
+          type: string
+          description: |
+            Адрес для уведомлений о смене состояния. Если не передан, используется адрес,
+            указанный в настройках договора.
+        - name: ttl_min
+          in: formData
+          required: false
+          type: integer
+          description: |
+            Время жизни поручения в минутах, по умолчанию 1440. По истечении поручение
+            переводится в состояние EXPIRED и средства не списываются.
+      responses:
+        '200':
+          description: Поручение принято и зарегистрировано.
+          schema:
+            $ref: '#/definitions/PaymentInfo'
+        '400':
+          description: Ошибка в составе или значениях параметров формы.
+          schema:
+            $ref: '#/definitions/Fault'
+        '401':
+          $ref: '#/responses/Unauthorized'
+        '402':
+          description: На договоре недостаточно средств для списания.
+          schema:
+            $ref: '#/definitions/Fault'
+        '409':
+          description: |
+            Поручение с таким order_id уже зарегистрировано. Возвращается ранее созданное
+            поручение — повторная отправка формы безопасна.
+          schema:
+            $ref: '#/definitions/PaymentInfo'
+        '429':
+          $ref: '#/responses/TooManyRequests'
+        '500':
+          $ref: '#/responses/ServerFault'
+
+  /payment/status/{payment_id}:
+    get:
+      tags:
+        - Payments
+      summary: Состояние платёжного поручения
+      description: |
+        Возвращает текущее состояние поручения. Опрос допускается не чаще одного раза в 30 секунд
+        на поручение; основной способ узнать итог — уведомление на callback_url.
+      parameters:
+        - name: payment_id
+          in: path
+          required: true
+          type: string
+          description: Идентификатор поручения, выданный при регистрации.
+      responses:
+        '200':
+          description: Текущее состояние поручения.
+          schema:
+            $ref: '#/definitions/PaymentInfo'
+        '401':
+          $ref: '#/responses/Unauthorized'
+        '404':
+          description: Поручение с таким идентификатором не найдено на договоре.
+          schema:
+            $ref: '#/definitions/Fault'
+        '500':
+          $ref: '#/responses/ServerFault'
+
+  /payment/cancel/{payment_id}:
+    post:
+      tags:
+        - Payments
+      summary: Отмена платёжного поручения
+      description: |
+        Отменяет поручение до его отправки в банк. Отмена допустима только в состояниях
+        REGISTERED и IN_WORK; после PAID возможен только возврат по заявлению.
+      parameters:
+        - name: payment_id
+          in: path
+          required: true
+          type: string
+          description: Идентификатор отменяемого поручения.
+        - name: reason
+          in: formData
+          required: false
+          type: string
+          maxLength: 255
+          description: Комментарий оператора мерчанта, сохраняется в журнале договора.
+      responses:
+        '200':
+          description: Поручение отменено, состояние переведено в REFUSED.
+          schema:
+            $ref: '#/definitions/PaymentInfo'
+        '401':
+          $ref: '#/responses/Unauthorized'
+        '404':
+          description: Поручение не найдено.
+          schema:
+            $ref: '#/definitions/Fault'
+        '409':
+          description: Отмена в текущем состоянии поручения невозможна.
+          schema:
+            $ref: '#/definitions/Fault'
+
+  /requisites/check:
+    post:
+      tags:
+        - Payments
+      summary: Проверка реквизитов получателя
+      description: |
+        Предварительная проверка реквизитов без создания поручения: доступность банка,
+        принадлежность БИК и возможность зачисления выбранным способом.
+        Ответ носит справочный характер и не резервирует средства.
+      parameters:
+        - name: payment_type
+          in: formData
+          required: true
+          type: string
+          enum:
+            - card
+            - account
+            - phone
+          description: Проверяемый способ зачисления.
+        - name: pan
+          in: formData
+          required: false
+          type: string
+          pattern: '^\d{16,19}$'
+          description: Номер карты получателя.
+        - name: account_no
+          in: formData
+          required: false
+          type: string
+          pattern: '^\d{20}$'
+          description: Расчётный счёт получателя.
+        - name: bik
+          in: formData
+          required: false
+          type: string
+          pattern: '^\d{9}$'
+          description: БИК банка получателя.
+      responses:
+        '200':
+          description: Результат проверки реквизитов.
+          schema:
+            $ref: '#/definitions/CheckResult'
+        '400':
+          description: Реквизиты переданы не полностью.
+          schema:
+            $ref: '#/definitions/Fault'
+        '401':
+          $ref: '#/responses/Unauthorized'
+
+  /merchant/balance:
+    get:
+      tags:
+        - Merchant
+      summary: Баланс договора
+      description: |
+        Возвращает доступный остаток и сумму, зарезервированную под поручения в обработке.
+        Значения обновляются раз в минуту, поэтому непосредственно после создания поручения
+        остаток может отличаться от расчётного.
+      responses:
+        '200':
+          description: Остатки по договору.
+          schema:
+            $ref: '#/definitions/BalanceInfo'
+        '401':
+          $ref: '#/responses/Unauthorized'
+        '500':
+          $ref: '#/responses/ServerFault'
+
+  /dictionary/banks:
+    get:
+      tags:
+        - Dictionaries
+      summary: Справочник банков получателей
+      description: |
+        Перечень банков, доступных для зачисления, с признаком приёма переводов по телефону.
+        Справочник обновляется ежедневно; рекомендуется кешировать его на стороне мерчанта.
+      parameters:
+        - name: payment_type
+          in: query
+          required: false
+          type: string
+          enum:
+            - card
+            - account
+            - phone
+          description: Оставить в выдаче только банки, доступные для указанного способа зачисления.
+        - name: active
+          in: query
+          required: false
+          type: boolean
+          description: Признак «только банки, принимающие переводы прямо сейчас».
+      responses:
+        '200':
+          description: Список банков.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/BankRef'
+        '401':
+          $ref: '#/responses/Unauthorized'
+
+  /callback/payment:
+    post:
+      tags:
+        - Callbacks
+      summary: Уведомление о смене состояния поручения
+      description: |
+        Kassira отправляет уведомление на адрес callback_url при каждой смене состояния поручения.
+        Тело уведомления — JSON, а не форма. Мерчант обязан ответить HTTP 200 в течение 10 секунд,
+        иначе уведомление повторяется 5 раз с интервалом 1, 5, 15, 60 и 240 минут.
+        Уведомления могут приходить не по порядку — ориентируйтесь на поле state, а не на порядок доставки.
+      consumes:
+        - application/json
+      security: []
+      parameters:
+        - name: X-Sign
+          in: header
+          required: true
+          type: string
+          description: |
+            Контрольная подпись уведомления: MD5-хеш от склеенных значений полей payment_id,
+            order_id, sum и секретного ключа договора, в нижнем регистре (hex).
+        - name: body
+          in: body
+          required: true
+          description: Тело уведомления.
+          schema:
+            $ref: '#/definitions/CallbackPayload'
+      responses:
+        '200':
+          description: Уведомление принято мерчантом.
+          schema:
+            $ref: '#/definitions/CallbackAck'
+
+definitions:
+  PaymentInfo:
+    type: object
+    description: Платёжное поручение в том виде, в каком его отдают все методы протокола.
+    required:
+      - payment_id
+      - state
+      - sum
+      - cur
+    properties:
+      payment_id:
+        type: string
+        description: Идентификатор поручения в Kassira, используется во всех последующих запросах.
+      order_id:
+        type: string
+        description: Номер операции в системе мерчанта, как он был передан при регистрации.
+      state:
+        type: string
+        description: Текущее состояние поручения.
+        enum:
+          - REGISTERED
+          - IN_WORK
+          - PAID
+          - RETURNED
+          - REFUSED
+          - EXPIRED
+      sum:
+        type: integer
+        format: int64
+        description: Сумма поручения в копейках.
+      cur:
+        type: string
+        description: Валюта поручения.
+      payment_type:
+        type: string
+        description: Способ зачисления, выбранный при регистрации.
+        enum:
+          - card
+          - account
+          - phone
+      masked_account:
+        type: string
+        description: Реквизит получателя в маскированном виде, пригоден для показа оператору.
+      fault_code:
+        type: string
+        description: Код причины отказа. Заполняется только для состояний REFUSED и RETURNED.
+      fault_message:
+        type: string
+        description: Текстовое описание причины отказа.
+      created:
+        type: string
+        format: date-time
+        description: Момент регистрации поручения.
+      updated:
+        type: string
+        format: date-time
+        description: Момент последней смены состояния.
+
+  CallbackPayload:
+    type: object
+    description: Тело уведомления, которое Kassira отправляет мерчанту.
+    required:
+      - notification_type
+      - payment_id
+      - state
+    properties:
+      notification_type:
+        type: string
+        description: Тип уведомления.
+        enum:
+          - PAYMENT_REGISTERED
+          - PAYMENT_IN_WORK
+          - PAYMENT_PAID
+          - PAYMENT_REFUSED
+          - PAYMENT_RETURNED
+          - PAYMENT_EXPIRED
+      payment_id:
+        type: string
+        description: Идентификатор поручения в Kassira.
+      order_id:
+        type: string
+        description: Номер операции в системе мерчанта.
+      state:
+        type: string
+        description: Состояние поручения на момент отправки уведомления.
+        enum:
+          - REGISTERED
+          - IN_WORK
+          - PAID
+          - RETURNED
+          - REFUSED
+          - EXPIRED
+      sum:
+        type: integer
+        format: int64
+        description: Сумма поручения в копейках.
+      cur:
+        type: string
+        description: Валюта поручения.
+      fault_code:
+        type: string
+        description: Код причины отказа, если поручение не исполнено.
+      fault_message:
+        type: string
+        description: Текстовое описание причины отказа.
+      processed_at:
+        type: string
+        format: date-time
+        description: Момент перехода в конечное состояние.
+
+  CallbackAck:
+    type: object
+    description: Ответ мерчанта на уведомление.
+    properties:
+      result:
+        type: string
+        description: Признак приёма уведомления.
+        enum:
+          - OK
+
+  Fault:
+    type: object
+    description: Единый формат ошибки протокола Kassira.
+    required:
+      - fault_code
+      - fault_message
+    properties:
+      fault_code:
+        type: string
+        description: Код ошибки протокола.
+        enum:
+          - INVALID_PARAM
+          - MISSING_PARAM
+          - SIGN_ERROR
+          - MERCHANT_BLOCKED
+          - NOT_ENOUGH_FUNDS
+          - DUPLICATE_ORDER
+          - DOC_NOT_FOUND
+          - WRONG_STATE
+          - REQUEST_LIMIT
+          - INTERNAL_FAILURE
+          - BANK_REJECT
+      fault_message:
+        type: string
+        description: Человекочитаемое описание ошибки на русском языке.
+      request_id:
+        type: string
+        description: Значение X-Request-Id, если оно передавалось. Указывайте его при обращении в поддержку.
+
+  BalanceInfo:
+    type: object
+    description: Остатки по договору мерчанта.
+    properties:
+      balance:
+        type: integer
+        format: int64
+        description: Доступный остаток в копейках.
+      reserved:
+        type: integer
+        format: int64
+        description: Сумма в копейках, зарезервированная под поручения в обработке.
+      cur:
+        type: string
+        description: Валюта договора.
+      updated:
+        type: string
+        format: date-time
+        description: Момент последнего пересчёта остатков.
+
+  BankRef:
+    type: object
+    description: Запись справочника банков.
+    properties:
+      bik:
+        type: string
+        description: БИК банка.
+      bank_name:
+        type: string
+        description: Наименование банка.
+      sbp_member:
+        type: boolean
+        description: Банк принимает переводы по номеру телефона.
+      active:
+        type: boolean
+        description: Банк принимает переводы прямо сейчас.
+
+  CheckResult:
+    type: object
+    description: Результат предварительной проверки реквизитов.
+    properties:
+      allowed:
+        type: boolean
+        description: Зачисление по указанным реквизитам возможно.
+      bank_name:
+        type: string
+        description: Банк, определённый по реквизитам.
+      fault_code:
+        type: string
+        description: Код причины, по которой зачисление невозможно.
+      fault_message:
+        type: string
+        description: Описание причины, по которой зачисление невозможно.
+
+responses:
+  Unauthorized:
+    description: Токен мерчанта не передан, недействителен или договор заблокирован.
+    schema:
+      $ref: '#/definitions/Fault'
+  TooManyRequests:
+    description: Превышено ограничение на частоту запросов по договору.
+    headers:
+      Retry-After:
+        type: integer
+        description: Через сколько секунд допустим повторный запрос.
+    schema:
+      $ref: '#/definitions/Fault'
+  ServerFault:
+    description: |
+      Внутренняя ошибка Kassira. Состояние поручения неизвестно — уточните его методом
+      /payment/status/{payment_id} перед повторной регистрацией.
+    schema:
+      $ref: '#/definitions/Fault'

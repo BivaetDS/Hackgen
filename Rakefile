@@ -27,7 +27,26 @@ namespace :lint do
   end
 end
 
-desc "Quality gate: RSpec + RuboCop"
-task check: %i[spec rubocop]
+CRLF = "\r\n"
+LF = "\n"
+
+desc "Normalize CRLF to LF in text files (rubocop -A rewrites files as CRLF on Windows)"
+task :lf do
+  patterns = ["lib/**/*.{rb,erb,yml,json}", "spec/**/*.{rb,yml,yaml,json}", "app/**/*.{rb,erb}",
+              "bin/*", "Rakefile", "Gemfile", "config.ru", "*.md", "docs/*.md", "examples/*"]
+  fixed = Dir[*patterns].select do |path|
+    next false unless File.file?(path)
+
+    content = File.binread(path)
+    next false unless content.include?(CRLF)
+
+    File.binwrite(path, content.gsub(CRLF, LF))
+    true
+  end
+  puts fixed.empty? ? "line endings already LF" : "normalized: #{fixed.join(", ")}"
+end
+
+desc "Quality gate: RSpec + RuboCop + dictionary schemas"
+task check: %i[spec rubocop lint:dictionaries]
 
 task default: :check

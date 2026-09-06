@@ -1,0 +1,181 @@
+# Фикстура для негативного теста: структурно правдоподобный OpenAPI 3.0.3, но
+# $ref '#/components/schemas/PayeeAccount' в DisbursementRequest.payee указывает
+# на компонент, которого нет в components.schemas. Все остальные $ref разрешаются.
+# Ожидаемое событие: E005 (Unresolvable $ref).
+openapi: 3.0.3
+info:
+  title: GhostRef Disbursement API
+  description: Мок-спека провайдера GhostRef для выплат в пользу физических лиц.
+  version: 1.4.0
+  contact:
+    name: GhostRef Solution Architects
+    email: architects@ghostref.example
+
+servers:
+  - url: https://api.sandbox.ghostref.example/open/v2
+    description: Sandbox
+
+tags:
+  - name: Disbursements
+    description: Выплаты получателям
+
+paths:
+  /disbursements:
+    post:
+      tags: [Disbursements]
+      summary: Запустить выплату
+      description: |
+        Ставит выплату в очередь исполнения.
+        Сумма указывается в минорных единицах валюты счёта.
+      operationId: startDisbursement
+      security:
+        - BearerJwt: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DisbursementRequest'
+      responses:
+        '202':
+          description: Выплата поставлена в очередь
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisbursementView'
+        '422':
+          description: Тело запроса не прошло проверку
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultEnvelope'
+
+  /disbursements/{disbursement_id}:
+    get:
+      tags: [Disbursements]
+      summary: Прочитать выплату
+      operationId: readDisbursement
+      security:
+        - BearerJwt: []
+      parameters:
+        - name: disbursement_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: dsb_5c1b7a90
+      responses:
+        '200':
+          description: Текущее состояние выплаты
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisbursementView'
+        '404':
+          description: Выплата с таким идентификатором не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultEnvelope'
+
+  /disbursements/{disbursement_id}/void:
+    post:
+      tags: [Disbursements]
+      summary: Аннулировать выплату
+      description: Аннулирование доступно, пока выплата не ушла в банк-исполнитель
+      operationId: voidDisbursement
+      security:
+        - BearerJwt: []
+      parameters:
+        - name: disbursement_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Выплата аннулирована
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisbursementView'
+        '409':
+          description: Аннулирование в текущем состоянии невозможно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultEnvelope'
+
+components:
+  securitySchemes:
+    BearerJwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Токен доступа партнёра, выдаётся эндпоинтом авторизации
+
+  schemas:
+    DisbursementRequest:
+      type: object
+      required: [amount_minor, currency_code, client_ref, payee]
+      properties:
+        amount_minor:
+          type: integer
+          description: Сумма в минорных единицах валюты
+          minimum: 100
+          example: 7500
+        currency_code:
+          type: string
+          enum: [EUR]
+          example: EUR
+        client_ref:
+          type: string
+          description: Идентификатор операции на стороне партнёра
+          maxLength: 40
+          example: ref-xyz789
+        payee:
+          # Битая ссылка: компонента PayeeAccount в этом документе нет.
+          $ref: '#/components/schemas/PayeeAccount'
+
+    DisbursementView:
+      type: object
+      properties:
+        disbursement_id:
+          type: string
+          example: dsb_5c1b7a90
+        client_ref:
+          type: string
+          example: ref-xyz789
+        state:
+          type: string
+          enum: [accepted, in_review, paid_out, returned, voided]
+        amount_minor:
+          type: integer
+          example: 7500
+        currency_code:
+          type: string
+          example: EUR
+        fault:
+          $ref: '#/components/schemas/Fault'
+        accepted_at:
+          type: string
+          format: date-time
+
+    Fault:
+      type: object
+      properties:
+        reason:
+          type: string
+          enum:
+            - payload_rejected
+            - balance_short
+            - payee_unknown
+            - gateway_fault
+        detail:
+          type: string
+
+    FaultEnvelope:
+      type: object
+      properties:
+        fault:
+          $ref: '#/components/schemas/Fault'

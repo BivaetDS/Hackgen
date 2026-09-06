@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://provider-integrator.local/schemas/overrides.schema.json",
+  "title": "overrides.yml",
+  "description": "Fixed-key override file (docs/IR_CONTRACT.md 2.11, docs/PLAN.md 5). Every section is optional; keys are the same for every provider.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "operations": {
+      "description": "operationId -> operation kind.",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/nonEmptyString" },
+      "additionalProperties": {
+        "enum": ["create", "status", "cancel", "balance", "webhook", "refund", "list", "unknown"]
+      }
+    },
+    "amount_unit": {
+      "description": "\"Schema.field\" (component name and provider_path) -> unit of the money field.",
+      "type": "object",
+      "propertyNames": { "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_.\\[\\]-]+$" },
+      "additionalProperties": { "enum": ["minor", "major"] }
+    },
+    "required_if": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["field", "when", "equals"],
+        "properties": {
+          "field": { "$ref": "#/$defs/providerPath" },
+          "when": { "$ref": "#/$defs/providerPath" },
+          "equals": { "$ref": "#/$defs/scalar" }
+        }
+      }
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "header": { "$ref": "#/$defs/nonEmptyString" },
+        "field": { "$ref": "#/$defs/providerPath" },
+        "algorithm": { "enum": ["hmac-sha256", "hmac-sha512", "hmac-sha1", "hmac-md5", "rsa-sha256", "ed25519"] },
+        "encoding": { "enum": ["hex", "base64"] },
+        "message": { "enum": ["raw_body", "concatenated_fields"] }
+      },
+      "oneOf": [
+        { "required": ["header"] },
+        { "required": ["field"] }
+      ]
+    },
+    "status_map": {
+      "description": "Provider status value -> canonical status.",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/nonEmptyString" },
+      "additionalProperties": { "enum": ["in_progress", "approved", "rejected"] }
+    },
+    "error_actions": {
+      "description": "Provider error code -> platform action.",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/nonEmptyString" },
+      "additionalProperties": {
+        "enum": [
+          "terminal_reject", "fatal_block_provider", "retry_later", "retry_with_backoff", "retry_alert_ops",
+          "unknown_state", "idempotent_success", "conflict"
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "providerPath": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_-]*(\\[\\])?(\\.[A-Za-z_][A-Za-z0-9_-]*(\\[\\])?)*$" },
+    "scalar": { "type": ["string", "number", "boolean"] }
+  }
+}

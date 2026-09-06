@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://provider-integrator.local/schemas/errors.schema.json",
+  "title": "errors.yml",
+  "description": "HTTP status -> canonical error code and platform action, the transport guard against terminal provider codes, provider error-code stems, Retry-After sources and per-source confidence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "confidence", "http", "http_guard", "provider_codes", "retry_after"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "confidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["example", "enum", "http_default", "override"],
+      "properties": {
+        "example": { "$ref": "#/$defs/confidence" },
+        "enum": { "$ref": "#/$defs/confidence" },
+        "http_default": { "$ref": "#/$defs/confidence" },
+        "override": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "http": {
+      "type": "object",
+      "required": ["default_4xx", "default_5xx"],
+      "propertyNames": { "pattern": "^([45][0-9]{2}|default_4xx|default_5xx)$" },
+      "properties": {
+        "default_4xx": { "$ref": "#/$defs/mapping" },
+        "default_5xx": { "$ref": "#/$defs/mapping" }
+      },
+      "additionalProperties": { "$ref": "#/$defs/mapping" }
+    },
+    "http_guard": {
+      "description": "For these transport-level HTTP statuses a terminal action derived from the provider code is ignored; the HTTP default stays.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["statuses", "terminal_actions"],
+      "properties": {
+        "statuses": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/httpStatusKey" }
+        },
+        "terminal_actions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/action" }
+        }
+      }
+    },
+    "provider_codes": {
+      "description": "Checked in order; the first entry with a stem contained in the normalized provider code wins.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "stems", "canonical", "action"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "stems": {
+            "description": "Compared against the provider code normalized to lower case with separators replaced by _.",
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "pattern": "^[a-z0-9_]+$" }
+          },
+          "canonical": { "$ref": "#/$defs/canonicalErrorCode" },
+          "action": { "$ref": "#/$defs/action" },
+          "note": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "retry_after": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["headers", "body_fields"],
+      "properties": {
+        "headers": {
+          "description": "Header names after snake_case normalization, compared case-insensitively.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+        },
+        "body_fields": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "httpStatusKey": { "type": "string", "pattern": "^[45][0-9]{2}$" },
+    "canonicalErrorCode": {
+      "enum": [
+        "validation_error", "invalid_credentials", "insufficient_balance", "rate_limit", "internal_error", "not_found",
+        "conflict"
+      ]
+    },
+    "action": {
+      "enum": [
+        "terminal_reject", "fatal_block_provider", "retry_later", "retry_with_backoff", "retry_alert_ops",
+        "unknown_state", "idempotent_success", "conflict"
+      ]
+    },
+    "mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["canonical", "action"],
+      "properties": {
+        "canonical": { "$ref": "#/$defs/canonicalErrorCode" },
+        "action": { "$ref": "#/$defs/action" }
+      }
+    }
+  }
+}

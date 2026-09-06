@@ -2,8 +2,9 @@
 
 module ProviderIntegrator
   module Models
-    # The inbound notification endpoint: how it was found (`source` path_heuristic | tag_heuristic |
-    # callbacks | override), its signature, event/status/id field paths, payload fields and examples.
+    # The inbound notification endpoint: how it was found (`source` override | extension | callbacks |
+    # path_heuristic | tag_heuristic | operation_id_heuristic), its signature, event/status/id field paths,
+    # payload fields and examples.
     # `method` is the IR key for the HTTP verb (docs/IR_CONTRACT.md). Shadowing Object#method on IR
     # values is accepted: nothing introspects them through #method.
     # rubocop:disable-next Lint/DataDefineOverride

@@ -1,0 +1,889 @@
+openapi: 3.0.3
+info:
+  title: Tranzo Disbursement API
+  version: "2.4.1"
+  description: |
+    Публичный API массовых выплат Tranzo для юридических лиц и партнёров.
+    Мерчант регистрирует выплату, получает числовой код состояния (state) и
+    уведомление на собственный callbackUrl. Суммы во всех методах передаются
+    в минорных единицах валюты (копейки, тийины).
+
+    Авторизация — OAuth 2.0 client_credentials. Access token живёт 30 минут,
+    мерчант обновляет его самостоятельно.
+  termsOfService: https://tranzo.example/legal/api-terms
+  contact:
+    name: Tranzo Merchant Support
+    url: https://tranzo.example/support
+    email: api-support@tranzo.example
+  license:
+    name: Proprietary
+    url: https://tranzo.example/legal/api-terms
+
+x-api-revision: "2026-04-17"
+
+servers:
+  - url: https://api.sandbox.tranzo.example/disbursement/v2
+    description: Sandbox (тестовая среда, реальные списания не выполняются)
+  - url: https://api.tranzo.example/disbursement/v2
+    description: Production (боевая среда)
+
+tags:
+  - name: Disbursements
+    description: Регистрация, состояние, реестр и отзыв выплат
+  - name: Merchant
+    description: Баланс мерчанта и предварительный расчёт комиссии
+
+security:
+  - MerchantOAuth2:
+      - 'disbursements:read'
+
+paths:
+  /disbursements:
+    post:
+      tags: [Disbursements]
+      summary: Зарегистрировать выплату
+      description: |
+        Регистрирует новую выплату и ставит её в очередь на исполнение.
+        Ответ возвращается сразу, с состоянием 0 (в обработке); финальное состояние
+        приходит уведомлением на callbackUrl, указанный в теле запроса.
+
+        Повторный запрос с тем же merchantReference в течение 24 часов
+        отклоняется с HTTP 409 — выплата не дублируется.
+      operationId: registerDisbursement
+      security:
+        - MerchantOAuth2:
+            - 'disbursements:write'
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        description: Параметры выплаты
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DisbursementRequest'
+            examples:
+              toPhone:
+                summary: Выплата по номеру телефона
+                value:
+                  merchantReference: "MR-2026-004471"
+                  amount: 250000
+                  currency: RUB
+                  callbackUrl: "https://merchant.example/hooks/tranzo"
+                  comment: "Вознаграждение исполнителя за апрель"
+                  destination:
+                    kind: phone
+                    phone: "+79261234567"
+                    holderName: "Иванов Иван Иванович"
+              toAccount:
+                summary: Выплата на расчётный счёт
+                value:
+                  merchantReference: "MR-2026-004472"
+                  amount: 1800000
+                  currency: RUB
+                  callbackUrl: "https://merchant.example/hooks/tranzo"
+                  destination:
+                    kind: account
+                    accountNumber: "40817810099910004312"
+                    bic: "044525593"
+                    holderName: "Петров Пётр Петрович"
+      responses:
+        '202':
+          description: Выплата принята к исполнению
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisbursementView'
+              example:
+                operationId: "d9f2c41e-77aa-4d19-8f01-2b3c5a6d7e80"
+                merchantReference: "MR-2026-004471"
+                state: 0
+                amount: 250000
+                currency: RUB
+                fee: 3500
+                destination:
+                  kind: phone
+                  phone: "+79261234567"
+                  holderName: "Иванов Иван Иванович"
+                createdAt: "2026-04-17T09:12:44+03:00"
+                updatedAt: "2026-04-17T09:12:44+03:00"
+        '400':
+          $ref: '#/components/responses/MalformedRequest'
+        '401':
+          $ref: '#/components/responses/TokenRejected'
+        '402':
+          description: На счёте мерчанта недостаточно средств для списания
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                errorCode: BAL_NOT_ENOUGH_FUNDS
+                errorMessage: "Merchant balance is lower than amount + fee"
+                traceId: "01HZ4M8Q2K"
+        '409':
+          description: Выплата с таким merchantReference уже зарегистрирована
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                errorCode: REQ_DUPLICATE_REFERENCE
+                errorMessage: "Disbursement with merchantReference MR-2026-004471 already exists"
+                traceId: "01HZ4M8Q2L"
+        '422':
+          description: Выплата не прошла проверку лимитов или реквизитов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              examples:
+                overLimit:
+                  summary: Превышен разовый лимит
+                  value:
+                    errorCode: VAL_AMOUNT_OVER_LIMIT
+                    errorMessage: "Сумма 2500000 копеек превышает разовый лимит 2000000 копеек по договору"
+                    traceId: "01HZ4M8Q2M"
+                badDestination:
+                  summary: Некорректные реквизиты получателя
+                  value:
+                    errorCode: VAL_INVALID_DESTINATION
+                    errorMessage: "destination.bic is unknown"
+                    traceId: "01HZ4M8Q2N"
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalFailure'
+        '503':
+          $ref: '#/components/responses/Maintenance'
+      callbacks:
+        disbursementState:
+          '{$request.body#/callbackUrl}':
+            post:
+              tags: [Disbursements]
+              summary: Уведомление о смене состояния выплаты
+              description: |
+                Tranzo отправляет POST на callbackUrl при каждой смене состояния выплаты.
+                Подпись передаётся в теле уведомления, в поле sign; заголовков с подписью нет.
+
+                sign = HMAC-SHA512 в нижнем регистре hex от concatenation значений
+                operationId + merchantReference + state + amount + currency
+                с ключом callbackSecret из личного кабинета мерчанта.
+
+                Уведомление считается доставленным при любом ответе 2xx. Иначе Tranzo
+                повторяет доставку 5 раз с интервалами 1, 5, 15, 60 и 240 минут.
+              operationId: disbursementStateCallback
+              security: []
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/CallbackPayload'
+                    examples:
+                      executed:
+                        summary: Выплата исполнена
+                        value:
+                          event: disbursement.executed
+                          operationId: "d9f2c41e-77aa-4d19-8f01-2b3c5a6d7e80"
+                          merchantReference: "MR-2026-004471"
+                          state: 1
+                          amount: 250000
+                          currency: RUB
+                          sentAt: "2026-04-17T09:14:02+03:00"
+                          sign: "9931c148cc21001804cd013d199045c3219442e4c71391e691aba26bb2c3c6248d04bca1e5e72725bae53dfd939b3f5e1c0188fb4060e9d6c1dd90e1f6402ef9"
+                      declined:
+                        summary: Выплата отклонена банком получателя
+                        value:
+                          event: disbursement.declined
+                          operationId: "d9f2c41e-77aa-4d19-8f01-2b3c5a6d7e80"
+                          merchantReference: "MR-2026-004471"
+                          state: 2
+                          amount: 250000
+                          currency: RUB
+                          errorCode: VAL_INVALID_DESTINATION
+                          errorText: "Recipient bank rejected the transfer"
+                          sentAt: "2026-04-17T09:14:02+03:00"
+                          sign: "199d4cbfbc744d49926fddaa0234a109424dbb49b2fcc9edb9495264f389aa75a404a4295274cc28a1b0d15646da2ac4750c92421817025652c0ed6cf0aac3f6"
+              responses:
+                '200':
+                  description: Уведомление принято мерчантом
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          result:
+                            type: string
+                            example: ok
+                      example:
+                        result: ok
+
+    get:
+      tags: [Disbursements]
+      summary: Реестр выплат за период
+      description: |
+        Постраничный список выплат мерчанта. Максимальный период выборки — 31 день,
+        сортировка по времени регистрации, от новых к старым.
+      operationId: listDisbursements
+      parameters:
+        - name: from
+          in: query
+          required: true
+          description: Начало периода (включительно)
+          schema:
+            type: string
+            format: date
+          example: "2026-04-01"
+        - name: to
+          in: query
+          required: true
+          description: Конец периода (включительно)
+          schema:
+            type: string
+            format: date
+          example: "2026-04-30"
+        - name: state
+          in: query
+          required: false
+          description: Фильтр по числовому состоянию выплаты
+          schema:
+            type: integer
+            enum: [0, 1, 2, 3, 4]
+          example: 1
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: perPage
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        '200':
+          description: Страница реестра
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisbursementPage'
+              example:
+                page: 1
+                perPage: 50
+                total: 2
+                items:
+                  - operationId: "d9f2c41e-77aa-4d19-8f01-2b3c5a6d7e80"
+                    merchantReference: "MR-2026-004471"
+                    state: 1
+                    amount: 250000
+                    currency: RUB
+                    fee: 3500
+                    createdAt: "2026-04-17T09:12:44+03:00"
+                    updatedAt: "2026-04-17T09:14:02+03:00"
+                  - operationId: "a1b2c3d4-5566-4788-9900-aabbccddeeff"
+                    merchantReference: "MR-2026-004472"
+                    state: 4
+                    amount: 1800000
+                    currency: RUB
+                    fee: 9000
+                    createdAt: "2026-04-16T18:03:10+03:00"
+                    updatedAt: "2026-04-17T18:03:10+03:00"
+        '400':
+          $ref: '#/components/responses/MalformedRequest'
+        '401':
+          $ref: '#/components/responses/TokenRejected'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /disbursements/{operationId}:
+    get:
+      tags: [Disbursements]
+      summary: Получить текущее состояние выплаты
+      description: |
+        Возвращает актуальное состояние выплаты по идентификатору, выданному Tranzo.
+        Метод рекомендуется как резервный источник состояния, если уведомление
+        на callbackUrl не было доставлено.
+      operationId: getDisbursementState
+      parameters:
+        - $ref: '#/components/parameters/OperationId'
+      responses:
+        '200':
+          description: Состояние выплаты
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisbursementView'
+              example:
+                operationId: "d9f2c41e-77aa-4d19-8f01-2b3c5a6d7e80"
+                merchantReference: "MR-2026-004471"
+                state: 2
+                amount: 250000
+                currency: RUB
+                fee: 3500
+                destination:
+                  kind: phone
+                  phone: "+79261234567"
+                declineReason: "Банк получателя отклонил перевод"
+                createdAt: "2026-04-17T09:12:44+03:00"
+                updatedAt: "2026-04-17T09:14:02+03:00"
+        '401':
+          $ref: '#/components/responses/TokenRejected'
+        '404':
+          $ref: '#/components/responses/OperationNotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /disbursements/{operationId}/revoke:
+    post:
+      tags: [Disbursements]
+      summary: Отозвать выплату
+      description: |
+        Отзыв возможен, пока выплата находится в состоянии 0 (в обработке)
+        и не передана в банк. После передачи в банк метод возвращает HTTP 409.
+      operationId: revokeDisbursement
+      security:
+        - MerchantOAuth2:
+            - 'disbursements:write'
+      parameters:
+        - $ref: '#/components/parameters/OperationId'
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: Выплата отозвана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisbursementView'
+              example:
+                operationId: "d9f2c41e-77aa-4d19-8f01-2b3c5a6d7e80"
+                merchantReference: "MR-2026-004471"
+                state: 3
+                amount: 250000
+                currency: RUB
+                fee: 0
+                createdAt: "2026-04-17T09:12:44+03:00"
+                updatedAt: "2026-04-17T09:13:01+03:00"
+        '401':
+          $ref: '#/components/responses/TokenRejected'
+        '404':
+          $ref: '#/components/responses/OperationNotFound'
+        '409':
+          description: Выплата уже передана в банк, отзыв невозможен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                errorCode: OPR_STATE_LOCKED
+                errorMessage: "Disbursement is locked by the processing bank"
+                traceId: "01HZ4M8Q2P"
+
+  /fees/quote:
+    post:
+      tags: [Merchant]
+      summary: Предварительный расчёт комиссии
+      description: |
+        Считает комиссию и итоговое списание для будущей выплаты.
+        Метод справочный: выплату не создаёт и лимиты не резервирует.
+      operationId: quoteDisbursementFee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeeQuoteRequest'
+            example:
+              amount: 250000
+              currency: RUB
+              method: phone
+      responses:
+        '200':
+          description: Расчёт комиссии
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeeQuote'
+              example:
+                amount: 250000
+                fee: 3500
+                total: 253500
+                currency: RUB
+        '400':
+          $ref: '#/components/responses/MalformedRequest'
+        '401':
+          $ref: '#/components/responses/TokenRejected'
+
+  /merchant/balance:
+    get:
+      tags: [Merchant]
+      summary: Баланс мерчанта
+      description: Текущий доступный баланс и сумма в резерве по каждой валюте договора.
+      operationId: getMerchantBalance
+      security:
+        - MerchantOAuth2:
+            - 'merchant:read'
+      responses:
+        '200':
+          description: Баланс по валютам
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MerchantBalance'
+              example:
+                merchantId: "M-100493"
+                updatedAt: "2026-04-17T09:15:00+03:00"
+                balances:
+                  - currency: RUB
+                    available: 84500000
+                    hold: 2500000
+                  - currency: KZT
+                    available: 1200000
+                    hold: 0
+        '401':
+          $ref: '#/components/responses/TokenRejected'
+        '403':
+          description: Токену не выдан scope merchant:read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                errorCode: SEC_INSUFFICIENT_SCOPE
+                errorMessage: "Scope merchant:read is required"
+                traceId: "01HZ4M8Q2R"
+
+components:
+  securitySchemes:
+    MerchantOAuth2:
+      type: oauth2
+      description: |
+        OAuth 2.0, поток client_credentials. clientId и clientSecret выдаются
+        в личном кабинете мерчанта, токен передаётся в заголовке Authorization: Bearer.
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.tranzo.example/oauth2/token
+          refreshUrl: https://auth.tranzo.example/oauth2/token
+          scopes:
+            'disbursements:write': Регистрация и отзыв выплат
+            'disbursements:read': Чтение состояния выплат и реестров
+            'merchant:read': Чтение баланса мерчанта
+
+  parameters:
+    RequestId:
+      name: X-Request-Id
+      in: header
+      required: false
+      description: |
+        Ключ идемпотентности запроса. При повторной отправке с тем же значением
+        в течение 24 часов Tranzo вернёт результат первого запроса.
+      schema:
+        type: string
+        format: uuid
+      example: "6f5c0f7a-3f0f-4a2e-9f5f-0f1c2d3e4a5b"
+
+    OperationId:
+      name: operationId
+      in: path
+      required: true
+      description: Идентификатор выплаты на стороне Tranzo
+      schema:
+        type: string
+        format: uuid
+      example: "d9f2c41e-77aa-4d19-8f01-2b3c5a6d7e80"
+
+  schemas:
+    DisbursementRequest:
+      type: object
+      required: [merchantReference, amount, currency, destination, callbackUrl]
+      properties:
+        merchantReference:
+          type: string
+          description: Идентификатор выплаты в учётной системе мерчанта, уникален 24 часа
+          maxLength: 48
+          pattern: '^[A-Za-z0-9._-]{4,48}$'
+          example: "MR-2026-004471"
+        amount:
+          type: integer
+          format: int64
+          description: Сумма выплаты в копейках (для KZT — в тийинах), без комиссии
+          minimum: 50000
+          maximum: 300000000
+          example: 250000
+        currency:
+          type: string
+          description: Валюта выплаты, ISO 4217
+          enum: [RUB, KZT]
+          example: RUB
+        destination:
+          $ref: '#/components/schemas/Destination'
+        callbackUrl:
+          type: string
+          format: uri
+          description: HTTPS-адрес мерчанта для уведомлений о смене состояния
+          example: "https://merchant.example/hooks/tranzo"
+        comment:
+          type: string
+          description: Назначение выплаты, попадает в выписку получателя
+          maxLength: 140
+          example: "Вознаграждение исполнителя за апрель"
+
+    Destination:
+      type: object
+      description: Реквизиты получателя. Набор полей зависит от значения kind.
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          description: Способ зачисления средств
+          enum: [phone, card, account]
+          example: phone
+        phone:
+          type: string
+          description: Телефон получателя в формате E.164. Обязательно, если kind = phone
+          pattern: '^\+7\d{10}$'
+          example: "+79261234567"
+        cardNumber:
+          type: string
+          description: Номер карты получателя, 16-19 цифр. Обязательно, если kind = card
+          pattern: '^\d{16,19}$'
+          example: "5536910012345678"
+        accountNumber:
+          type: string
+          description: Номер расчётного счёта, 20 цифр. Обязательно, если kind = account
+          pattern: '^\d{20}$'
+          example: "40817810099910004312"
+        bic:
+          type: string
+          description: БИК банка получателя. Обязательно, если kind = account
+          pattern: '^\d{9}$'
+          example: "044525593"
+        holderName:
+          type: string
+          description: ФИО получателя, как в документах банка
+          maxLength: 120
+          example: "Иванов Иван Иванович"
+
+    DisbursementView:
+      type: object
+      properties:
+        operationId:
+          type: string
+          format: uuid
+          description: Идентификатор выплаты на стороне Tranzo
+          example: "d9f2c41e-77aa-4d19-8f01-2b3c5a6d7e80"
+        merchantReference:
+          type: string
+          description: Идентификатор выплаты в учётной системе мерчанта
+          example: "MR-2026-004471"
+        state:
+          type: integer
+          description: |
+            Состояние выплаты, числовой код:
+            0 — в обработке,
+            1 — успешно исполнена,
+            2 — отклонена банком получателя,
+            3 — отменена мерчантом,
+            4 — просрочена, средства возвращены на баланс мерчанта
+          enum: [0, 1, 2, 3, 4]
+          example: 1
+        amount:
+          type: integer
+          format: int64
+          description: Сумма выплаты в копейках
+          example: 250000
+        currency:
+          type: string
+          example: RUB
+        fee:
+          type: integer
+          format: int64
+          description: Комиссия Tranzo в копейках, списывается сверх суммы выплаты
+          example: 3500
+        destination:
+          $ref: '#/components/schemas/Destination'
+        declineReason:
+          type: string
+          nullable: true
+          description: Причина отказа простым текстом, заполняется для состояний 2 и 4
+          example: "Банк получателя отклонил перевод"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-04-17T09:12:44+03:00"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-04-17T09:14:02+03:00"
+
+    DisbursementPage:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        perPage:
+          type: integer
+          example: 50
+        total:
+          type: integer
+          description: Общее количество выплат в периоде
+          example: 2
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DisbursementView'
+
+    CallbackPayload:
+      type: object
+      required: [event, operationId, state, sign]
+      properties:
+        event:
+          type: string
+          description: Тип события, вызвавшего уведомление
+          enum:
+            - disbursement.executed
+            - disbursement.declined
+            - disbursement.revoked
+            - disbursement.expired
+            - disbursement.failed
+          example: disbursement.executed
+        operationId:
+          type: string
+          format: uuid
+          example: "d9f2c41e-77aa-4d19-8f01-2b3c5a6d7e80"
+        merchantReference:
+          type: string
+          example: "MR-2026-004471"
+        state:
+          type: integer
+          description: |
+            Состояние выплаты на момент отправки уведомления.
+            Расшифровка кодов — в описании поля state ответа GET /disbursements/{operationId}.
+          enum: [1, 2, 3, 4, -1]
+          example: 1
+        amount:
+          type: integer
+          format: int64
+          description: Сумма выплаты в копейках
+          example: 250000
+        currency:
+          type: string
+          example: RUB
+        errorCode:
+          type: string
+          description: Код отказа Tranzo, присылается для состояний 2 и -1
+          example: VAL_INVALID_DESTINATION
+        errorText:
+          type: string
+          description: Расшифровка кода отказа
+          example: "Recipient bank rejected the transfer"
+        sentAt:
+          type: string
+          format: date-time
+          description: Момент отправки уведомления по часам Tranzo
+          example: "2026-04-17T09:14:02+03:00"
+        sign:
+          type: string
+          description: |
+            Подпись уведомления: HMAC-SHA512 в нижнем регистре hex от concatenation
+            значений полей operationId, merchantReference, state, amount, currency
+            с ключом callbackSecret. Само поле sign в подсчёт не входит.
+          pattern: '^[0-9a-f]{128}$'
+          example: "9931c148cc21001804cd013d199045c3219442e4c71391e691aba26bb2c3c6248d04bca1e5e72725bae53dfd939b3f5e1c0188fb4060e9d6c1dd90e1f6402ef9"
+
+    FeeQuoteRequest:
+      type: object
+      required: [amount, currency, method]
+      properties:
+        amount:
+          type: integer
+          format: int64
+          description: Сумма выплаты в копейках
+          minimum: 50000
+          example: 250000
+        currency:
+          type: string
+          enum: [RUB, KZT]
+          example: RUB
+        method:
+          type: string
+          description: Способ зачисления, как в поле destination.kind
+          enum: [phone, card, account]
+          example: phone
+
+    FeeQuote:
+      type: object
+      properties:
+        amount:
+          type: integer
+          format: int64
+          example: 250000
+        fee:
+          type: integer
+          format: int64
+          description: Комиссия Tranzo в копейках
+          example: 3500
+        total:
+          type: integer
+          format: int64
+          description: Итоговое списание с баланса мерчанта в копейках
+          example: 253500
+        currency:
+          type: string
+          example: RUB
+
+    MerchantBalance:
+      type: object
+      properties:
+        merchantId:
+          type: string
+          description: Номер договора мерчанта в Tranzo
+          example: "M-100493"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-04-17T09:15:00+03:00"
+        balances:
+          type: array
+          items:
+            $ref: '#/components/schemas/BalanceEntry'
+
+    BalanceEntry:
+      type: object
+      properties:
+        currency:
+          type: string
+          example: RUB
+        available:
+          type: integer
+          format: int64
+          description: Доступно к выплате, в копейках
+          example: 84500000
+        hold:
+          type: integer
+          format: int64
+          description: Зарезервировано под выплаты в обработке, в копейках
+          example: 2500000
+
+    ErrorEnvelope:
+      type: object
+      required: [errorCode, errorMessage]
+      properties:
+        errorCode:
+          type: string
+          description: Код ошибки Tranzo; префикс указывает на подсистему
+          enum:
+            - REQ_MALFORMED_BODY
+            - REQ_DUPLICATE_REFERENCE
+            - SEC_TOKEN_EXPIRED
+            - SEC_INSUFFICIENT_SCOPE
+            - BAL_NOT_ENOUGH_FUNDS
+            - VAL_AMOUNT_OVER_LIMIT
+            - VAL_INVALID_DESTINATION
+            - OPR_NOT_FOUND
+            - OPR_STATE_LOCKED
+            - RATE_TOO_MANY_REQUESTS
+            - SYS_INTERNAL_FAILURE
+            - SYS_MAINTENANCE
+          example: VAL_AMOUNT_OVER_LIMIT
+        errorMessage:
+          type: string
+          description: Человекочитаемое описание ошибки
+          example: "Сумма превышает разовый лимит"
+        traceId:
+          type: string
+          description: Идентификатор запроса в логах Tranzo, указывайте его в обращениях в поддержку
+          example: "01HZ4M8Q2M"
+
+    RateLimitError:
+      type: object
+      required: [errorCode, errorMessage]
+      properties:
+        errorCode:
+          type: string
+          enum: [RATE_TOO_MANY_REQUESTS]
+          example: RATE_TOO_MANY_REQUESTS
+        errorMessage:
+          type: string
+          example: "Rate limit is 20 requests per second"
+        retryAfterSeconds:
+          type: integer
+          description: Через сколько секунд можно повторить запрос
+          example: 30
+        traceId:
+          type: string
+          example: "01HZ4M8Q2S"
+
+  responses:
+    MalformedRequest:
+      description: Некорректное тело или параметры запроса
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            errorCode: REQ_MALFORMED_BODY
+            errorMessage: "Field amount must be an integer"
+            traceId: "01HZ4M8Q2T"
+
+    TokenRejected:
+      description: Access token отсутствует, истёк или отозван
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            errorCode: SEC_TOKEN_EXPIRED
+            errorMessage: "Access token expired, request a new one"
+            traceId: "01HZ4M8Q2U"
+
+    OperationNotFound:
+      description: Выплата с указанным operationId не найдена
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            errorCode: OPR_NOT_FOUND
+            errorMessage: "Disbursement not found"
+            traceId: "01HZ4M8Q2V"
+
+    TooManyRequests:
+      description: Превышен лимит частоты запросов
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RateLimitError'
+          example:
+            errorCode: RATE_TOO_MANY_REQUESTS
+            errorMessage: "Rate limit is 20 requests per second"
+            retryAfterSeconds: 30
+            traceId: "01HZ4M8Q2W"
+
+    InternalFailure:
+      description: Внутренняя ошибка Tranzo
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            errorCode: SYS_INTERNAL_FAILURE
+            errorMessage: "Unexpected processing error"
+            traceId: "01HZ4M8Q2X"
+
+    Maintenance:
+      description: Регламентные работы, приём выплат временно приостановлен
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            errorCode: SYS_MAINTENANCE
+            errorMessage: "Service is under maintenance, retry in 15 minutes"
+            traceId: "01HZ4M8Q2Y"

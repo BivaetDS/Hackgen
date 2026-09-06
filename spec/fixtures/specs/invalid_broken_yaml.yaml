@@ -1,0 +1,106 @@
+# Фикстура для негативного теста: спеку правили руками и не закрыли двойную кавычку
+# в description операции openSettlement. Psych не может разобрать файл: открытая кавычка
+# в документе единственная, поэтому сканер уходит до конца потока.
+# Ожидаемое событие: E001 (Spec cannot be parsed).
+openapi: 3.0.3
+info:
+  title: BrokenPay Settlement API
+  version: 1.2.0
+  description: Мок-спека провайдера BrokenPay, повреждённая при ручном редактировании
+
+servers:
+  - url: https://gateway.sandbox.brokenpay.example/api
+    description: Sandbox
+
+paths:
+  /v1/settlements:
+    post:
+      tags: [Settlements]
+      summary: Открыть расчёт
+      description: "Открывает расчёт в пользу магазина. Сумма — в минорных единицах.
+      operationId: openSettlement
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenSettlementBody'
+      responses:
+        '202':
+          description: Расчёт принят в обработку
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettlementView'
+
+  /v1/settlements/{settlement_ref}:
+    get:
+      tags: [Settlements]
+      summary: Прочитать расчёт
+      operationId: fetchSettlement
+      security:
+        - basicAuth: []
+      parameters:
+        - name: settlement_ref
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Текущее состояние расчёта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettlementView'
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: Логин и пароль магазина, выдаются при подключении
+
+  schemas:
+    OpenSettlementBody:
+      type: object
+      required: [total_minor, currency_code, merchant_ref]
+      properties:
+        total_minor:
+          type: integer
+          description: Сумма расчёта в минорных единицах валюты
+          minimum: 500
+          example: 4200
+        currency_code:
+          type: string
+          enum: [KZT]
+          example: KZT
+        merchant_ref:
+          type: string
+          description: Номер расчёта на стороне магазина
+          maxLength: 40
+          example: stl-2026-0042
+
+    SettlementView:
+      type: object
+      properties:
+        settlement_ref:
+          type: string
+          example: bp-88213
+        merchant_ref:
+          type: string
+          example: stl-2026-0042
+        state:
+          type: string
+          enum: [queued, in_flight, settled, rejected]
+        total_minor:
+          type: integer
+          example: 4200
+        currency_code:
+          type: string
+          example: KZT
+        opened_at:
+          type: string
+          format: date-time

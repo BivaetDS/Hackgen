@@ -56,6 +56,8 @@ module ProviderIntegrator
       ["W105", "warning",
        "Several %{kind} candidates (%{candidates}); %{operation_id} chosen, others generated as extra methods",
        "More than one operation competes for a contract role"],
+      ["W106", "warning", "No status operation found; fetch_status is generated as a stub",
+       "No operation classified as status"],
       ["W201", "warning", "Status %{status} has no canonical mapping; defaulting to %{default}",
        "Provider status absent from statuses.yml"],
       ["W202", "warning",
@@ -63,6 +65,8 @@ module ProviderIntegrator
        "Provider error code absent from errors.yml"],
       ["W203", "warning", "Webhook event %{value} has no canonical status; the service treats it as unknown_event",
        "Webhook event value absent from statuses.yml"],
+      ["W204", "warning", "Numeric status %{status} mapped by convention to %{canonical}; confirm with the provider",
+       "Numeric status without a textual description mapped through statuses.yml numeric"],
       ["W301", "warning",
        "HMAC canonicalization for %{name} is not specified (encoding %{encoding}, message %{message}); " \
        "the generator assumes %{default_encoding} digest over %{default_message}",
@@ -84,6 +88,9 @@ module ProviderIntegrator
        "Conditional requirement found by regex over a description"],
       ["W403", "warning", "Required request field %{field} in %{operation_id} is not mapped to any canonical field",
        "Required request field without a canonical name"],
+      ["W405", "warning",
+       "Direction of %{operation_id} not found in the spec; %{direction} assumed for the ProviderGateway config",
+       "No withdraw/deposit keyword anywhere in the create operation or the title"],
       ["W501", "warning",
        "Security scheme %{scheme_name} of type %{type} is not supported; credentials must be configured manually",
        "Security scheme type outside the supported set"],
@@ -111,6 +118,10 @@ module ProviderIntegrator
        "Conditional requirement recorded from %{source}: %{field} is required when %{when} equals %{equals} " \
        "(%{operation_id})",
        "Conditional requirement found structurally (discriminator, if/then, override)"],
+      ["I403", "info",
+       "Gateway config recorded: external_method %{external_method}, gateway %{gateway} (confidence %{confidence}); " \
+       "evidence: %{evidence}",
+       "ProviderGateway config is a visible inference; always reported"],
       ["I601", "info", "Override %{key} applied to %{target}: %{value}",
        "An overrides.yml entry changed the IR"]
     ].freeze
