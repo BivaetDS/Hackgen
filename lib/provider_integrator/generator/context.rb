@@ -28,6 +28,9 @@ module ProviderIntegrator
       # "acmepay_service.rb".
       def service_file_name = "#{Inflector.identifier(slug)}_service.rb"
 
+      # "acmepay_service_spec.rb".
+      def spec_file_name = "#{Inflector.identifier(slug)}_service_spec.rb"
+
       # "ACMEPAY_BASE_URL" and friends from canonical_contract.yml -> env.
       def env_name(key)
         template = canon.dig("env", key.to_s) or raise GenerationError, "no env template for #{key}"
@@ -52,6 +55,11 @@ module ProviderIntegrator
       # The service template data, built once and shared by the service and documentation generators.
       def service_data
         @service_data ||= TemplateData::Service.new(self)
+      end
+
+      # The spec template data, built once and shared by the spec and documentation generators.
+      def spec_data
+        @spec_data ||= TemplateData::ServiceSpec.new(self)
       end
     end
   end

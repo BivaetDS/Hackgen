@@ -2,9 +2,9 @@
 
 module ProviderIntegrator
   # Turns a ProviderSpec into the output files (docs/PLAN.md 3.1, 6): the service, the contract
-  # stub, INTEGRATION.md, fixtures.json and generation_report.json, validated before they are
-  # handed back. The generator reads only the IR and the dictionaries; it never sees the OpenAPI
-  # document, and it writes nothing itself - the pipeline decides where the files go.
+  # stub, INTEGRATION.md, fixtures.json, the service spec and generation_report.json, validated
+  # before they are handed back. The generator reads only the IR and the dictionaries; it never
+  # sees the OpenAPI document, and it writes nothing itself - the pipeline decides where the files go.
   module Generator
     module_function
 
@@ -19,9 +19,10 @@ module ProviderIntegrator
       Models::GenerationResult.new(value: files, events: log.sorted, validation:)
     end
 
-    # The four content files, in output order; a template failure becomes E201 for that file.
+    # The five content files, in output order; a template failure becomes E201 for that file.
     def generate(context, log)
-      [ServiceGenerator, BaseContractGenerator, DocumentationGenerator, FixturesGenerator].filter_map do |generator|
+      generators = [ServiceGenerator, BaseContractGenerator, DocumentationGenerator, FixturesGenerator, RspecGenerator]
+      generators.filter_map do |generator|
         generator.new(context).call
       rescue GenerationError => e
         log.add("E201", file: generator.name.split("::").last, reason: e.message)

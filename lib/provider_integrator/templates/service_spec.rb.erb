@@ -1,0 +1,30 @@
+# frozen_string_literal: true
+
+<%- data.header_lines.each do |line| -%>
+# <%= line %>
+<%- end -%>
+
+<%- data.requires.each do |library| -%>
+require '<%= library %>'
+<%- end -%>
+<%- data.relative_requires.each do |file| -%>
+require_relative '<%= file %>'
+<%- end -%>
+
+RSpec.describe <%= data.class_name %> do
+<%- data.lets.each do |let| -%>
+<%= let.source %>
+<%- end -%>
+<%- data.befores.each do |hook| -%>
+
+<%= hook.source %>
+<%- end -%>
+<%- data.helpers.each do |helper| -%>
+
+<%= helper.source %>
+<%- end -%>
+<%- data.groups.each do |group| -%>
+
+<%= group.source %>
+<%- end -%>
+end

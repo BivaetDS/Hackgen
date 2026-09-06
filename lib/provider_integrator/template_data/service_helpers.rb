@@ -7,6 +7,8 @@ module ProviderIntegrator
     # error-code readers, and the amount conversion helpers the payloads asked for.
     class ServiceHelpers
       QUERY_TEMPLATE = '"#{url}#{url.include?(\'?\') ? \'&\' : \'?\'}#{URI.encode_www_form(%{pair})}"'
+      # The token field of an OAuth2 client-credentials response (RFC 6749); the generated spec stubs it.
+      ACCESS_TOKEN_FIELD = "access_token"
 
       def initialize(service)
         @service = service
@@ -104,7 +106,7 @@ module ProviderIntegrator
         MethodData.build(name: "access_token", comment: access_token_comment,
                          lines: ["form = { #{form.join(", ")} }",
                                  "response = client.post(TOKEN_URL, form: form, headers: {})",
-                                 "response.body.to_h['access_token']"])
+                                 "response.body.to_h[#{Code.str(ACCESS_TOKEN_FIELD)}]"])
       end
 
       def access_token_comment

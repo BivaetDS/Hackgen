@@ -30,8 +30,9 @@ module ProviderIntegrator
 
       # { "ok" => Boolean, "checks" => [{ "name", "ok", "detail" }] }, the report/CLI summary.
       def call
-        ruby_checks(file(:service), contract: true)
-        ruby_checks(file(:base_contract), contract: false)
+        ruby_checks(:service, contract: true)
+        ruby_checks(:base_contract)
+        ruby_checks(:service_spec)
         fixtures_checks(file(:fixtures))
         documentation_checks(file(:documentation))
         { "ok" => @checks.all?(&:ok), "checks" => @checks.map { |check| check.to_h.transform_keys(&:to_s) } }
@@ -61,8 +62,10 @@ module ProviderIntegrator
 
       # ---- Ruby ----------------------------------------------------------------------------------
 
-      def ruby_checks(file, contract:)
-        return missing(contract ? "service" : "base_contract", "the Ruby file") unless file
+      # Syntax, leftovers and RuboCop for the Ruby file of +kind+; the contract checks for the service.
+      def ruby_checks(kind, contract: false)
+        file = file(kind)
+        return missing(kind.to_s, "the Ruby file") unless file
 
         source = file.content
         return unless record("#{file.name}: #{CHECKS[:syntax]}", *syntax(source), file: file.name)

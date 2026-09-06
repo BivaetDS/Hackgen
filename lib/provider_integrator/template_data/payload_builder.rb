@@ -22,6 +22,11 @@ module ProviderIntegrator
         condition.equals == branch
       end
 
+      # Containers: declared objects and the oneOf parents that carry no type of their own.
+      def self.container?(field)
+        field.type == "object" || (field.type.nil? && field.canonical.to_s.match?(/\A(requisite|error|customer)\z/))
+      end
+
       # +docs+ rows: [provider path, source description, requirement, note] for INTEGRATION.md.
       def initialize(operation, canon:, context:, scope: Scope.build)
         @operation = operation
@@ -55,7 +60,7 @@ module ProviderIntegrator
 
           *parents, name = field.provider_path.split(".")
           node = parents.reduce(root) { |acc, segment| subtree(acc, segment) }
-          node[name] = container?(field) ? subtree(node, name) : field
+          node[name] = self.class.container?(field) ? subtree(node, name) : field
         end
       end
 
@@ -63,11 +68,6 @@ module ProviderIntegrator
       def subtree(node, segment)
         node[segment] = {} unless node[segment].is_a?(Hash)
         node[segment]
-      end
-
-      # Containers: declared objects and the oneOf parents that carry no type of their own.
-      def container?(field)
-        field.type == "object" || (field.type.nil? && field.canonical.to_s.match?(/\A(requisite|error|customer)\z/))
       end
 
       def array_note(field)

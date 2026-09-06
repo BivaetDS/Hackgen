@@ -9,9 +9,9 @@ module ProviderIntegrator
   class Reporter
     WRAP = 78
     LEVEL_COLOURS = { "error" => :red, "warning" => :yellow, "info" => :cyan }.freeze
-    GENERATING = ["service", "integration guide", "test fixtures", "contract stub and report"].freeze
+    GENERATING = ["service", "integration guide", "test fixtures", "service spec", "contract stub and report"].freeze
     # The three deliverables of the case study first, then the extras (presentation order only).
-    OUTPUT_ORDER = %w[service documentation fixtures base_contract report].freeze
+    OUTPUT_ORDER = %w[service documentation fixtures service_spec base_contract report].freeze
     FAILURE_TITLES = { spec: "The spec cannot be used:", generation: "Generation failed; nothing was written:" }.freeze
 
     def initialize(io: $stdout, err: $stderr, verbose: false, colour: true)

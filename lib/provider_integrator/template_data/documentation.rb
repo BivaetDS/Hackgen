@@ -29,7 +29,8 @@ module ProviderIntegrator
       # Sections in document order; empty ones are dropped.
       def sections
         [DocumentationSections::Setup, DocumentationSections::Methods, DocumentationSections::Fields,
-         DocumentationSections::Statuses, DocumentationSections::Webhook, DocumentationSections::Review]
+         DocumentationSections::Statuses, DocumentationSections::Webhook, DocumentationSections::Tests,
+         DocumentationSections::Review]
           .flat_map { |builder| builder.new(self).sections }
           .reject { |section| section.lines.empty? }
       end
