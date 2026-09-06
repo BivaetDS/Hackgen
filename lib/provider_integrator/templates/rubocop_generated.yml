@@ -1,0 +1,47 @@
+# RuboCop configuration for generated Ruby (service and base contract). It is applied in-process
+# through the stdin API so the output is style-stable across runs; the reference service in
+# docs/TZ.md uses single quotes and aligned hash rockets, so does this config.
+AllCops:
+  TargetRubyVersion: 3.3
+  NewCops: enable
+  SuggestExtensions: false
+
+Layout/EndOfLine:
+  EnforcedStyle: lf
+
+Layout/LineLength:
+  Max: 120
+  # Evidence and TODO comments are wrapped by the generator; never break them mid-sentence.
+  AllowedPatterns: ['^\s*#']
+
+Layout/HashAlignment:
+  EnforcedHashRocketStyle: table
+  EnforcedColonStyle: key
+
+Style/StringLiterals:
+  EnforcedStyle: single_quotes
+
+Style/StringLiteralsInInterpolation:
+  EnforcedStyle: single_quotes
+
+Style/Documentation:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Enabled: true
+
+Naming/VariableNumber:
+  Enabled: false
+
+# The BaseService contract fixes the signatures: request_method stays even when a provider has a
+# single payout method and the argument is not used.
+Lint/UnusedMethodArgument:
+  Enabled: false
+
+# STATUS_MAP / ERROR_MAP sit after the private helpers, exactly where the reference service in
+# docs/TZ.md keeps them; constants are public regardless of the modifier.
+Lint/UselessConstantScoping:
+  Enabled: false
+
+Metrics:
+  Enabled: false

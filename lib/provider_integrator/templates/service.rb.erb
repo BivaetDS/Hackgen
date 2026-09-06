@@ -1,0 +1,38 @@
+# frozen_string_literal: true
+
+<%- data.header_lines.each do |line| -%>
+# <%= line %>
+<%- end -%>
+<%- unless data.requires.empty? -%>
+
+<%- data.requires.each do |library| -%>
+require '<%= library %>'
+<%- end -%>
+<%- end -%>
+
+class <%= data.namespace %>
+  class <%= data.class_name %> < <%= data.base_service %>
+<%- data.top_constants.each do |constant| -%>
+<%= constant.source %>
+
+<%- end -%>
+<%- data.contract_methods.each do |method| -%>
+<%= method.source %>
+
+<%- end -%>
+<%- data.extra_methods.each do |method| -%>
+<%= method.source %>
+
+<%- end -%>
+    private
+
+<%- data.private_methods_data.each do |method| -%>
+<%= method.source %>
+
+<%- end -%>
+<%- data.bottom_constants.each do |constant| -%>
+<%= constant.source %>
+
+<%- end -%>
+  end
+end

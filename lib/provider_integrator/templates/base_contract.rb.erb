@@ -1,0 +1,77 @@
+# frozen_string_literal: true
+
+# ДОПУЩЕНИЕ: реальный <%= data.namespace %>::<%= data.base_service %> предоставляет Space Payments и в этот
+# репозиторий не входит. Файл - заглушка контракта, реконструированного по эталону ТЗ и ответам экспертов
+# (docs/ASSUMPTIONS.md), чтобы сгенерированный сервис можно было загрузить и прогнать тесты автономно.
+# В продакшене файл не используется: сервис подключается к настоящему <%= data.base_service %>.
+#
+# Credentials this provider reads: <%= data.credential_keys.join(', ') %>.
+
+class <%= data.namespace %>
+<%- data.exception_names.each do |name| -%>
+  class <%= name %> < StandardError; end
+<%- end -%>
+
+  # Outcome of a service call: <%= data.success %>(**details) or <%= data.failure %>(error, code, **details).
+  # details carry what the platform stores: status, provider_operation_id, response, error_code, retry_after.
+  Result = Struct.new(:success, :error, :code, :details, keyword_init: true) do
+    def success? = success
+    def <%= data.failed_predicate %> = !success
+    def status = details[:status]
+    def provider_operation_id = details[:provider_operation_id]
+    def response = details[:response]
+  end
+
+  # The platform operation as the generated service reads it (docs/ASSUMPTIONS.md, допущение 1).
+  # amount is in major units; the requisites are one hash keyed by the payout method.
+  Operation = Struct.new(<%= data.operation_members.map { |name| ":#{name}" }.join(', ') %>, keyword_init: true)
+
+  # What the HTTP client returns.
+  Response = Struct.new(<%= data.response_members.map { |name| ":#{name}" }.join(', ') %>, keyword_init: true)
+
+  class <%= data.base_service %>
+    STATUSES = <%= data.statuses_literal %>
+
+    attr_reader :client, :<%= data.credentials %>
+
+    # client returns a Response and responds to:
+<%- data.client_methods.each do |signature| -%>
+    #   <%= signature %>
+<%- end -%>
+    # <%= data.credentials %> is the provider's secret hash from providers.credentials.
+    def initialize(client:, <%= data.credentials %>:)
+      @client = client
+      @<%= data.credentials %> = <%= data.credentials %>
+    end
+
+<%- data.contract_signatures.each do |signature| -%>
+<%- if signature.start_with?('check_conditions') -%>
+    def <%= signature %>
+      <%= data.success %>
+    end
+<%- else -%>
+    def <%= signature %>
+      raise NotImplementedError, 'implemented by the generated service'
+    end
+<%- end -%>
+
+<%- end -%>
+    private
+
+    def <%= data.success %>(**details)
+      Result.new(success: true, error: nil, code: nil, details: details)
+    end
+
+    def <%= data.failure %>(error, code, **details)
+      Result.new(success: false, error: error, code: code, details: details)
+    end
+
+    def <%= data.approve %>(provider_operation_id)
+      <%= data.success %>(status: <%= data.approved %>, provider_operation_id: provider_operation_id)
+    end
+
+    def <%= data.reject %>(provider_operation_id, error_code = nil)
+      <%= data.success %>(status: <%= data.rejected %>, provider_operation_id: provider_operation_id, error_code: error_code)
+    end
+  end
+end

@@ -1,0 +1,612 @@
+{
+  "events": {
+    "analysis": [
+      {
+        "code": "W301",
+        "details": {
+          "default_encoding": "hex",
+          "default_message": "raw_body",
+          "encoding": "unknown",
+          "message": "raw_body",
+          "name": "X-NovaPay-Signature"
+        },
+        "level": "warning",
+        "location": "#/paths/~1webhooks~1payout/post/parameters/0",
+        "message": "HMAC canonicalization for X-NovaPay-Signature is not specified (encoding unknown, message raw_body); the generator assumes hex digest over raw_body"
+      },
+      {
+        "code": "W402",
+        "details": {
+          "equals": "sbp",
+          "field": "recipient.bank_code",
+          "operation_id": "createPayout",
+          "when": "recipient.type"
+        },
+        "level": "warning",
+        "location": "#/components/schemas/Recipient/properties/bank_code",
+        "message": "Conditional requirement inferred from description: recipient.bank_code is required when recipient.type equals sbp (createPayout)"
+      },
+      {
+        "code": "W402",
+        "details": {
+          "equals": "card",
+          "field": "recipient.card_number",
+          "operation_id": "createPayout",
+          "when": "recipient.type"
+        },
+        "level": "warning",
+        "location": "#/components/schemas/Recipient/properties/card_number",
+        "message": "Conditional requirement inferred from description: recipient.card_number is required when recipient.type equals card (createPayout)"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.9,
+          "kind": "balance",
+          "method": "GET",
+          "operation_id": "getBalance",
+          "path": "/balance"
+        },
+        "level": "info",
+        "location": "#/paths/~1balance/get",
+        "message": "Operation getBalance (GET /balance) classified as balance with confidence 0.9"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.9,
+          "kind": "create",
+          "method": "POST",
+          "operation_id": "createPayout",
+          "path": "/payouts"
+        },
+        "level": "info",
+        "location": "#/paths/~1payouts/post",
+        "message": "Operation createPayout (POST /payouts) classified as create with confidence 0.9"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.9,
+          "kind": "status",
+          "method": "GET",
+          "operation_id": "getPayoutStatus",
+          "path": "/payouts/{payout_id}"
+        },
+        "level": "info",
+        "location": "#/paths/~1payouts~1{payout_id}/get",
+        "message": "Operation getPayoutStatus (GET /payouts/{payout_id}) classified as status with confidence 0.9"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.9,
+          "kind": "cancel",
+          "method": "POST",
+          "operation_id": "cancelPayout",
+          "path": "/payouts/{payout_id}/cancel"
+        },
+        "level": "info",
+        "location": "#/paths/~1payouts~1{payout_id}~1cancel/post",
+        "message": "Operation cancelPayout (POST /payouts/{payout_id}/cancel) classified as cancel with confidence 0.9"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.92,
+          "kind": "webhook",
+          "method": "POST",
+          "operation_id": "payoutWebhook",
+          "path": "/webhooks/payout"
+        },
+        "level": "info",
+        "location": "#/paths/~1webhooks~1payout/post",
+        "message": "Operation payoutWebhook (POST /webhooks/payout) classified as webhook with confidence 0.92"
+      },
+      {
+        "code": "I201",
+        "details": {
+          "count": 5,
+          "mapping": {
+            "cancelled": "rejected",
+            "completed": "approved",
+            "failed": "rejected",
+            "pending": "in_progress",
+            "processing": "in_progress"
+          }
+        },
+        "level": "info",
+        "location": null,
+        "message": "Status mapping recorded (5 statuses): pending -> in_progress, processing -> in_progress, completed -> approved, failed -> rejected, cancelled -> rejected"
+      },
+      {
+        "code": "I301",
+        "details": {
+          "algorithm": "hmac-sha256",
+          "encoding": "unknown",
+          "message": "raw_body",
+          "name": "X-NovaPay-Signature",
+          "placement": "header",
+          "secret": "callback_secret"
+        },
+        "level": "info",
+        "location": "#/paths/~1webhooks~1payout/post/parameters/0",
+        "message": "Signature convention recorded: X-NovaPay-Signature (header), algorithm hmac-sha256, encoding unknown, message raw_body, secret callback_secret"
+      },
+      {
+        "code": "I401",
+        "details": {
+          "field": "amount",
+          "multiplier": 100,
+          "operation_id": "createPayout",
+          "score": 8,
+          "signals": [
+            "description: копейках",
+            "error example (422): kopecks",
+            "minimum: 100000"
+          ],
+          "unit": "minor"
+        },
+        "level": "info",
+        "location": "#/components/schemas/CreatePayoutRequest/properties/amount",
+        "message": "Amount field amount in createPayout uses minor units (multiplier 100, score 8); signals: description: копейках, error example (422): kopecks, minimum: 100000"
+      },
+      {
+        "code": "I403",
+        "details": {
+          "confidence": 0.9,
+          "evidence": [
+            "currency: RUB (enum constant)",
+            "request method: sbp (default of recipient.type)",
+            "direction: withdraw (token 'payout' in operationId createPayout)"
+          ],
+          "external_method": "sbp_payout",
+          "gateway": "RUB_SBP_WITHDRAW"
+        },
+        "level": "info",
+        "location": null,
+        "message": "Gateway config recorded: external_method sbp_payout, gateway RUB_SBP_WITHDRAW (confidence 0.9); evidence: currency: RUB (enum constant), request method: sbp (default of recipient.type), direction: withdraw (token 'payout' in operationId createPayout)"
+      },
+      {
+        "code": "W102",
+        "details": {
+          "kind": "balance",
+          "method": "GET",
+          "operation_id": "getBalance",
+          "path": "/balance"
+        },
+        "level": "info",
+        "location": "#/paths/~1balance/get",
+        "message": "Operation getBalance (GET /balance) is outside the BaseService contract (kind balance); generated as an extra method"
+      },
+      {
+        "code": "W102",
+        "details": {
+          "kind": "cancel",
+          "method": "POST",
+          "operation_id": "cancelPayout",
+          "path": "/payouts/{payout_id}/cancel"
+        },
+        "level": "info",
+        "location": "#/paths/~1payouts~1{payout_id}~1cancel/post",
+        "message": "Operation cancelPayout (POST /payouts/{payout_id}/cancel) is outside the BaseService contract (kind cancel); generated as an extra method"
+      }
+    ],
+    "generation": []
+  },
+  "files": [
+    {
+      "path": "novapay_service.rb",
+      "sha256": "2f42c7b2f56b1e3bf904bdbebeb9e4f5c8f00f9c639605cb2ebff1ef254eed48"
+    },
+    {
+      "path": "base_contract.rb",
+      "sha256": "6f3f06e95109b901d8d1f2977de1223a470443330912752c348c6d73c3c84cab"
+    },
+    {
+      "path": "INTEGRATION.md",
+      "sha256": "1915d4f8c92997b01f387dee55db9ff2e861e7a1a9bf420923cd43fb3f40ae7c"
+    },
+    {
+      "path": "fixtures.json",
+      "sha256": "67654c876334d76f5f08e0412339af8cd9fbef8ca32d37688e68fdf606e9a7d7"
+    }
+  ],
+  "generator": {
+    "ir_version": 1,
+    "name": "provider-integrator",
+    "version": "0.1.0"
+  },
+  "inferences": {
+    "amount_units": [
+      {
+        "confidence": 0.89,
+        "evidence": [
+          "description: копейках",
+          "error example (422): kopecks",
+          "minimum: 100000"
+        ],
+        "field": "amount",
+        "operation_id": "createPayout",
+        "source": "scoring",
+        "type": "multiply",
+        "unit_from": "major",
+        "unit_to": "minor",
+        "value": 100
+      }
+    ],
+    "authentication": {
+      "confidence": 1.0,
+      "evidence": [
+        "securitySchemes.ApiKeyAuth: apiKey in header X-API-Key",
+        "security: ApiKeyAuth used by 4 of 5 operations"
+      ],
+      "location": "header",
+      "name": "X-API-Key",
+      "scheme_name": "ApiKeyAuth",
+      "type": "api_key"
+    },
+    "conditional_requirements": [
+      {
+        "confidence": 0.6,
+        "equals": "sbp",
+        "evidence": [
+          "description: обязателен для type=sbp"
+        ],
+        "field": "recipient.bank_code",
+        "operation_id": "createPayout",
+        "source": "description",
+        "when": "recipient.type"
+      },
+      {
+        "confidence": 0.6,
+        "equals": "card",
+        "evidence": [
+          "description: обязателен для type=card"
+        ],
+        "field": "recipient.card_number",
+        "operation_id": "createPayout",
+        "source": "description",
+        "when": "recipient.type"
+      }
+    ],
+    "gateway_config": {
+      "confidence": 0.9,
+      "currency": "RUB",
+      "direction": "withdraw",
+      "evidence": [
+        "currency: RUB (enum constant)",
+        "request method: sbp (default of recipient.type)",
+        "direction: withdraw (token 'payout' in operationId createPayout)"
+      ],
+      "external_method": "sbp_payout",
+      "gateway": "RUB_SBP_WITHDRAW",
+      "method": "sbp"
+    },
+    "operations": [
+      {
+        "canonical_method": "create_request",
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'create' -> create (+5)",
+          "structure POST with body and no path id -> create (+3)",
+          "text 'создать' -> create (+1)"
+        ],
+        "in_contract": true,
+        "kind": "create",
+        "method": "POST",
+        "operation_id": "createPayout",
+        "path": "/payouts"
+      },
+      {
+        "canonical_method": "fetch_status",
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'status' -> status (+5)",
+          "structure GET with path id -> status (+3)",
+          "text 'статус' -> status (+1)"
+        ],
+        "in_contract": true,
+        "kind": "status",
+        "method": "GET",
+        "operation_id": "getPayoutStatus",
+        "path": "/payouts/{payout_id}"
+      },
+      {
+        "canonical_method": "cancel_request",
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'cancel' -> cancel (+5)",
+          "path token 'cancel' -> cancel (+3)",
+          "text 'отменить' -> cancel (+1)"
+        ],
+        "in_contract": false,
+        "kind": "cancel",
+        "method": "POST",
+        "operation_id": "cancelPayout",
+        "path": "/payouts/{payout_id}/cancel"
+      },
+      {
+        "canonical_method": "process_callback",
+        "confidence": 0.92,
+        "evidence": [
+          "operationId token 'webhook' -> webhook (+5)",
+          "path token 'webhooks' -> webhook (+3)",
+          "tag 'Webhooks' -> webhook (+2)",
+          "text 'webhook' -> webhook (+1)"
+        ],
+        "in_contract": true,
+        "kind": "webhook",
+        "method": "POST",
+        "operation_id": "payoutWebhook",
+        "path": "/webhooks/payout"
+      },
+      {
+        "canonical_method": "fetch_balance",
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'balance' -> balance (+5)",
+          "path token 'balance' -> balance (+3)",
+          "text 'баланс' -> balance (+1)"
+        ],
+        "in_contract": false,
+        "kind": "balance",
+        "method": "GET",
+        "operation_id": "getBalance",
+        "path": "/balance"
+      }
+    ],
+    "statuses": [
+      {
+        "canonical": "in_progress",
+        "confidence": 0.95,
+        "evidence": [
+          "statuses.yml: pending -> in_progress"
+        ],
+        "provider": "pending",
+        "source": "dictionary"
+      },
+      {
+        "canonical": "in_progress",
+        "confidence": 0.95,
+        "evidence": [
+          "statuses.yml: processing -> in_progress"
+        ],
+        "provider": "processing",
+        "source": "dictionary"
+      },
+      {
+        "canonical": "approved",
+        "confidence": 0.95,
+        "evidence": [
+          "statuses.yml: completed -> approved"
+        ],
+        "provider": "completed",
+        "source": "dictionary"
+      },
+      {
+        "canonical": "rejected",
+        "confidence": 0.95,
+        "evidence": [
+          "statuses.yml: failed -> rejected"
+        ],
+        "provider": "failed",
+        "source": "dictionary"
+      },
+      {
+        "canonical": "rejected",
+        "confidence": 0.95,
+        "evidence": [
+          "statuses.yml: cancelled -> rejected"
+        ],
+        "provider": "cancelled",
+        "source": "dictionary"
+      }
+    ],
+    "webhook": {
+      "confidence": 0.92,
+      "event_field": "event",
+      "events": [
+        {
+          "canonical_status": "approved",
+          "confidence": 0.95,
+          "source": "dictionary",
+          "value": "payout.completed"
+        },
+        {
+          "canonical_status": "rejected",
+          "confidence": 0.95,
+          "source": "dictionary",
+          "value": "payout.failed"
+        },
+        {
+          "canonical_status": "in_progress",
+          "confidence": 0.95,
+          "source": "dictionary",
+          "value": "payout.processing"
+        },
+        {
+          "canonical_status": "rejected",
+          "confidence": 0.95,
+          "source": "dictionary",
+          "value": "payout.cancelled"
+        }
+      ],
+      "id_field": "payout_id",
+      "method": "POST",
+      "path": "/webhooks/payout",
+      "signature": {
+        "algorithm": "hmac-sha256",
+        "confidence": 0.9,
+        "encoding": "unknown",
+        "evidence": [
+          "parameter X-NovaPay-Signature (header): HMAC-SHA256 подпись тела запроса",
+          "operation description: Подпись передаётся в заголовке X-NovaPay-Signature (HMAC-SHA256)"
+        ],
+        "location": "header",
+        "message": "raw_body",
+        "name": "X-NovaPay-Signature",
+        "secret": "callback_secret",
+        "source": "parameter"
+      },
+      "source": "path_heuristic",
+      "status_field": "status"
+    }
+  },
+  "overrides_applied": [],
+  "provider": {
+    "class_name": "Provider::NovapayService",
+    "service_file": "novapay_service.rb",
+    "slug": "novapay",
+    "title": "NovaPay Payout API",
+    "version": "1.0.0"
+  },
+  "requires_confirmation": [
+    {
+      "code": "W301",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/paths/~1webhooks~1payout/post/parameters/0",
+      "message": "HMAC canonicalization for X-NovaPay-Signature is not specified (encoding unknown, message raw_body); the generator assumes hex digest over raw_body",
+      "where": "verify_signature!"
+    },
+    {
+      "code": "W402",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/components/schemas/Recipient/properties/bank_code",
+      "message": "Conditional requirement inferred from description: recipient.bank_code is required when recipient.type equals sbp (createPayout)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "W402",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/components/schemas/Recipient/properties/card_number",
+      "message": "Conditional requirement inferred from description: recipient.card_number is required when recipient.type equals card (createPayout)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "I201",
+      "evidence": [],
+      "level": "info",
+      "location": null,
+      "message": "Status mapping recorded (5 statuses): pending -> in_progress, processing -> in_progress, completed -> approved, failed -> rejected, cancelled -> rejected",
+      "where": "STATUS_MAP"
+    },
+    {
+      "code": "I301",
+      "evidence": [],
+      "level": "info",
+      "location": "#/paths/~1webhooks~1payout/post/parameters/0",
+      "message": "Signature convention recorded: X-NovaPay-Signature (header), algorithm hmac-sha256, encoding unknown, message raw_body, secret callback_secret",
+      "where": "verify_signature!"
+    },
+    {
+      "code": "I401",
+      "evidence": [
+        "description: копейках",
+        "error example (422): kopecks",
+        "minimum: 100000"
+      ],
+      "level": "info",
+      "location": "#/components/schemas/CreatePayoutRequest/properties/amount",
+      "message": "Amount field amount in createPayout uses minor units (multiplier 100, score 8); signals: description: копейках, error example (422): kopecks, minimum: 100000",
+      "where": "build_*_payload, MIN_AMOUNT"
+    },
+    {
+      "code": "I403",
+      "evidence": [
+        "currency: RUB (enum constant)",
+        "request method: sbp (default of recipient.type)",
+        "direction: withdraw (token 'payout' in operationId createPayout)"
+      ],
+      "level": "info",
+      "location": null,
+      "message": "Gateway config recorded: external_method sbp_payout, gateway RUB_SBP_WITHDRAW (confidence 0.9); evidence: currency: RUB (enum constant), request method: sbp (default of recipient.type), direction: withdraw (token 'payout' in operationId createPayout)",
+      "where": "ProviderGateway config"
+    }
+  ],
+  "todos": [
+    {
+      "file": "novapay_service.rb",
+      "line": 126,
+      "text": "TODO(confidence 0.6): required when recipient.type = sbp (description: обязателен для type=sbp)"
+    },
+    {
+      "file": "novapay_service.rb",
+      "line": 144,
+      "text": "TODO(confidence 0.6): required when recipient.type = card (description: обязателен для type=card)"
+    },
+    {
+      "file": "novapay_service.rb",
+      "line": 175,
+      "text": "TODO(confidence 0.6): encoding and canonicalization are not in the spec (W301): hex over raw_body"
+    }
+  ],
+  "validation": {
+    "checks": [
+      {
+        "detail": "Prism: no syntax errors",
+        "name": "novapay_service.rb: syntax",
+        "ok": true
+      },
+      {
+        "detail": "no ERB tags in the output",
+        "name": "novapay_service.rb: no ERB leftovers",
+        "ok": true
+      },
+      {
+        "detail": "0 offenses",
+        "name": "novapay_service.rb: rubocop",
+        "ok": true
+      },
+      {
+        "detail": "class inherits Provider::BaseService",
+        "name": "novapay_service.rb: inherits BaseService",
+        "ok": true
+      },
+      {
+        "detail": "4/4 contract methods",
+        "name": "novapay_service.rb: contract methods",
+        "ok": true
+      },
+      {
+        "detail": "Prism: no syntax errors",
+        "name": "base_contract.rb: syntax",
+        "ok": true
+      },
+      {
+        "detail": "no ERB tags in the output",
+        "name": "base_contract.rb: no ERB leftovers",
+        "ok": true
+      },
+      {
+        "detail": "0 offenses",
+        "name": "base_contract.rb: rubocop",
+        "ok": true
+      },
+      {
+        "detail": "parses, 6 top-level entries",
+        "name": "fixtures.json: JSON",
+        "ok": true
+      },
+      {
+        "detail": "examples satisfy the schemas rebuilt from the IR",
+        "name": "fixtures.json: schemas",
+        "ok": true
+      },
+      {
+        "detail": "12 sections",
+        "name": "INTEGRATION.md: sections",
+        "ok": true
+      },
+      {
+        "detail": "no ERB tags in the output",
+        "name": "INTEGRATION.md: no ERB leftovers",
+        "ok": true
+      }
+    ],
+    "ok": true
+  }
+}

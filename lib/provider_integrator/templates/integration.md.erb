@@ -1,0 +1,11 @@
+# <%= data.title %>
+
+<%= data.intro %>
+<%- data.sections.each do |section| -%>
+
+## <%= section.title %>
+
+<%- section.lines.each do |line| -%>
+<%= line %>
+<%- end -%>
+<%- end -%>

@@ -8,10 +8,13 @@ RSpec::Core::RakeTask.new(:spec)
 RuboCop::RakeTask.new(:rubocop)
 
 namespace :golden do
-  desc "Regenerate golden outputs under spec/golden/ (commit the diff with an explanation)"
-  task :update do
+  desc "Regenerate golden outputs under spec/golden/ (commit the diff with an explanation); " \
+       "rake \"golden:update[novapay,bearerpay]\" adds or refreshes the named specs"
+  task :update, [:names] do |_task, args|
     require_relative "lib/provider_integrator"
-    ProviderIntegrator::Golden.update!
+    names = args[:names].to_s.split(/[,\s]+/).reject(&:empty?)
+    written = ProviderIntegrator::Golden.update!(names.empty? ? ProviderIntegrator::Golden.present : names)
+    puts written.empty? ? "no golden directories (pass names: rake \"golden:update[novapay]\")" : written
   end
 end
 
