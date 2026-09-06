@@ -128,7 +128,7 @@ module ProviderIntegrator
 
       def operation(node)
         parameters = Array(node["parameters"])
-        body, rest = split_parameters(parameters)
+        body, rest = split_parameters(node, parameters)
         converted = node.except("parameters", "consumes", "produces")
         converted["parameters"] = rest unless rest.empty?
         converted["requestBody"] = body if body
@@ -136,26 +136,31 @@ module ProviderIntegrator
         converted
       end
 
-      def split_parameters(parameters)
+      def split_parameters(node, parameters)
         body = parameters.find { |parameter| parameter["in"] == "body" }
         form = parameters.select { |parameter| parameter["in"] == "formData" }
         rest = parameters.reject { |parameter| %w[body formData].include?(parameter["in"]) }
-        [request_body(body, form), rest.map { |parameter| parameter_object(parameter) }]
+        [request_body(node, body, form), rest.map { |parameter| parameter_object(parameter) }]
       end
 
-      def request_body(body, form)
-        return json_body(body) if body
+      def request_body(node, body, form)
+        return json_body(node, body) if body
         return nil if form.empty?
 
         { "required" => form.any? { |parameter| parameter["required"] == true },
           "content" => { FORM_TYPE => { "schema" => form_schema(form) } } }
       end
 
-      def json_body(body)
-        media = source["consumes"]&.first || DEFAULT_CONSUMES
+      # 2.0 lets an operation narrow the document-level "consumes"; a form API still posts its
+      # callbacks as JSON, so the operation wins over the global media type.
+      def json_body(node, body)
+        media = consumed(node) || consumed(source) || DEFAULT_CONSUMES
         { "required" => body["required"] == true, "description" => body["description"],
           "content" => { media => { "schema" => body["schema"] || {} } } }.compact
       end
+
+      # The first media type +node+ declares it consumes, or nil.
+      def consumed(node) = Array(node["consumes"]).first
 
       # formData parameters describe one object; rebuild it so the field extractor sees a schema.
       def form_schema(form)

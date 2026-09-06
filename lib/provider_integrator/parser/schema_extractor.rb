@@ -183,6 +183,9 @@ module ProviderIntegrator
 
         items = document.deref(node["items"], Pointer.join(pointer, "items"))
         return [] unless items.node.is_a?(Hash)
+        # The array node itself is never the cycle; the items schema is ("children" of the same
+        # component). Without this guard a self-referencing array grows exponentially until MAX_DEPTH.
+        return [] if cursor.revisiting?(items.pointer)
 
         walk(items.node, cursor.descend(pointer: items.pointer, prefix: "#{path}[]"))
       end
@@ -267,11 +270,17 @@ module ProviderIntegrator
 
       def merge_two(left, right)
         merged = right.merge(left)
-        merged["properties"] = (right["properties"] || {}).merge(left["properties"] || {})
+        merged["properties"] = merge_properties(left["properties"], right["properties"])
         merged.delete("properties") if merged["properties"].empty?
-        required = (right["required"] || []) | (left["required"] || [])
+        required = (left["required"] || []) | (right["required"] || [])
         merged["required"] = required unless required.empty?
         merged
+      end
+
+      # +outer+ is the enclosing (already merged) node: it wins on a conflict and keeps its position,
+      # because the order of the properties is the order of the fields in the IR.
+      def merge_properties(outer, inner)
+        (outer || {}).merge(inner || {}) { |_key, from_outer, _from_inner| from_outer }
       end
     end
   end

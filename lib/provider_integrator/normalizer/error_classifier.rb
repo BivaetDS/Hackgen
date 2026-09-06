@@ -58,7 +58,7 @@ module ProviderIntegrator
         entry = entry_for(code)
         decision = decide(http, code, entry, override_actions)
         Verdict.new(provider_code: code, canonical: decision[:canonical], action: decision[:action], retry_after:,
-                    confidence: confidences.fetch("example"), source: decision[:source],
+                    confidence: confidences.fetch(decision[:source]), source: decision[:source],
                     evidence: ["example (#{http}): code #{code}"] + decision[:evidence],
                     unknown_code: decision[:unknown] == true)
       end
@@ -162,11 +162,13 @@ module ProviderIntegrator
         end
       end
 
+      # The component that owns the enum property ("PayoutError"). A schema written inline in the
+      # operation belongs to no component, and the contract names that case "inline".
       def owner(field)
         segments = Parser::Pointer.parse(field.pointer) || []
-        index = segments.rindex("properties")
-        component = index && index >= 1 ? segments[index - 1] : "inline"
-        "#{component}.#{field.name}"
+        index = segments.rindex("schemas")
+        component = segments[index + 1] if index&.positive? && segments[index - 1] == "components"
+        "#{component || "inline"}.#{field.name}"
       end
 
       # ---- source: http default --------------------------------------------------------------

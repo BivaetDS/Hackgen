@@ -58,7 +58,7 @@ module ProviderIntegrator
 
       # Where the signature is carried, with an override winning over the declaration.
       def placement(forced, source)
-        { location: forced[:location] || source.location, name: forced[:name] || source.name }
+        { location: forced[:location] || source&.location, name: forced[:name] || source&.name }
       end
 
       def encoding_of(forced, texts)
@@ -70,9 +70,11 @@ module ProviderIntegrator
       end
 
       # [[prefix, text], ...] in search order: the declaration itself, then the operation prose.
+      # An override may pin a signature the spec never declares, so there is not always a source.
       def texts_for(source, summary, description)
-        { source.label => source.description, "operation description" => description,
-          "operation summary" => summary }.reject { |_, text| text.nil? || text.to_s.strip.empty? }
+        declared = source ? { source.label => source.description } : {}
+        declared.merge("operation description" => description, "operation summary" => summary)
+                .reject { |_, text| text.nil? || text.to_s.strip.empty? }
       end
 
       def detect(texts)

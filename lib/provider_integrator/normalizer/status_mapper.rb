@@ -97,7 +97,7 @@ module ProviderIntegrator
         return nil unless canonical
 
         Verdict.new(provider:, canonical:, confidence: confidences.fetch("description"), source: "description",
-                    evidence: ["description: #{provider} - #{text}"])
+                    evidence: ["description: #{provider} — #{text}"])
       end
 
       def described(provider, description)

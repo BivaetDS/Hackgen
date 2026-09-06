@@ -68,13 +68,12 @@ module ProviderIntegrator
         nil
       end
 
-      # "type" in "required for type=sbp" means the sibling field, not a top-level one.
+      # "type" in "required for type=sbp" means the sibling field, not a top-level one; when the
+      # schema has no such sibling the name stays exactly as the description wrote it (2.6), because
+      # an invented path would be no more real than the name and harder to trace back to the prose.
       def resolve_when(name, path, paths)
-        container = path.split(".")[0..-2]
-        sibling = (container + [name]).join(".")
-        return sibling if paths.include?(sibling)
-
-        paths.include?(name) ? name : sibling
+        sibling = (path.split(".")[0..-2] + [name]).join(".")
+        paths.include?(sibling) ? sibling : name
       end
 
       def verdict(condition, equals, source, evidence)

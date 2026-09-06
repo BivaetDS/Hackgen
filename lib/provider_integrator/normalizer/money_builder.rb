@@ -17,7 +17,7 @@ module ProviderIntegrator
       def call(field:, currency: nil)
         forced = context.overrides.amount_unit(schema_name, field.path)
         verdict = context.money_units.call(field:, error_examples:, currency:)
-        verdict = force(verdict, forced, currency) if forced
+        verdict = force(verdict, forced, currency, field) if forced
         report(field, verdict, forced)
         conversion(verdict, forced)
       end
@@ -26,7 +26,7 @@ module ProviderIntegrator
 
       attr_reader :context, :operation_id, :error_examples, :schema_name
 
-      def force(verdict, unit, currency)
+      def force(verdict, unit, currency, field)
         multiplier = unit == "minor" ? context.money_units.exponent_for(currency) : nil
         type = if unit == "minor"
                  "multiply"
@@ -34,7 +34,7 @@ module ProviderIntegrator
                  (verdict.type == "to_decimal_string" ? "to_decimal_string" : "identity")
                end
         MoneyUnits::Verdict.new(unit:, type:, value: multiplier, confidence: 1.0,
-                                evidence: ["overrides.yml: amount_unit #{schema_name}.#{unit}"],
+                                evidence: ["overrides.yml: amount_unit #{schema_name}.#{field.path} -> #{unit}"],
                                 scores: verdict.scores)
       end
 

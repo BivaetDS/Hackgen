@@ -142,10 +142,17 @@ module ProviderIntegrator
 
       def verdict(state)
         scores = state.scores
-        kind = winner(scores)
-        structural_only = kind != "unknown" && state.structural_only?(kind)
-        Verdict.new(kind:, confidence: capped(Confidence.from_scores(scores), structural_only), source: "scoring",
-                    scores:, evidence: state.evidence(kind), structural_only:)
+        leader = winner(scores)
+        structural_only = leader != "unknown" && state.structural_only?(leader)
+        confidence = capped(Confidence.from_scores(scores), structural_only)
+        kind = decided?(leader, confidence) ? leader : "unknown"
+        Verdict.new(kind:, confidence:, source: "scoring", scores:, evidence: state.evidence(kind), structural_only:)
+      end
+
+      # A lead narrower than unknown_below is no decision at all (docs/IR_CONTRACT.md 2.1): the kind
+      # becomes unknown, the operation is generated as an extra method and W101 reports the doubt.
+      def decided?(kind, confidence)
+        kind == "unknown" || confidence >= Confidence.thresholds.fetch("unknown_below")
       end
 
       # argmax over the scores; a tie for the lead is not a decision.
