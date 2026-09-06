@@ -91,6 +91,24 @@ RSpec.describe ProviderIntegrator::Parser::ExampleComposer do
         .to eq({ "kind" => "payout", "currency" => "RUB", "attempts" => 0, "test" => false })
     end
 
+    it "prefers example over const, const over a one-value enum and the enum over default" do
+      schema = { "type" => "object",
+                 "properties" => { "id" => { "example" => "p_1", "const" => "c", "default" => "d" },
+                                   "kind" => { "const" => "payout", "enum" => %w[e], "default" => "d" },
+                                   "currency" => { "enum" => %w[RUB], "default" => "d" } } }
+
+      expect(composer.for_schema(schema, "#/s"))
+        .to eq({ "id" => "p_1", "kind" => "payout", "currency" => "RUB" })
+    end
+
+    it "keeps a false or a 0 example instead of reading it as no value at all" do
+      schema = { "type" => "object",
+                 "properties" => { "test" => { "type" => "boolean", "example" => false },
+                                   "retries" => { "type" => "integer", "example" => 0 } } }
+
+      expect(composer.for_schema(schema, "#/s")).to eq({ "test" => false, "retries" => 0 })
+    end
+
     it "composes an array into a one-element array" do
       schema = { "type" => "array", "items" => { "type" => "object",
                                                  "properties" => { "sku" => { "type" => "string",
@@ -131,6 +149,19 @@ RSpec.describe ProviderIntegrator::Parser::ExampleComposer do
         .to eq({ "id" => "p_1", "currency" => "RUB" })
     end
 
+    it "composes the same component once per property, not once per document" do
+      root = { "components" => { "schemas" => {
+        "Money" => { "type" => "object",
+                     "properties" => { "amount" => { "type" => "integer", "example" => 100 } } }
+      } } }
+      document = ProviderIntegrator::Parser::Document.new(root:, log:, spec_format: "3.0.3")
+      schema = { "type" => "object", "properties" => { "debit" => { "$ref" => "#/components/schemas/Money" },
+                                                       "credit" => { "$ref" => "#/components/schemas/Money" } } }
+
+      expect(described_class.new(document).for_schema(schema, "#/s"))
+        .to eq({ "debit" => { "amount" => 100 }, "credit" => { "amount" => 100 } })
+    end
+
     it "returns nil and reports E005 when the schema cannot be resolved" do
       value = composer.for_schema({ "$ref" => "#/components/schemas/Missing" }, "#/s")
 
@@ -138,6 +169,29 @@ RSpec.describe ProviderIntegrator::Parser::ExampleComposer do
         expect(value).to be_nil
         expect(log.to_a.map(&:code)).to eq(%w[E005])
         expect(log.to_a.first.message).to eq("Unresolvable $ref #/components/schemas/Missing")
+      end
+    end
+
+    context "with a component that refers to itself" do
+      let(:components) do
+        { "schemas" => { "Node" => {
+          "type" => "object",
+          "properties" => { "id" => { "type" => "string", "example" => "n_1" },
+                            "parent" => { "$ref" => "#/components/schemas/Node" },
+                            "children" => { "type" => "array",
+                                            "items" => { "$ref" => "#/components/schemas/Node" } } }
+        } } }
+      end
+
+      # Without the guard the component is composed again on every level down to MAX_DEPTH, which is
+      # exponential in the number of self-referencing properties, and the spec is untrusted input.
+      it "stops at a component already open on this branch instead of composing it again" do
+        value = composer.for_schema({ "$ref" => "#/components/schemas/Node" }, "#/s")
+
+        aggregate_failures do
+          expect(value).to eq({ "id" => "n_1" })
+          expect(log).to be_empty
+        end
       end
     end
   end
