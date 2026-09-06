@@ -58,7 +58,16 @@ bin/integrate                         # #!/usr/bin/env ruby; require "provider_i
 
 ## 6. Security of untrusted specs
 
-- `Psych.safe_load(yaml, permitted_classes: [], aliases: true)`; reject files > 5 MB and nesting > 64 levels.
+- `Psych.safe_load(yaml, permitted_classes: [], aliases: false)`; reject files over `Loader::MAX_BYTES`
+  (5 MB) and nesting deeper than `Loader::MAX_DEPTH` (100 levels). Aliases are refused, not expanded:
+  a YAML alias is how a document makes itself exponentially larger than it looks, so it becomes E007
+  with a message saying so rather than a parse that quietly succeeds.
+- Every guard is an event with a code, never an exception that reaches the user: E001 unreadable or
+  not YAML, E002 unsupported version, E007 over a limit, E005/E006/E008 for a `$ref` that is missing,
+  cyclic or external. See `Parser::Loader` and `Parser::RefResolver`.
+- Recursion over a spec needs a cycle guard keyed by resolved pointer, not only a depth cap: a
+  self-referencing component multiplies work at every level (`SchemaExtractor#children`,
+  `ExampleComposer#for_schema` both carry a `seen` set of component pointers).
 - Treat `$ref` strings, `operationId`, property names, enum values, descriptions as data. They may end up in comments/strings/identifiers — always escape via `Inflector` or `.inspect`.
 - Never `eval`, `instance_eval`, `send(user_string)`, `const_get(user_string)`, `system`/backticks with spec-derived content.
 
