@@ -89,7 +89,6 @@ GEM
       regexp_parser (>= 2.0)
       rubocop (~> 1.86, >= 1.86.2)
     ruby-progressbar (1.13.0)
-    rubyzip (3.6.0)
     simpleidn (0.3.0)
     sinatra (4.2.1)
       logger (>= 1.6.0)
@@ -120,6 +119,7 @@ GEM
     zeitwerk (2.8.3)
 
 PLATFORMS
+  arm64-darwin-24
   arm64-darwin-25
   x64-mingw-ucrt
 
@@ -136,7 +136,6 @@ DEPENDENCIES
   rubocop (~> 1.90)
   rubocop-rake (~> 0.7)
   rubocop-rspec (~> 3.10)
-  rubyzip (~> 3.6)
   sinatra (~> 4.2)
   thor (~> 1.5)
   tty-table (~> 0.12)
@@ -188,7 +187,6 @@ CHECKSUMS
   rubocop-rake (0.7.1) sha256=3797f2b6810c3e9df7376c26d5f44f3475eda59eb1adc38e6f62ecf027cbae4d
   rubocop-rspec (3.10.2) sha256=0b3e2ecc592cd10ecbf0095bb58d1e357905276e069643523cc19eb7495f65e2
   ruby-progressbar (1.13.0) sha256=80fc9c47a9b640d6834e0dc7b3c94c9df37f08cb072b7761e4a71e22cff29b33
-  rubyzip (3.6.0) sha256=268994d44d62282d1cfd99bf10eae48d7267199158ad7ea3e1fee2da9458b695
   simpleidn (0.3.0) sha256=12ca730bed2f3db04d11e9bfd1bca3e11fb37f55b21eb2e9793fb5814bf54d03
   sinatra (4.2.1) sha256=b7aeb9b11d046b552972ade834f1f9be98b185fa8444480688e3627625377080
   strings (0.2.1) sha256=933293b3c95cf85b81eb44b3cf673e3087661ba739bbadfeadf442083158d6fb

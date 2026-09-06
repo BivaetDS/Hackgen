@@ -1,7 +1,7 @@
 # Чек-поинт: что показывать и что говорить
 
-Шпаргалка для восьмиминутного чек-поинта и для финала. Всё, что здесь написано, проверено и работает
-на текущем `main`. Команды запускать из корня репозитория (`E:\Hackgenesis\Generator`), shell — Git Bash.
+Шпаргалка для восьмиминутного чек-поинта и для финала. Всё, что здесь написано, проверено на текущем коде.
+Команды запускать из корня репозитория (`E:\Hackgenesis\Generator`), shell — Git Bash.
 
 Перед выходом на связь один раз прогнать проверку и не закрывать терминал:
 
@@ -9,7 +9,7 @@
 bundle exec rake check
 ```
 
-Ожидаемо: `701 examples, 0 failures`, `190 files inspected, no offenses detected`, пять словарей `ok`.
+Ожидаемо: `769 examples, 0 failures`, `217 files inspected, no offenses detected`, пять словарей `ok`.
 
 ---
 
@@ -18,7 +18,7 @@ bundle exec rake check
 ### Команда 1. Живой разбор эталонной спеки ТЗ
 
 ```bash
-ruby bin/integrate --spec docs/provider_api.yaml --provider novapay
+ruby bin/integrate --spec docs/provider_api.yaml --provider novapay --run-spec
 ```
 
 ```
@@ -35,9 +35,11 @@ Webhook signature: X-NovaPay-Signature (HMAC-SHA256) on POST /webhooks/payout
 Generating service...
 Generating integration guide...
 Generating test fixtures...
+Generating service spec...
 Generating contract stub and report...
 Validating output... Ruby syntax OK, RuboCop 0 offenses, 4/4 contract methods, fixtures valid,
-                     INTEGRATION.md 12 sections
+                     INTEGRATION.md 13 sections
+Running generated spec... RSpec 20 examples, 0 failures
 Completed with 3 warnings:
   W301 HMAC canonicalization for X-NovaPay-Signature is not specified ...
   W402 Conditional requirement inferred from description: recipient.bank_code
@@ -49,6 +51,7 @@ Output:
   ./output/novapay/novapay_service.rb
   ./output/novapay/INTEGRATION.md
   ./output/novapay/fixtures.json
+  ./output/novapay/novapay_service_spec.rb
   ./output/novapay/base_contract.rb
   ./output/novapay/generation_report.json
 ```
@@ -66,7 +69,8 @@ Output:
 | `W301` | кодировка подписи в спеке не указана — и мы это честно говорим, а не угадываем молча |
 | `Validating output... Ruby syntax OK, ... 4/4 contract methods` | результат проверен до записи: Prism, RuboCop, JSON-схемы, секции документации |
 | `Requires confirmation: 7 items` | критичные выводы (единицы, подпись, статусы, конфиг шлюза) не молчат даже при высокой уверенности |
-| `Output: ./output/novapay/...` | три файла ТЗ плюс заглушка контракта и отчёт — за один прогон |
+| `Running generated spec... 0 failures` | записанный сервис реально выполняется через Net::HTTP + WebMock, без сети |
+| `Output: ./output/novapay/...` | три файла ТЗ плюс RSpec, заглушка контракта и отчёт — за один прогон |
 
 ### Команда 2. Чужая спека, другой формат — код не менялся
 
@@ -87,6 +91,17 @@ ruby bin/integrate --spec spec/fixtures/specs/numstatus.yaml   # OAuth2, веб�
 ruby bin/integrate --spec spec/fixtures/specs/bearerpay.yaml   # Bearer, вообще без вебхука
 ```
 
+Матрица регрессии волны 2 (собрана из канонического IR `--analyze-only`; повторы warning сохранены):
+
+| Спека | Операции распознаны | Auth | Статусы | Warnings |
+|---|---|---|---|---|
+| `novapay` | 5: create, status, cancel, webhook, balance | API key, header | 5 строковых | 3: W301, W402×2 |
+| `bearerpay` | 6: create, status×2, cancel, list, unknown | Bearer | NEW/SENT/DONE/DECLINED | 9: W101, W105, W202, W304, W402×4, W403 |
+| `rublepay` | 6: create, status, refund, webhook, list, unknown | API key, query | 7 строковых | 6: W101, W202×2, W402, W403×2 |
+| `numstatus` (`tranzo`) | 6: create, status, cancel, balance, list, unknown; webhook из callbacks | OAuth2 client credentials | 0/1/2/3/4/−1 | 9: W101, W202, W203, W204, W402×4, W403 |
+| `cardpay` | 7: create×2, status, cancel, balance, list, webhook | API key, header | 5 строковых | 6: W105, W201, W202, W203, W402×2 |
+| `legacy_swagger2` (`kassira`) | 7: create, status, cancel, balance, list, unknown, webhook | API key, header | 6 строковых | 9: W101×2, W201, W203, W402×4, W403 |
+
 ### Команда 3. Битая спека — понятное сообщение, не стек-трейс
 
 ```bash
@@ -101,8 +116,9 @@ exit=3
 
 Спека — недоверенный ввод: лимиты размера и глубины, `Psych.safe_load` без алиасов, собственный
 резолвер `$ref`. Любая проблема — код `E…`, одна понятная строка в stderr и свой exit-код: 2 аргументы,
-3 спека, 4 предупреждения под `--strict`, 5 сгенерированное не прошло валидацию (ничего не записано),
-6 не удалось записать. Стек-трейс — только с `--verbose`.
+3 спека, 4 предупреждения под `--strict`, 5 сгенерированное не прошло валидацию (ничего не записано) либо
+сгенерированный RSpec упал (шесть файлов сохранены для диагностики), 6 не удалось записать. Стек-трейс — только
+с `--verbose`.
 
 ### Команда 4. Сгенерированные файлы
 
@@ -116,15 +132,15 @@ ls output/novapay && diff -r output/novapay spec/golden/novapay && echo identica
 409 как успех, `Retry-After` из заголовка, `case request_method` по способам выплаты, `TODO(confidence 0.6)`
 там, где спека молчит. `INTEGRATION.md` — секции эталона плюс «Требует подтверждения»; `fixtures.json` —
 структура эталона, синтетика помечена `_synthetic`. Всё проверено `OutputValidator` (Prism, RuboCop,
-json_schemer) и тестом, который гоняет сервис против `base_contract.rb` с фейковым клиентом.
+json_schemer) и сгенерированным тестом, который гоняет `Provider::HttpClient` через WebMock без сети.
 
 ### Запасной вариант, если демо не запускается
 
 ```bash
-bundle exec rspec spec/parser/parser_spec.rb
+cd output/novapay && bundle exec rspec novapay_service_spec.rb
 ```
 
-25 примеров — тот же самый факт в виде теста: IR совпадает с эталоном, события ровно те, что нужны.
+20 примеров проверяют сам сгенерированный сервис: запросы, ответы, подпись webhook и условия.
 
 ---
 
@@ -133,7 +149,8 @@ bundle exec rspec spec/parser/parser_spec.rb
 **0:00–0:30 — что это.**
 Детерминированный компилятор: OpenAPI провайдера → промежуточное представление (JSON) → Ruby-сервис
 под контракт `Provider::BaseService` + `INTEGRATION.md` + `fixtures.json`. Сквозной проход готов и
-покрыт тестами: одна команда — и пять файлов на диске, каждый проверен до записи.
+покрыт тестами: одна команда — и шесть файлов на диске, генерация проверена до записи, затем выполняется
+сгенерированный RSpec.
 
 **0:30–1:30 — как это работает без нейросети.** *(самое важное — это прямое требование ТЗ)*
 Никаких LLM и внешних API в рантайме. Правила, словари и взвешенный скоринг. Пример: операция
@@ -175,13 +192,14 @@ SHA-256, есть тест на это.
 **5:30–6:00 — обработка ошибок.** Команда 3.
 
 **6:00–6:30 — качество.**
-`bundle exec rake check` — 701 тест, линтер, валидация словарей по JSON-схемам. Каждый анализатор
+`bundle exec rake check` — полный RSpec, линтер, валидация словарей по JSON-схемам. Каждый анализатор
 покрыт тройкой «позитив / другой провайдер / неоднозначность». Есть тест, что разбор эталонной спеки
-даёт представление, **байт в байт** равное написанному вручную эталону.
+даёт представление, **байт в байт** равное написанному вручную эталону; все шесть сгенерированных RSpec
+проходят в отдельных подпроцессах.
 
 **6:30–7:00 — что дальше.**
-Сгенерированный RSpec поверх `fixtures.json`, golden на все спеки, мок-сервер провайдера для e2e-прогона,
-`--diff` для ручных правок, тонкий веб-интерфейс, Docker.
+README и Docker для чистой машины, мок-сервер провайдера для отдельного e2e-прогона, `--diff` для ручных
+правок и реальная публичная спека S6. Пользовательский веб-интерфейс не входит в scope.
 
 ---
 
@@ -226,7 +244,7 @@ SHA-256, есть тест на это.
 
 - Файлы пишутся в `./output/<slug>/`, повторный запуск перезаписывает свои же файлы без вопросов;
   обнаружение ручных правок (`--diff`, W601) — волна 4.
-- `docs/ASSUMPTIONS.md` — 18 допущений по `BaseService`, потому что реального класса у нас нет.
+- `docs/ASSUMPTIONS.md` — 23 допущения по `BaseService`, потому что реального класса у нас нет.
   Это не пробел, а зафиксированный список вопросов к заказчику.
 - Часть предупреждений на синтетических спеках (`W201`, `W202`) — это не баги, а ровно тот случай,
   ради которого предупреждения и сделаны: провайдер использует слово, которого нет в словаре.
@@ -241,9 +259,10 @@ SHA-256, есть тест на это.
 | 1A | Парсер и анализаторы, CLI с разбором | **готово** |
 | 1B | Генератор: сервис, `INTEGRATION.md`, `fixtures.json`, `base_contract.rb`, отчёт, валидатор, golden | **готово** |
 | 1C | Полный конвейер и запись файлов через `bin/integrate` | **готово** |
-| 2 | Golden-тесты, генерируемый RSpec, анти-хардкод | по плану |
-| 3 | README, Docker, S3 | по плану |
-| 4–5 | Мок-сервер, `--diff`, веб-слой | по плану |
+| 2 | Golden на 6 спек, генерируемый RSpec, `--run-spec`, invalid/детерминизм/подтверждения | **готово; ядро заморожено** |
+| 3 | README, Docker, полировка инструкции | по плану |
+| 4 | Мок-сервер, `--diff`, S6 | по плану |
+| 5 | Финальная защита | по плану |
 
 Репозиторий: <https://github.com/BivaetDS/Hackgen>
 

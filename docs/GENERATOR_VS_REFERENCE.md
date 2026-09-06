@@ -46,5 +46,8 @@
 ## Дополнительные файлы
 
 `base_contract.rb` — заглушка `Provider::BaseService`, `Result`, `Operation`, `Response`, исключений
-(шапка «ДОПУЩЕНИЕ»). `generation_report.json` — события анализа и генерации, уверенности и evidence,
-список `TODO(confidence …)` с номерами строк, результаты валидатора, SHA-256 файлов.
+(шапка «ДОПУЩЕНИЕ») и `Provider::HttpClient` на Net::HTTP для автономного WebMock-прогона.
+`novapay_service_spec.rb` — сгенерированный RSpec поверх того же хеша `fixtures.json`: запросы 201/409/ошибки,
+`fetch_status`, webhook с верной и неверной подписью, `check_conditions`; запускается отдельно или флагом
+`--run-spec`. `generation_report.json` — события анализа и генерации, уверенности и evidence, список
+`TODO(confidence …)` с номерами строк, результаты валидатора, SHA-256 остальных пяти файлов.

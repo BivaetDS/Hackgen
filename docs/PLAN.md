@@ -29,9 +29,8 @@ provider_api.yaml → анализ → ProviderSpec (JSON) → правила Sp
 
 ```
 provider-integrator/
-├── Gemfile  README.md  ASSUMPTIONS.md  Rakefile  Dockerfile  compose.yaml  config.ru
+├── Gemfile  README.md  ASSUMPTIONS.md  Rakefile  Dockerfile  compose.yaml
 ├── bin/integrate                         # Thor CLI
-├── app/web.rb  app/views/                # тонкий веб-слой (Sinatra/Roda) поверх того же ядра
 ├── lib/provider_integrator.rb            # Zeitwerk
 └── lib/provider_integrator/
     ├── parser.rb                         # Parser.call(path:, overrides:) → Result
@@ -53,13 +52,13 @@ spec/
 │                    real_public_*.yaml invalid_*.yaml
 ├── fixtures/normalized_novapay.json  generated_manifest.json     # заглушки для параллельной работы
 ├── golden/<spec>/   все выходные файлы
-├── parser/ normalizer/ generator/ integration/ web/
+├── parser/ normalizer/ generator/ integration/
 examples/  overrides.example.yml
 ```
 
-Владение: `parser/ normalizer/ models/ dictionaries/` — Dev A («мозг»); `generator/ template_data/ templates/` — Dev B («фабрика»); `bin/ app/ spec/integration spec/fixtures/specs README ASSUMPTIONS Docker` — Dev C («продукт»).
+Владение: `parser/ normalizer/ models/ dictionaries/` — Dev A («мозг»); `generator/ template_data/ templates/` — Dev B («фабрика»); `bin/ spec/integration spec/fixtures/specs README ASSUMPTIONS Docker` — Dev C («продукт»).
 
-Стек (MIT/Ruby-лицензия): `openapi3_parser` (чтение + $ref + циклы, 3.0/3.1), `json_schemer` (валидация спеки, примеров, fixtures), `Psych.safe_load`, ERB, `Prism`/`ruby -c`, RuboCop `-A`, Thor + pastel/tty-table, RSpec + WebMock, Zeitwerk, Sinatra (веб-слой и мок-провайдер), Rack::Test.
+Стек (MIT/Ruby-лицензия): `openapi3_parser` (чтение + $ref + циклы, 3.0/3.1), `json_schemer` (валидация спеки, примеров, fixtures), `Psych.safe_load`, ERB, `Prism`/`ruby -c`, RuboCop `-A`, Thor + pastel/tty-table, RSpec + WebMock, Zeitwerk; Sinatra + Rack::Test — только для опционального локального мок-провайдера.
 
 ---
 
@@ -260,7 +259,7 @@ error_actions:         { amount_limit_exceeded: terminal_reject }
 
 ---
 
-## 7. CLI и веб
+## 7. CLI
 
 CLI — основной вывод текстуально близок к эталону из ТЗ, детали в `--verbose`:
 
@@ -284,10 +283,6 @@ Output: ./output/novapay/
 ```
 
 Флаги: `--spec`, `--provider`, `--output`, `--overrides PATH`, `--analyze-only`, `--strict`, `--verbose`, `--diff` (показать расхождения с существующим output без перезаписи), `--run-spec` (сразу запустить сгенерированный RSpec), `--help`, `--version`. Exit codes: 0 ok; 1 внутренняя; 2 аргументы; 3 спека; 4 неоднозначность в strict; 5 генерация; 6 запись.
-
-Веб (тонкий слой на том же ядре, без SPA): `/` загрузка YAML + slug → `/analysis` (эндпоинты, auth, статусы, webhook, warnings с подсветкой уверенности) → `/result` (файлы, проверки, preview, Download ZIP). Ограничение размера, whitelist slug, временная директория на запрос, без выполнения сгенерированного кода, без стек-трейсов наружу. Docker: один образ, без БД, не root, healthcheck. Публичный деплой — не нужен; демо локально.
-
----
 
 ## 8. Валидация результата (output_validator.rb)
 
@@ -323,13 +318,12 @@ Output: ./output/novapay/
 |---|---|---|---|
 | **0. Контракты** | Все трое: ProviderSpec JSON, интерфейсы Parser/Generator, реестр E/W, `normalized_novapay.json`, `generated_manifest.json`, `canonical_contract.yml`, ASSUMPTIONS.md с вопросами | Контракт зафиксирован в репо, каждый может работать автономно | — (фундамент) |
 | **1. Сквозной NovaPay** | A: loader/validator/spec_reader/extractors/классификатор/auth/status/error/units/conditional/webhook. B: service/INTEGRATION/fixtures/base_contract по шаблонам. C: CLI формата эталона, output_validator, события | `./bin/integrate` на NovaPay → 3 файла; валидатор зелёный; вывод близок к эталону | Разбор 20/20; Генерация 25/25; Преобразование 15/15; Понятность 6+4 / 4+3+3; Качество 6 / 4 |
-| **2. Доказательства** | C: `invalid_*`, S1, S2, golden, детерминизм, анти-хардкод тест. A: правки по S1/S2, `overrides.yml`. B: `generation_report.json`, `rspec_generator`, TODO по уверенности в коде | Регрессия зелёная на NovaPay+S1+S2+invalid; RSpec сгенерированного сервиса проходит; `grep novapay lib/` пуст | Универсальность 15/15 / 10/10; Ошибки разбора 4 / 3; Док и fixtures 13; Доп. идеи (часть) |
-| **3. Полнота и инструкция** | C: README (запуск, настройка, поддерж./неподдерж. элементы, troubleshooting), ASSUMPTIONS с ответами экспертов, Dockerfile. B: полировка INTEGRATION.md, cancel/balance как доп. методы. A: S3, `callbacks`, числовые статусы | Проект запускается на чистой машине по README; S3 зелёная | Инструкция 3; Полнота 8; Инфо по настройке 5 / 5+4 |
-| **4. Сильные доп. идеи** | B: `mock_server_generator`, e2e «сервис ↔ мок» (реальные запросы к провайдеру не требуются — это только демонстрация). A: S4 (3.1, несколько create), S5 (Swagger 2.0 конвертер). C: `--diff`/`regeneration_diff`, S6 реальная спека | e2e против мока зелёный; S4–S6 зелёные; diff показывает ручные правки | Доп. идеи 6; усиление Универсальности и Выступления |
-| **5. Веб и упаковка** | C: Sinatra `/`→`/analysis`→`/result`+ZIP, Rack::Test, compose. A/B: подсветка уверенности в `/analysis` | Веб и CLI дают идентичные файлы (SHA совпадает) | Демонстрация; доп. идеи |
-| **6. Защита** | Все: сценарий, 3+ репетиции с таймером, ответы на вопросы, резервная запись | Демо укладывается в 7 минут стабильно | Выступление 6 |
+| **2. Доказательства** | C: `invalid_*`, S1–S5, golden на все шесть спек, детерминизм, анти-хардкод, `--run-spec`. A: правки ядра по регрессии и `overrides.yml`. B: `generation_report.json`, `rspec_generator`, TODO по уверенности | Регрессия зелёная на NovaPay+S1–S5+invalid; все шесть сгенерированных RSpec проходят; `grep novapay lib/` пуст | Универсальность 15/15 / 10/10; Ошибки разбора 4 / 3; Док и fixtures 13; Доп. идеи (часть) |
+| **3. Полнота и инструкция** | C: README (запуск, настройка, поддерж./неподдерж. элементы, troubleshooting), ASSUMPTIONS с ответами экспертов, Dockerfile. B: полировка INTEGRATION.md, cancel/balance как доп. методы | Проект запускается на чистой машине по README | Инструкция 3; Полнота 8; Инфо по настройке 5 / 5+4 |
+| **4. Сильные доп. идеи** | B: `mock_server_generator`, e2e «сервис ↔ мок» (реальные запросы к провайдеру не требуются — это только демонстрация). C: `--diff`/`regeneration_diff`, S6 реальная спека | e2e против мока и S6 зелёные; diff показывает ручные правки | Доп. идеи 6; усиление Универсальности и Выступления |
+| **5. Защита** | Все: сценарий, 3+ репетиции с таймером, ответы на вопросы, резервная запись | Демо укладывается в 7 минут стабильно | Выступление 6 |
 
-Если по ходу выясняется, что времени всё же не хватает — граница отсечения проходит между волнами, не внутри: завершённая Волна 2 без Волн 4–5 даёт больше баллов, чем все волны, начатые наполовину.
+Если по ходу выясняется, что времени всё же не хватает — граница отсечения проходит между волнами, не внутри: завершённая Волна 2 без Волны 4 даёт больше баллов, чем все волны, начатые наполовину.
 
 ---
 
@@ -348,7 +342,7 @@ Output: ./output/novapay/
 | Разные спеки (7 / 5) | S1–S6 | C/A | регрессия зелёная |
 | Не привязано к провайдеру (5 / 3) | словари + canonical_contract.yml | A | анти-хардкод тест |
 | Расширение/неподдерж. (3 / 1+1) | overrides.yml, реестр W-кодов, report | C | правило без правки кода |
-| Запуск, процесс, сообщения (15 / 4+3+3) | CLI формата эталона, exit codes, события, веб | C | демо + invalid_* |
+| Запуск, процесс, сообщения (15 / 4+3+3) | CLI формата эталона, exit codes, события, `--run-spec` | C | демо + invalid_* |
 | Инфо по настройке (5 / 5+4) | INTEGRATION.md, README | B/C | секции есть |
 | fixtures.json (— / 4) | fixtures_generator | B | валидны против схем |
 | Структура кода (6 / 4) | parser/normalizer/generator + Zeitwerk | A | обзор на защите |
@@ -356,7 +350,7 @@ Output: ./output/novapay/
 | Инструкция (— / 3) | README | C | чистая машина |
 | Доп. идеи (6) | report, RSpec-генератор, мок-сервер, diff, base_contract | B/C | показать на защите |
 | Выступление (6) | сценарий + репетиции | все | таймер |
-| Полнота (8) | 4 метода + cancel/balance + 3 файла + док + веб | все | чек-лист ТЗ |
+| Полнота (8) | 4 метода + cancel/balance + файлы ТЗ + документация и RSpec | все | чек-лист ТЗ |
 
 ---
 
@@ -380,7 +374,6 @@ Output: ./output/novapay/
 | Захардкоженный NovaPay | S1 генерит `payouts`/`X-API-Key` | анти-хардкод тест в CI |
 | Сложность не видна жюри | демо показывает только файлы | показывать `--analyze-only`, отчёт, e2e против мока |
 | Демо падает | флейк на репетиции | резервная запись + прогон из golden |
-| Доля не-Ruby растёт | много HTML/JS в вебе | веб без SPA, только ERB-шаблоны |
 
 ---
 
@@ -393,6 +386,6 @@ Output: ./output/novapay/
 5. Неоднозначности — W-события в CLI, в отчёте и как TODO в коде.
 6. S1–S6 проходят без правки кода; анти-хардкод тест зелёный.
 7. `invalid_*` дают понятную ошибку и exit 3.
-8. Веб и CLI дают идентичный результат; проект запускается на чистой машине по README.
+8. Живой CLI-прогон байт-в-байт совпадает с golden; проект запускается на чистой машине по README.
 9. ASSUMPTIONS.md содержит допущения и ответы экспертов.
 10. Демо стабильно укладывается в 7 минут.
