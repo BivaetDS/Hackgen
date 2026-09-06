@@ -29,6 +29,10 @@ module ProviderIntegrator
   # A template or output step failed in a way the pipeline cannot recover from.
   class GenerationError < Error; end
 
+  # The generated files could not be written to the output directory (permissions, a file in the
+  # way, a full disk); raised by Pipeline#write and turned into the :write status.
+  class WriteError < Error; end
+
   # Absolute path of lib/provider_integrator (dictionaries, schemas and templates live there).
   LIB_ROOT = File.expand_path("provider_integrator", __dir__)
 
