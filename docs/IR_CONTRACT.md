@@ -178,7 +178,8 @@ Signature = nil, если ни параметр с canonical `signature`, ни �
 
 ### WebhookEvent
 `value` — значение enum; `canonical_status` — по §2.7 через токены значения (nil если нет → W203);
-`confidence`, `source` (`dictionary | token | override`).
+`confidence`, `source` (`dictionary | token | override | none`). `none` — ровно тот случай, когда
+`canonical_status` = nil: значение события не сопоставлено, confidence 0.0, событие W203.
 
 ### GatewayConfig
 §2.10: `external_method`, `gateway`, `direction` (`withdraw | deposit`), `currency` (код или nil), `method`
@@ -393,6 +394,10 @@ I601 и `source: override` в затронутой модели.
    статус по конвенции), `W405` (направление операции по умолчанию), `I403` (gateway config записан всегда).
    Обоснование: инвариант «что не выводится — не угадывается молча»; без них заглушка `fetch_status`, конвенция
    `0/1/2` и `RUB_SBP_WITHDRAW` для депозита попадали бы в вывод без предупреждения.
-2. **S4 (несколько create-операций по способам выплаты, волна 4):** потребуется `RequestMethods.source: operations`
+2. **`WebhookEvent.source: none` (волна 1A):** значение события вебхука без канонического статуса не могло
+   быть выражено — enum допускал только `dictionary | token | override`. Добавлено `none` (совпадает с
+   соглашением `FieldMapping.source: none` для несопоставленного поля). Обоснование: инвариант «что не
+   выводится — не угадывается»; альтернатива (подставить `in_progress`) прятала бы W203.
+3. **S4 (несколько create-операций по способам выплаты, волна 4):** потребуется `RequestMethods.source: operations`
    и путь на каждое значение (`paths: {sbp: "/payouts/sbp"}`) — новый член модели. До подтверждения вторые
    create-кандидаты остаются `in_contract: false` с W105.

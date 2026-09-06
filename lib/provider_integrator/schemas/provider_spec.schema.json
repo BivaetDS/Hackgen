@@ -464,7 +464,7 @@
         "value": { "type": "string", "minLength": 1 },
         "canonical_status": { "enum": ["in_progress", "approved", "rejected", null] },
         "confidence": { "$ref": "#/$defs/confidence" },
-        "source": { "enum": ["dictionary", "token", "override"] }
+        "source": { "enum": ["dictionary", "token", "override", "none"] }
       }
     },
 

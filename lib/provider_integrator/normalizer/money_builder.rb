@@ -47,12 +47,11 @@ module ProviderIntegrator
       def unit_to(verdict) = verdict.unit == "minor" ? "minor" : "major"
 
       def report(field, verdict, forced)
-        score = verdict.scores.values.max
-        context.log.add("I401", **decision(verdict), field: field.path, operation_id:, score:,
-                                location: field.pointer)
+        where = { field: field.path, operation_id:, score: verdict.scores.values.max, location: field.pointer }
+        context.log.add("I401", **decision(verdict), **where)
         return if forced || verdict.unit != "unknown"
 
-        context.log.add("W401", field: field.path, operation_id:, score:, location: field.pointer)
+        context.log.add("W401", **where)
       end
 
       def decision(verdict)
