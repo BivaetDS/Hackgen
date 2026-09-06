@@ -63,10 +63,12 @@ RSpec/NestedGroups:
 RSpec/SpecFilePathFormat:
   Enabled: false
 
-# Cross-cutting contract specs (docs <-> code, fixtures <-> schemas) do not describe one class.
+# Cross-cutting contract specs (docs <-> code, fixtures <-> schemas) and the executable's
+# integration specs (bin/integrate in a child process) do not describe one class.
 RSpec/DescribeClass:
   Exclude:
     - "spec/contract/**/*"
+    - "spec/integration/**/*"
 
 # The repository is LF-only (.gitattributes); RuboCop's "native" default would demand CRLF on Windows.
 Layout/EndOfLine:
