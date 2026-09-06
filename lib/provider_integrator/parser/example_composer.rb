@@ -34,16 +34,20 @@ module ProviderIntegrator
         examples.filter_map { |name, node| named_example(name, node, pointer) }.to_h
       end
 
-      # The schema's own example, else a value composed from its properties, else nil.
-      def for_schema(schema, pointer, depth = 0)
+      # The schema's own example, else a value composed from its properties, else nil. +seen+ carries
+      # the component pointers already open on this branch.
+      def for_schema(schema, pointer, depth = 0, seen = [])
         resolved = document.deref(schema, pointer)
         node = resolved.node
         return nil unless node.is_a?(Hash) && depth <= MAX_DEPTH
 
         declared = SchemaFacts.example(node)
         return declared unless declared.nil?
+        # A $ref cycle: without this the same component is composed again on every level below it,
+        # so n self-referencing properties cost n ** MAX_DEPTH compositions of an untrusted spec.
+        return nil if seen.include?(resolved.pointer)
 
-        compose(node, resolved.pointer, depth)
+        compose(node, resolved.pointer, depth, seen + [resolved.pointer])
       end
 
       private
@@ -57,27 +61,27 @@ module ProviderIntegrator
         [name.to_s, resolved.node["value"]]
       end
 
-      def compose(node, pointer, depth)
+      def compose(node, pointer, depth, seen)
         merged = extractor.flatten(node, pointer)
-        return compose_object(merged, pointer, depth) if merged["properties"].is_a?(Hash)
-        return compose_array(merged, pointer, depth) if SchemaFacts.array?(merged)
+        return compose_object(merged, pointer, depth, seen) if merged["properties"].is_a?(Hash)
+        return compose_array(merged, pointer, depth, seen) if SchemaFacts.array?(merged)
 
         scalar(merged)
       end
 
-      def compose_object(node, pointer, depth)
+      def compose_object(node, pointer, depth, seen)
         composed = node["properties"].filter_map do |name, child|
-          value = for_schema(child, Pointer.join(pointer, "properties", name.to_s), depth + 1)
+          value = for_schema(child, Pointer.join(pointer, "properties", name.to_s), depth + 1, seen)
           [name.to_s, value] unless value.nil?
         end.to_h
         composed.empty? ? nil : composed
       end
 
-      def compose_array(node, pointer, depth)
+      def compose_array(node, pointer, depth, seen)
         items = node["items"]
         return nil unless items.is_a?(Hash)
 
-        value = for_schema(items, Pointer.join(pointer, "items"), depth + 1)
+        value = for_schema(items, Pointer.join(pointer, "items"), depth + 1, seen)
         value.nil? ? nil : [value]
       end
 
