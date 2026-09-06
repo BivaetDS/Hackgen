@@ -9,7 +9,7 @@
 bundle exec rake check
 ```
 
-Ожидаемо: `668 examples, 0 failures`, `184 files inspected, no offenses detected`, пять словарей `ok`.
+Ожидаемо: `701 examples, 0 failures`, `190 files inspected, no offenses detected`, пять словарей `ok`.
 
 ---
 
@@ -30,14 +30,27 @@ Found 5 endpoints: POST /payouts, GET /payouts/{payout_id},
   fetch_status     -> GET /payouts/{payout_id} (confidence 0.9)
   process_callback -> POST /webhooks/payout (confidence 0.92)
   extra            -> cancel, balance (outside the BaseService contract)
-Auth: ApiKeyAuth [api_key] (header: X-API-Key)
+Auth: ApiKeyAuth (header: X-API-Key)
 Webhook signature: X-NovaPay-Signature (HMAC-SHA256) on POST /webhooks/payout
-
+Generating service...
+Generating integration guide...
+Generating test fixtures...
+Generating contract stub and report...
+Validating output... Ruby syntax OK, RuboCop 0 offenses, 4/4 contract methods, fixtures valid,
+                     INTEGRATION.md 12 sections
 Completed with 3 warnings:
   W301 HMAC canonicalization for X-NovaPay-Signature is not specified ...
   W402 Conditional requirement inferred from description: recipient.bank_code
        is required when recipient.type equals sbp (createPayout)
   W402 ... recipient.card_number is required when recipient.type equals card
+Requires confirmation: 7 items (W301, W402 x2, I201, I301, I401, I403) - see INTEGRATION.md
+                       «Требует подтверждения» and generation_report.json
+Output:
+  ./output/novapay/novapay_service.rb
+  ./output/novapay/INTEGRATION.md
+  ./output/novapay/fixtures.json
+  ./output/novapay/base_contract.rb
+  ./output/novapay/generation_report.json
 ```
 
 **На что показать пальцем:**
@@ -51,6 +64,9 @@ Completed with 3 warnings:
 | `Webhook signature: ... (HMAC-SHA256)` | вебхук и подпись распознаны |
 | `W402 ... bank_code required when type=sbp` | условная обязательность выведена **из русского текста описания** |
 | `W301` | кодировка подписи в спеке не указана — и мы это честно говорим, а не угадываем молча |
+| `Validating output... Ruby syntax OK, ... 4/4 contract methods` | результат проверен до записи: Prism, RuboCop, JSON-схемы, секции документации |
+| `Requires confirmation: 7 items` | критичные выводы (единицы, подпись, статусы, конфиг шлюза) не молчат даже при высокой уверенности |
+| `Output: ./output/novapay/...` | три файла ТЗ плюс заглушка контракта и отчёт — за один прогон |
 
 ### Команда 2. Чужая спека, другой формат — код не менялся
 
@@ -78,20 +94,24 @@ ruby bin/integrate --spec spec/fixtures/specs/invalid_bad_ref.yaml; echo "exit=$
 ```
 
 ```
+The spec cannot be used:
   E005 Unresolvable $ref #/components/schemas/PayeeAccount
 exit=3
 ```
 
 Спека — недоверенный ввод: лимиты размера и глубины, `Psych.safe_load` без алиасов, собственный
-резолвер `$ref`. Любая проблема — код `E…`, одна понятная строка и свой exit-код.
+резолвер `$ref`. Любая проблема — код `E…`, одна понятная строка в stderr и свой exit-код: 2 аргументы,
+3 спека, 4 предупреждения под `--strict`, 5 сгенерированное не прошло валидацию (ничего не записано),
+6 не удалось записать. Стек-трейс — только с `--verbose`.
 
-### Команда 4. Сгенерированные файлы (волна 1B)
+### Команда 4. Сгенерированные файлы
 
 ```bash
-bundle exec rake "golden:update[novapay]" && ls spec/golden/novapay
+ls output/novapay && diff -r output/novapay spec/golden/novapay && echo identical
 ```
 
-Открыть `spec/golden/novapay/novapay_service.rb` рядом с эталоном из `docs/TZ.md`: та же структура
+Вторая команда доказывает детерминизм: файлы из живого прогона байт в байт равны golden-копии в репозитории.
+Открыть `output/novapay/novapay_service.rb` рядом с эталоном из `docs/TZ.md`: та же структура
 (`BASE_URL`, четыре метода, `STATUS_MAP`, `ERROR_MAP`), но единицы суммы в хелпере, порог из `minimum`,
 409 как успех, `Retry-After` из заголовка, `case request_method` по способам выплаты, `TODO(confidence 0.6)`
 там, где спека молчит. `INTEGRATION.md` — секции эталона плюс «Требует подтверждения»; `fixtures.json` —
@@ -112,9 +132,8 @@ bundle exec rspec spec/parser/parser_spec.rb
 
 **0:00–0:30 — что это.**
 Детерминированный компилятор: OpenAPI провайдера → промежуточное представление (JSON) → Ruby-сервис
-под контракт `Provider::BaseService` + `INTEGRATION.md` + `fixtures.json`. Сейчас полностью готова и
-покрыта тестами первая половина — разбор и анализ спеки. Генерация файлов из готового представления —
-следующий шаг, представление под неё уже зафиксировано контрактом.
+под контракт `Provider::BaseService` + `INTEGRATION.md` + `fixtures.json`. Сквозной проход готов и
+покрыт тестами: одна команда — и пять файлов на диске, каждый проверен до записи.
 
 **0:30–1:30 — как это работает без нейросети.** *(самое важное — это прямое требование ТЗ)*
 Никаких LLM и внешних API в рантайме. Правила, словари и взвешенный скоринг. Пример: операция
@@ -156,13 +175,13 @@ SHA-256, есть тест на это.
 **5:30–6:00 — обработка ошибок.** Команда 3.
 
 **6:00–6:30 — качество.**
-`bundle exec rake check` — 668 тестов, линтер, валидация словарей по JSON-схемам. Каждый анализатор
+`bundle exec rake check` — 701 тест, линтер, валидация словарей по JSON-схемам. Каждый анализатор
 покрыт тройкой «позитив / другой провайдер / неоднозначность». Есть тест, что разбор эталонной спеки
 даёт представление, **байт в байт** равное написанному вручную эталону.
 
 **6:30–7:00 — что дальше.**
-Генерация трёх файлов ТЗ из готового представления, сгенерированный RSpec поверх `fixtures.json`,
-мок-сервер провайдера для e2e-прогона, тонкий веб-интерфейс, Docker.
+Сгенерированный RSpec поверх `fixtures.json`, golden на все спеки, мок-сервер провайдера для e2e-прогона,
+`--diff` для ручных правок, тонкий веб-интерфейс, Docker.
 
 ---
 
@@ -205,9 +224,8 @@ SHA-256, есть тест на это.
 
 ## 4. Честные места — сказать самим, не ждать вопроса
 
-- `bin/integrate` сейчас доводит до анализа и печатает, что запись файлов — следующая волна (1C).
-  Сам генератор готов: `bundle exec rake "golden:update[novapay]"` кладёт все пять файлов в
-  `spec/golden/novapay/` — их и показываем рядом с эталоном ТЗ.
+- Файлы пишутся в `./output/<slug>/`, повторный запуск перезаписывает свои же файлы без вопросов;
+  обнаружение ручных правок (`--diff`, W601) — волна 4.
 - `docs/ASSUMPTIONS.md` — 18 допущений по `BaseService`, потому что реального класса у нас нет.
   Это не пробел, а зафиксированный список вопросов к заказчику.
 - Часть предупреждений на синтетических спеках (`W201`, `W202`) — это не баги, а ровно тот случай,
@@ -222,7 +240,7 @@ SHA-256, есть тест на это.
 | 0 | Контракты, модели, реестр событий, словари, эталонный IR | готово |
 | 1A | Парсер и анализаторы, CLI с разбором | **готово** |
 | 1B | Генератор: сервис, `INTEGRATION.md`, `fixtures.json`, `base_contract.rb`, отчёт, валидатор, golden | **готово** |
-| 1C | Полный конвейер и запись файлов через `bin/integrate` | следующая |
+| 1C | Полный конвейер и запись файлов через `bin/integrate` | **готово** |
 | 2 | Golden-тесты, генерируемый RSpec, анти-хардкод | по плану |
 | 3 | README, Docker, S3 | по плану |
 | 4–5 | Мок-сервер, `--diff`, веб-слой | по плану |

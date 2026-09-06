@@ -22,10 +22,10 @@ bin/integrate                         # #!/usr/bin/env ruby; require "provider_i
 ## 2. Objects and boundaries
 
 - Models: `Data.define(...)` with `include Models::Base` (strict `from_h`, deep `to_h`, canonical JSON); always immutable.
-- Every module boundary returns a result object: `Models::ParseResult` (`#spec`), `Models::GenerationResult` (`#files`, `#file(kind)`, `#validation`); both share `Models::ResultPredicates` (`success?` = no error-level events).
+- Every module boundary returns a result object: `Models::ParseResult` (`#spec`), `Models::GenerationResult` (`#files`, `#file(kind)`, `#validation`); both share `Models::ResultPredicates` (`success?` = no error-level events). `Models::PipelineResult` (`#status`, `#files`, `#output_dir`, `#error`) is the exception: its `success?` is `status == :ok`, because a write failure has no event of its own.
 - Events only through `Events.build(code, location:, **details)` / `EventLog#add`; codes live in `events.rb` and `docs/PLAN.md §3.3` (a spec keeps them in sync).
 - Service objects expose `self.call(**kwargs)` or `new(...).call`; no global state, no class-level mutable memoization except frozen dictionaries and pure caches (`RubyFormatter.cache`).
-- Exceptions only for unrecoverable input (`SpecError`) or template bugs (`GenerationError`); rescue them in `Generator.call` / `Pipeline`, never in analyzers or pieces.
+- Exceptions only for unrecoverable input (`SpecError`), template bugs (`GenerationError`) or a failed write (`WriteError`); `Generator.call` turns template failures into E201, `Pipeline#call` turns everything else into a status. Nothing raises past the pipeline.
 
 ## 3. Deterministic generation
 
@@ -45,12 +45,13 @@ bin/integrate                         # #!/usr/bin/env ruby; require "provider_i
 - Provider slug → `AcmepayService`, `ACMEPAY_BASE_URL`, `acmepay_service.rb` (`Generator::Context`). Every identifier from the spec passes through `Inflector.identifier`/`class_name`.
 - Output is validated before it is returned (`Generator::OutputValidator`): Prism syntax, no ERB leftovers, `< BaseService`, the four contract methods (Prism visitor), RuboCop offences, `fixtures.json` parses and its examples satisfy `TemplateData::FieldSchema` (JSON Schema rebuilt from the IR), INTEGRATION.md required sections. Fatal findings become `E201`; schema mismatches of provider examples are recorded only.
 
-## 5. CLI (Thor)
+## 5. Pipeline and CLI (Thor)
 
-- `class CLI < Thor; def self.exit_on_failure? = true; end`.
-- Output through a `Reporter` object (pastel for colour; respects `--no-color` and non-TTY). Default output mirrors the reference transcript in `docs/TZ.md`; details under `--verbose`.
-- Exit codes: 0 ok, 1 internal, 2 args, 3 spec error, 4 ambiguity in `--strict`, 5 generation, 6 write. Map exceptions to codes in one place.
-- Never print a backtrace unless `--verbose`.
+- `Pipeline.call(path:, provider:, output:, overrides:, analyze_only:, observer:)` is the one entry point of the product (CLI now, web later): `Parser.call` → `Generator.call` → `Files.write` under `<output>/<slug>/`. Files are written only when the generator's validation passed; `--analyze-only` stops after the parse. It never raises: `WriteError` becomes `status :write`, anything else `:internal` with the exception in `#error`.
+- Stage observer (duck type `parsed(result)`, `generating(slug, dir)`, `generated(result)`) lets the CLI print each stage as it happens; `Pipeline::NullObserver` for silent callers, `Reporter` implements it.
+- `class CLI < Thor`: `self.start` calls `super(args, config.merge(debug: true))` and rescues `Thor::Error` itself so every argument error (Thor's and ours) exits 2. Status → exit code in one method (`CLI#exit_code`): ok 0, internal 1, spec 3, generation 5, write 6; `--strict` turns a warned success into 4 after the files were written.
+- Output discipline: progress and results on stdout, failures on stderr (`Reporter.new(io:, err:)`); under `--analyze-only` stdout carries the IR JSON alone and the human part moves to stderr. Default wording mirrors the transcript in `docs/TZ.md` / `docs/PLAN.md §7`; info events, locations and backtraces only under `--verbose`.
+- `Reporter` prints ready strings; anything that interprets generator data is a presenter next to it (`Reporter::ValidationLine` reads check kinds through `Generator::OutputValidator.kind` / `CHECKS`, never the wording).
 
 ## 6. Security of untrusted specs
 
@@ -72,6 +73,7 @@ bin/integrate                         # #!/usr/bin/env ruby; require "provider_i
 - `spec/<layer>/<class>_spec.rb` mirrors `lib/`. `describe ".call"` for service objects.
 - Fixtures: full specs in `spec/fixtures/specs/*.yaml`, expected IR in `spec/fixtures/normalized_*.json`, golden outputs in `spec/golden/<spec>/`. `spec/support/*.rb` is auto-required — scripts meant for child processes go under `spec/fixtures/`.
 - `spec/support/generation_helpers.rb` memoizes the NovaPay generation per process (`GenerationHelpers.novapay_generation`, `novapay_file(kind)`, `generate_fixture(name)`): generation is pure and RuboCop is the slow part.
+- CLI specs run `CLI.start` in process with `$stdout`/`$stderr` swapped for `StringIO` and `--output Dir.mktmpdir`; exit 5 and 1 are reached by stubbing `Generator.call` / `Parser.call`. `spec/integration/` starts the real executable once in a child process from an empty tmpdir (`Open3.capture3(RbConfig.ruby, executable, ..., chdir:)`) and compares the written files with `spec/golden/novapay` byte for byte; `RSpec/DescribeClass` is excluded there.
 - Use `aggregate_failures` for IR and output assertions; assert generated code by `include` of exact lines, not by regexes over the whole file.
 - WebMock enabled globally (`WebMock.disable_net_connect!`).
 - Every analyzer spec has at least: happy path on NovaPay, one alternative spec, one ambiguous case asserting the right `W…` event. Every generator piece has: NovaPay, one other fixture spec, one IR variation built with `Data#with` (stub, single method, status-only webhook).
@@ -86,6 +88,6 @@ bin/integrate                         # #!/usr/bin/env ruby; require "provider_i
 
 1. `bundle exec rake check` green (`rspec` + `rubocop` + dictionary schemas).
 2. `grep -ri novapay lib/` returns nothing (also a spec).
-3. Two consecutive generations of `spec/fixtures/normalized_novapay.json` produce identical SHA-256 for every file (a spec), and `spec/golden/novapay` matches.
+3. Two consecutive generations of `spec/fixtures/normalized_novapay.json` produce identical SHA-256 for every file (a spec), `spec/golden/novapay` matches, and `bin/integrate --spec docs/provider_api.yaml --provider novapay` writes the same bytes to `output/novapay/` (integration spec).
 4. New warnings/errors have a code in `docs/PLAN.md §3.3` and a spec asserting them.
 5. Nothing at runtime calls an LLM, an external API, or a non-Ruby executable.
