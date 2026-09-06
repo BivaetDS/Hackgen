@@ -49,7 +49,8 @@ CLI (Thor)  →  Pipeline  →  Parser.call  →  ProviderSpec (IR, JSON-сер�
 ## Тесты
 
 ```
-spec/unit/…            анализаторы: позитив, негатив, неоднозначность
+spec/{parser,normalizer,generator,template_data,models}/  юнит-тесты по слоям: позитив, негатив, неоднозначность
+spec/contract/         контрактные тесты: реестр событий, анти-хардкод, детерминизм, IR-схема
 spec/golden/<name>/    байт-в-байт эталоны для каждой спеки из spec/fixtures/specs/
 spec/integration/      generated_specs_spec.rb — сгенерированный RSpec зелёный против base_contract.rb
                        invalid_specs_spec.rb  — E-коды на битых спеках
