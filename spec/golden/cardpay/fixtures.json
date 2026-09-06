@@ -1,0 +1,327 @@
+{
+  "create_request": {
+    "request": {
+      "amount": 125000,
+      "currency": "RUB",
+      "merchant_reference": "ORD-2026-000411",
+      "purpose": "Вознаграждение по договору 41/26",
+      "notify_url": "https://merchant.example/hooks/cardpay",
+      "destination": {
+        "type": "card",
+        "card_number": "4111111111111111",
+        "holder_name": "IVAN IVANOV",
+        "expiry": "09/29"
+      },
+      "customer": {
+        "phone": "79261234567",
+        "email": "ivanov@example.com",
+        "ip": "203.0.113.17"
+      }
+    },
+    "response_202": {
+      "disbursement_id": "cp_9f1c4d2e77",
+      "merchant_reference": "ORD-2026-000411",
+      "payout_method": "card",
+      "state": "queued",
+      "amount": 125000,
+      "currency": "RUB",
+      "fee": 3500,
+      "failure": null,
+      "created_at": "2026-08-14T09:12:03Z",
+      "settled_at": null
+    },
+    "response_400": {
+      "error_code": "CP_MALFORMED_REQUEST",
+      "error_message": "Field destination.card_number is required when destination.type = card",
+      "request_id": "req_7c2f10a9",
+      "retry_after": null,
+      "details": [
+        {
+          "field": "destination.card_number",
+          "reason": "required when destination.type = card"
+        }
+      ]
+    },
+    "response_401": {
+      "error_code": "CP_KEY_REVOKED",
+      "error_message": "Merchant key is revoked or does not exist",
+      "request_id": "req_7c2f10ab",
+      "retry_after": null
+    },
+    "response_402": {
+      "error_code": "CP_LOW_BALANCE",
+      "error_message": "Insufficient merchant balance: available 4200000, requested 12500000",
+      "request_id": "req_7c2f10ac",
+      "retry_after": null
+    },
+    "response_409": {
+      "disbursement_id": "cp_9f1c4d2e77",
+      "merchant_reference": "ORD-2026-000411",
+      "payout_method": "card",
+      "state": "in_flight",
+      "amount": 125000,
+      "currency": "RUB",
+      "fee": 3500,
+      "failure": null,
+      "created_at": "2026-08-14T09:12:03Z",
+      "settled_at": null
+    },
+    "response_422": {
+      "error_code": "CP_AMOUNT_LIMIT_EXCEEDED",
+      "error_message": "Amount 90000000 exceeds per-transaction limit of 60000000 kopecks",
+      "request_id": "req_7c2f10a9",
+      "retry_after": null
+    },
+    "response_429": {
+      "error_code": "CP_REQUEST_LIMIT",
+      "error_message": "Rate limit exceeded: 60 requests per minute per key",
+      "request_id": "req_7c2f10ad",
+      "retry_after": 12
+    },
+    "response_500": {
+      "error_code": "CP_INTERNAL_ERROR",
+      "error_message": "Unexpected error, contact support with request_id",
+      "request_id": "req_7c2f10b0",
+      "retry_after": null
+    },
+    "response_503": {
+      "error_code": "CP_CHANNEL_UNAVAILABLE",
+      "error_message": "Card payout channel is temporarily unavailable, retry later",
+      "request_id": "req_7c2f10af",
+      "retry_after": 60
+    }
+  },
+  "fetch_status": {
+    "response_200": {
+      "disbursement_id": "cp_9f1c4d2e77",
+      "merchant_reference": "ORD-2026-000411",
+      "payout_method": "card",
+      "state": "settled",
+      "amount": 125000,
+      "currency": "RUB",
+      "fee": 3500,
+      "failure": null,
+      "created_at": "2026-08-14T09:12:03Z",
+      "settled_at": "2026-08-14T09:14:41Z"
+    },
+    "response_401": {
+      "error_code": "CP_KEY_REVOKED",
+      "error_message": "Merchant key is revoked or does not exist",
+      "request_id": "req_7c2f10ab",
+      "retry_after": null
+    },
+    "response_404": {
+      "error_code": "CP_DISBURSEMENT_NOT_FOUND",
+      "error_message": "Disbursement cp_9f1c4d2e77 not found",
+      "request_id": "req_7c2f10ae",
+      "retry_after": null
+    },
+    "response_429": {
+      "error_code": "CP_REQUEST_LIMIT",
+      "error_message": "Rate limit exceeded: 60 requests per minute per key",
+      "request_id": "req_7c2f10ad",
+      "retry_after": 12
+    }
+  },
+  "callback": {
+    "payload": {
+      "event_type": "disbursement.settled",
+      "disbursement_id": "cp_9f1c4d2e77",
+      "merchant_reference": "ORD-2026-000411",
+      "state": "settled",
+      "previous_state": "in_flight",
+      "amount": 125000,
+      "currency": "RUB",
+      "fee": 3500,
+      "failure": null,
+      "occurred_at": "2026-08-14T09:14:41Z"
+    },
+    "expected_operation_status": "approved"
+  },
+  "callback_failed": {
+    "payload": {
+      "event_type": "disbursement.rejected_by_bank",
+      "disbursement_id": "cp_9f1c4d2e78",
+      "merchant_reference": "ORD-2026-000412",
+      "state": "rejected_by_bank",
+      "previous_state": "in_flight",
+      "amount": 250000,
+      "currency": "RUB",
+      "fee": null,
+      "failure": {
+        "code": "CP_INVALID_CARD",
+        "message": "Card declined by issuer",
+        "bank_message": "57 - transaction not permitted to cardholder"
+      },
+      "occurred_at": "2026-08-14T09:15:02Z"
+    },
+    "expected_operation_status": "rejected"
+  },
+  "create_sbp_disbursement": {
+    "request": {
+      "amount": 125000,
+      "currency": "RUB",
+      "merchant_reference": "ORD-2026-000413",
+      "purpose": "Возврат за отменённый заказ",
+      "notify_url": "https://merchant.example/hooks/cardpay",
+      "destination": {
+        "phone": "79261234567",
+        "member_id": "100000000004",
+        "member_name": "Т-Банк"
+      }
+    },
+    "response_202": {
+      "disbursement_id": "cp_31ba77c0e4",
+      "merchant_reference": "ORD-2026-000413",
+      "payout_method": "sbp",
+      "state": "queued",
+      "amount": 125000,
+      "currency": "RUB",
+      "fee": 1500,
+      "failure": null,
+      "created_at": "2026-08-14T10:02:55Z",
+      "settled_at": null
+    },
+    "response_400": {
+      "error_code": "CP_MALFORMED_REQUEST",
+      "error_message": "Field destination.card_number is required when destination.type = card",
+      "request_id": "req_7c2f10a9",
+      "retry_after": null,
+      "details": [
+        {
+          "field": "destination.card_number",
+          "reason": "required when destination.type = card"
+        }
+      ]
+    },
+    "response_401": {
+      "error_code": "CP_KEY_REVOKED",
+      "error_message": "Merchant key is revoked or does not exist",
+      "request_id": "req_7c2f10ab",
+      "retry_after": null
+    },
+    "response_402": {
+      "error_code": "CP_LOW_BALANCE",
+      "error_message": "Insufficient merchant balance: available 4200000, requested 12500000",
+      "request_id": "req_7c2f10ac",
+      "retry_after": null
+    },
+    "response_409": {
+      "disbursement_id": "cp_9f1c4d2e77",
+      "merchant_reference": "ORD-2026-000411",
+      "payout_method": "card",
+      "state": "in_flight",
+      "amount": 125000,
+      "currency": "RUB",
+      "fee": 3500,
+      "failure": {
+        "code": "CP_INVALID_CARD",
+        "message": "Card declined by issuer",
+        "bank_message": "57 - transaction not permitted to cardholder"
+      },
+      "created_at": "2026-08-14T09:12:03Z",
+      "settled_at": "2026-08-14T09:14:41Z"
+    },
+    "response_422": {
+      "error_code": "CP_MEMBER_NOT_SUPPORTED",
+      "error_message": "SBP member 100000000004 does not support incoming payouts",
+      "request_id": "req_7c2f10b4",
+      "retry_after": null
+    },
+    "response_429": {
+      "error_code": "CP_REQUEST_LIMIT",
+      "error_message": "Rate limit exceeded: 60 requests per minute per key",
+      "request_id": "req_7c2f10ad",
+      "retry_after": 12
+    },
+    "response_503": {
+      "error_code": "CP_CHANNEL_UNAVAILABLE",
+      "error_message": "Card payout channel is temporarily unavailable, retry later",
+      "request_id": "req_7c2f10af",
+      "retry_after": 60
+    }
+  },
+  "cancel_request": {
+    "response_200": {
+      "disbursement_id": "cp_9f1c4d2e77",
+      "merchant_reference": "ORD-2026-000411",
+      "payout_method": "card",
+      "state": "returned",
+      "amount": 125000,
+      "currency": "RUB",
+      "fee": 0,
+      "failure": null,
+      "created_at": "2026-08-14T09:12:03Z",
+      "settled_at": null
+    },
+    "response_401": {
+      "error_code": "CP_KEY_REVOKED",
+      "error_message": "Merchant key is revoked or does not exist",
+      "request_id": "req_7c2f10ab",
+      "retry_after": null
+    },
+    "response_404": {
+      "error_code": "CP_DISBURSEMENT_NOT_FOUND",
+      "error_message": "Disbursement cp_9f1c4d2e77 not found",
+      "request_id": "req_7c2f10ae",
+      "retry_after": null
+    },
+    "response_409": {
+      "error_code": "CP_INVALID_STATE",
+      "error_message": "Disbursement in state in_flight can not be cancelled",
+      "request_id": "req_7c2f10c1",
+      "retry_after": null
+    }
+  },
+  "fetch_balance": {
+    "response_200": {
+      "available": 1284500000,
+      "reserved": 37500000,
+      "currency": "RUB",
+      "limits": {
+        "daily_remaining": 4500000000,
+        "per_transaction_max": 60000000
+      },
+      "updated_at": "2026-08-14T09:10:00Z"
+    },
+    "response_401": {
+      "error_code": "CP_KEY_REVOKED",
+      "error_message": "Merchant key is revoked or does not exist",
+      "request_id": "req_7c2f10ab",
+      "retry_after": null
+    },
+    "response_429": {
+      "error_code": "CP_REQUEST_LIMIT",
+      "error_message": "Rate limit exceeded: 60 requests per minute per key",
+      "request_id": "req_7c2f10ad",
+      "retry_after": 12
+    }
+  },
+  "list_requests": {
+    "response_200": {
+      "members": [
+        {
+          "member_id": "100000000004",
+          "member_name": "Т-Банк",
+          "active": true
+        },
+        {
+          "member_id": "100000000111",
+          "member_name": "Альфа-Банк",
+          "active": true
+        },
+        {
+          "member_id": "100000000008",
+          "member_name": "Совкомбанк",
+          "active": false
+        }
+      ]
+    },
+    "response_401": {
+      "error_code": "CP_KEY_REVOKED",
+      "error_message": "Merchant key is revoked or does not exist",
+      "request_id": "req_7c2f10ab",
+      "retry_after": null
+    }
+  }
+}

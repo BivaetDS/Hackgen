@@ -1,0 +1,986 @@
+{
+  "events": {
+    "analysis": [
+      {
+        "code": "W101",
+        "details": {
+          "confidence": 0.0,
+          "kind": "unknown",
+          "method": "POST",
+          "operation_id": "calculateDepositFee",
+          "path": "/fees/quote"
+        },
+        "level": "warning",
+        "location": "#/paths/~1fees~1quote/post",
+        "message": "Operation calculateDepositFee (POST /fees/quote) classified as unknown with low confidence 0.0"
+      },
+      {
+        "code": "W202",
+        "details": {
+          "canonical": "validation_error",
+          "http": 422,
+          "provider_code": "amount_less_than_min"
+        },
+        "level": "warning",
+        "location": "#/paths/~1deposits/post/responses/422",
+        "message": "Provider error code amount_less_than_min (HTTP 422) has no canonical analog; defaulting to validation_error"
+      },
+      {
+        "code": "W202",
+        "details": {
+          "canonical": "validation_error",
+          "http": 422,
+          "provider_code": "source_not_enabled"
+        },
+        "level": "warning",
+        "location": "#/paths/~1fees~1quote/post/responses/422",
+        "message": "Provider error code source_not_enabled (HTTP 422) has no canonical analog; defaulting to validation_error"
+      },
+      {
+        "code": "W402",
+        "details": {
+          "equals": "true",
+          "field": "receipt_email",
+          "operation_id": "initDeposit",
+          "when": "fiscalization"
+        },
+        "level": "warning",
+        "location": "#/components/schemas/CreateDepositRequest/properties/receipt_email",
+        "message": "Conditional requirement inferred from description: receipt_email is required when fiscalization equals true (initDeposit)"
+      },
+      {
+        "code": "W403",
+        "details": {
+          "field": "occurred_at",
+          "operation_id": "depositNotification"
+        },
+        "level": "warning",
+        "location": "#/components/schemas/DepositNotification/properties/occurred_at",
+        "message": "Required request field occurred_at in depositNotification is not mapped to any canonical field"
+      },
+      {
+        "code": "W403",
+        "details": {
+          "field": "source_type",
+          "operation_id": "calculateDepositFee"
+        },
+        "level": "warning",
+        "location": "#/components/schemas/FeeQuoteRequest/properties/source_type",
+        "message": "Required request field source_type in calculateDepositFee is not mapped to any canonical field"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.9,
+          "kind": "create",
+          "method": "POST",
+          "operation_id": "initDeposit",
+          "path": "/deposits"
+        },
+        "level": "info",
+        "location": "#/paths/~1deposits/post",
+        "message": "Operation initDeposit (POST /deposits) classified as create with confidence 0.9"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.9,
+          "kind": "status",
+          "method": "GET",
+          "operation_id": "getDepositState",
+          "path": "/deposits/{deposit_id}"
+        },
+        "level": "info",
+        "location": "#/paths/~1deposits~1{deposit_id}/get",
+        "message": "Operation getDepositState (GET /deposits/{deposit_id}) classified as status with confidence 0.9"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.92,
+          "kind": "refund",
+          "method": "POST",
+          "operation_id": "refundDeposit",
+          "path": "/deposits/{deposit_id}/refunds"
+        },
+        "level": "info",
+        "location": "#/paths/~1deposits~1{deposit_id}~1refunds/post",
+        "message": "Operation refundDeposit (POST /deposits/{deposit_id}/refunds) classified as refund with confidence 0.92"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.9,
+          "kind": "list",
+          "method": "GET",
+          "operation_id": "listSbpBanks",
+          "path": "/directories/sbp-banks"
+        },
+        "level": "info",
+        "location": "#/paths/~1directories~1sbp-banks/get",
+        "message": "Operation listSbpBanks (GET /directories/sbp-banks) classified as list with confidence 0.9"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.0,
+          "kind": "unknown",
+          "method": "POST",
+          "operation_id": "calculateDepositFee",
+          "path": "/fees/quote"
+        },
+        "level": "info",
+        "location": "#/paths/~1fees~1quote/post",
+        "message": "Operation calculateDepositFee (POST /fees/quote) classified as unknown with confidence 0.0"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.92,
+          "kind": "webhook",
+          "method": "POST",
+          "operation_id": "depositNotification",
+          "path": "/notifications/deposit"
+        },
+        "level": "info",
+        "location": "#/paths/~1notifications~1deposit/post",
+        "message": "Operation depositNotification (POST /notifications/deposit) classified as webhook with confidence 0.92"
+      },
+      {
+        "code": "I201",
+        "details": {
+          "count": 7,
+          "mapping": {
+            "awaiting_payment": "in_progress",
+            "created": "in_progress",
+            "expired": "rejected",
+            "partially_paid": "in_progress",
+            "refunded": "rejected",
+            "rejected": "rejected",
+            "succeeded": "approved"
+          }
+        },
+        "level": "info",
+        "location": null,
+        "message": "Status mapping recorded (7 statuses): created -> in_progress, awaiting_payment -> in_progress, succeeded -> approved, partially_paid -> in_progress, refunded -> rejected, expired -> rejected, rejected -> rejected"
+      },
+      {
+        "code": "I301",
+        "details": {
+          "algorithm": "hmac-sha512",
+          "encoding": "hex",
+          "message": "raw_body",
+          "name": "X-RublePay-Sign",
+          "placement": "header",
+          "secret": "callback_secret"
+        },
+        "level": "info",
+        "location": "#/paths/~1notifications~1deposit/post/parameters/0",
+        "message": "Signature convention recorded: X-RublePay-Sign (header), algorithm hmac-sha512, encoding hex, message raw_body, secret callback_secret"
+      },
+      {
+        "code": "I401",
+        "details": {
+          "field": "amount",
+          "multiplier": 1,
+          "operation_id": "initDeposit",
+          "score": 6,
+          "signals": [
+            "description: рублях",
+            "pattern: ^\\d+\\.\\d{2}$",
+            "type: string"
+          ],
+          "unit": "major"
+        },
+        "level": "info",
+        "location": "#/components/schemas/CreateDepositRequest/properties/amount",
+        "message": "Amount field amount in initDeposit uses major units (multiplier 1, score 6); signals: description: рублях, pattern: ^\\d+\\.\\d{2}$, type: string"
+      },
+      {
+        "code": "I402",
+        "details": {
+          "equals": "account",
+          "field": "payment_details.account_number",
+          "operation_id": "initDeposit",
+          "source": "discriminator",
+          "when": "payment_details.source_type"
+        },
+        "level": "info",
+        "location": "#/components/schemas/AccountSource/properties/account_number",
+        "message": "Conditional requirement recorded from discriminator: payment_details.account_number is required when payment_details.source_type equals account (initDeposit)"
+      },
+      {
+        "code": "I402",
+        "details": {
+          "equals": "account",
+          "field": "payment_details.bank_bik",
+          "operation_id": "initDeposit",
+          "source": "discriminator",
+          "when": "payment_details.source_type"
+        },
+        "level": "info",
+        "location": "#/components/schemas/AccountSource/properties/bank_bik",
+        "message": "Conditional requirement recorded from discriminator: payment_details.bank_bik is required when payment_details.source_type equals account (initDeposit)"
+      },
+      {
+        "code": "I402",
+        "details": {
+          "equals": "account",
+          "field": "payment_details.inn",
+          "operation_id": "initDeposit",
+          "source": "discriminator",
+          "when": "payment_details.source_type"
+        },
+        "level": "info",
+        "location": "#/components/schemas/AccountSource/properties/inn",
+        "message": "Conditional requirement recorded from discriminator: payment_details.inn is required when payment_details.source_type equals account (initDeposit)"
+      },
+      {
+        "code": "I402",
+        "details": {
+          "equals": "card",
+          "field": "payment_details.cvc",
+          "operation_id": "initDeposit",
+          "source": "discriminator",
+          "when": "payment_details.source_type"
+        },
+        "level": "info",
+        "location": "#/components/schemas/CardSource/properties/cvc",
+        "message": "Conditional requirement recorded from discriminator: payment_details.cvc is required when payment_details.source_type equals card (initDeposit)"
+      },
+      {
+        "code": "I402",
+        "details": {
+          "equals": "card",
+          "field": "payment_details.expiry_month",
+          "operation_id": "initDeposit",
+          "source": "discriminator",
+          "when": "payment_details.source_type"
+        },
+        "level": "info",
+        "location": "#/components/schemas/CardSource/properties/expiry_month",
+        "message": "Conditional requirement recorded from discriminator: payment_details.expiry_month is required when payment_details.source_type equals card (initDeposit)"
+      },
+      {
+        "code": "I402",
+        "details": {
+          "equals": "card",
+          "field": "payment_details.expiry_year",
+          "operation_id": "initDeposit",
+          "source": "discriminator",
+          "when": "payment_details.source_type"
+        },
+        "level": "info",
+        "location": "#/components/schemas/CardSource/properties/expiry_year",
+        "message": "Conditional requirement recorded from discriminator: payment_details.expiry_year is required when payment_details.source_type equals card (initDeposit)"
+      },
+      {
+        "code": "I402",
+        "details": {
+          "equals": "card",
+          "field": "payment_details.pan",
+          "operation_id": "initDeposit",
+          "source": "discriminator",
+          "when": "payment_details.source_type"
+        },
+        "level": "info",
+        "location": "#/components/schemas/CardSource/properties/pan",
+        "message": "Conditional requirement recorded from discriminator: payment_details.pan is required when payment_details.source_type equals card (initDeposit)"
+      },
+      {
+        "code": "I402",
+        "details": {
+          "equals": "sbp",
+          "field": "payment_details.bank_member_id",
+          "operation_id": "initDeposit",
+          "source": "discriminator",
+          "when": "payment_details.source_type"
+        },
+        "level": "info",
+        "location": "#/components/schemas/SbpSource/properties/bank_member_id",
+        "message": "Conditional requirement recorded from discriminator: payment_details.bank_member_id is required when payment_details.source_type equals sbp (initDeposit)"
+      },
+      {
+        "code": "I403",
+        "details": {
+          "confidence": 0.9,
+          "evidence": [
+            "currency: RUB (enum constant)",
+            "request method: card (default of payment_details.source_type)",
+            "direction: deposit (token 'deposit' in operationId initDeposit)"
+          ],
+          "external_method": "card_deposit",
+          "gateway": "RUB_CARD_DEPOSIT"
+        },
+        "level": "info",
+        "location": null,
+        "message": "Gateway config recorded: external_method card_deposit, gateway RUB_CARD_DEPOSIT (confidence 0.9); evidence: currency: RUB (enum constant), request method: card (default of payment_details.source_type), direction: deposit (token 'deposit' in operationId initDeposit)"
+      },
+      {
+        "code": "W102",
+        "details": {
+          "kind": "refund",
+          "method": "POST",
+          "operation_id": "refundDeposit",
+          "path": "/deposits/{deposit_id}/refunds"
+        },
+        "level": "info",
+        "location": "#/paths/~1deposits~1{deposit_id}~1refunds/post",
+        "message": "Operation refundDeposit (POST /deposits/{deposit_id}/refunds) is outside the BaseService contract (kind refund); generated as an extra method"
+      },
+      {
+        "code": "W102",
+        "details": {
+          "kind": "list",
+          "method": "GET",
+          "operation_id": "listSbpBanks",
+          "path": "/directories/sbp-banks"
+        },
+        "level": "info",
+        "location": "#/paths/~1directories~1sbp-banks/get",
+        "message": "Operation listSbpBanks (GET /directories/sbp-banks) is outside the BaseService contract (kind list); generated as an extra method"
+      },
+      {
+        "code": "W102",
+        "details": {
+          "kind": "unknown",
+          "method": "POST",
+          "operation_id": "calculateDepositFee",
+          "path": "/fees/quote"
+        },
+        "level": "info",
+        "location": "#/paths/~1fees~1quote/post",
+        "message": "Operation calculateDepositFee (POST /fees/quote) is outside the BaseService contract (kind unknown); generated as an extra method"
+      }
+    ],
+    "generation": []
+  },
+  "files": [
+    {
+      "path": "rublepay_service.rb",
+      "sha256": "300b4ce51c8b2b873f7d80cf796ad545e7b1f183a3ee76208b50415aa4c50521"
+    },
+    {
+      "path": "base_contract.rb",
+      "sha256": "e907f95bacd39d905e383c1b311691475e201180f6870b8a677dbb3d37201aae"
+    },
+    {
+      "path": "INTEGRATION.md",
+      "sha256": "3ae6fc2d887fce6f43dc7a814dac454959b50c4bb495dfd1603df93bf8b18650"
+    },
+    {
+      "path": "fixtures.json",
+      "sha256": "009c1de51304ca6b8cbb111915e02cdf9b450dff7fa6891d3965d2d210bfb1bc"
+    },
+    {
+      "path": "rublepay_service_spec.rb",
+      "sha256": "daa634709da375e108e4b58f2495d462d78fbfb76a044daa1286485b738c3994"
+    }
+  ],
+  "generator": {
+    "ir_version": 1,
+    "name": "provider-integrator",
+    "version": "0.1.0"
+  },
+  "inferences": {
+    "amount_units": [
+      {
+        "confidence": 0.86,
+        "evidence": [
+          "description: рублях",
+          "pattern: ^\\d+\\.\\d{2}$",
+          "type: string"
+        ],
+        "field": "amount",
+        "operation_id": "initDeposit",
+        "source": "scoring",
+        "type": "to_decimal_string",
+        "unit_from": "major",
+        "unit_to": "major",
+        "value": null
+      }
+    ],
+    "authentication": {
+      "confidence": 1.0,
+      "evidence": [
+        "securitySchemes.MerchantKey: apiKey in query api_key",
+        "security: MerchantKey used by 5 of 6 operations"
+      ],
+      "location": "query",
+      "name": "api_key",
+      "scheme_name": "MerchantKey",
+      "type": "api_key"
+    },
+    "conditional_requirements": [
+      {
+        "confidence": 0.95,
+        "equals": "card",
+        "evidence": [
+          "discriminator payment_details.source_type = card"
+        ],
+        "field": "payment_details.pan",
+        "operation_id": "initDeposit",
+        "source": "discriminator",
+        "when": "payment_details.source_type"
+      },
+      {
+        "confidence": 0.95,
+        "equals": "card",
+        "evidence": [
+          "discriminator payment_details.source_type = card"
+        ],
+        "field": "payment_details.expiry_month",
+        "operation_id": "initDeposit",
+        "source": "discriminator",
+        "when": "payment_details.source_type"
+      },
+      {
+        "confidence": 0.95,
+        "equals": "card",
+        "evidence": [
+          "discriminator payment_details.source_type = card"
+        ],
+        "field": "payment_details.expiry_year",
+        "operation_id": "initDeposit",
+        "source": "discriminator",
+        "when": "payment_details.source_type"
+      },
+      {
+        "confidence": 0.95,
+        "equals": "card",
+        "evidence": [
+          "discriminator payment_details.source_type = card"
+        ],
+        "field": "payment_details.cvc",
+        "operation_id": "initDeposit",
+        "source": "discriminator",
+        "when": "payment_details.source_type"
+      },
+      {
+        "confidence": 0.95,
+        "equals": "sbp",
+        "evidence": [
+          "discriminator payment_details.source_type = sbp"
+        ],
+        "field": "payment_details.bank_member_id",
+        "operation_id": "initDeposit",
+        "source": "discriminator",
+        "when": "payment_details.source_type"
+      },
+      {
+        "confidence": 0.95,
+        "equals": "account",
+        "evidence": [
+          "discriminator payment_details.source_type = account"
+        ],
+        "field": "payment_details.account_number",
+        "operation_id": "initDeposit",
+        "source": "discriminator",
+        "when": "payment_details.source_type"
+      },
+      {
+        "confidence": 0.95,
+        "equals": "account",
+        "evidence": [
+          "discriminator payment_details.source_type = account"
+        ],
+        "field": "payment_details.bank_bik",
+        "operation_id": "initDeposit",
+        "source": "discriminator",
+        "when": "payment_details.source_type"
+      },
+      {
+        "confidence": 0.95,
+        "equals": "account",
+        "evidence": [
+          "discriminator payment_details.source_type = account"
+        ],
+        "field": "payment_details.inn",
+        "operation_id": "initDeposit",
+        "source": "discriminator",
+        "when": "payment_details.source_type"
+      },
+      {
+        "confidence": 0.6,
+        "equals": "true",
+        "evidence": [
+          "description: Обязателен, если fiscalization = true"
+        ],
+        "field": "receipt_email",
+        "operation_id": "initDeposit",
+        "source": "description",
+        "when": "fiscalization"
+      }
+    ],
+    "gateway_config": {
+      "confidence": 0.9,
+      "currency": "RUB",
+      "direction": "deposit",
+      "evidence": [
+        "currency: RUB (enum constant)",
+        "request method: card (default of payment_details.source_type)",
+        "direction: deposit (token 'deposit' in operationId initDeposit)"
+      ],
+      "external_method": "card_deposit",
+      "gateway": "RUB_CARD_DEPOSIT",
+      "method": "card"
+    },
+    "operations": [
+      {
+        "canonical_method": "create_request",
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'init' -> create (+5)",
+          "structure POST with body and no path id -> create (+3)",
+          "text 'создать' -> create (+1)"
+        ],
+        "in_contract": true,
+        "kind": "create",
+        "method": "POST",
+        "operation_id": "initDeposit",
+        "path": "/deposits"
+      },
+      {
+        "canonical_method": "fetch_status",
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'state' -> status (+5)",
+          "structure GET with path id -> status (+3)",
+          "text 'состояние' -> status (+1)"
+        ],
+        "in_contract": true,
+        "kind": "status",
+        "method": "GET",
+        "operation_id": "getDepositState",
+        "path": "/deposits/{deposit_id}"
+      },
+      {
+        "canonical_method": "refund_request",
+        "confidence": 0.92,
+        "evidence": [
+          "operationId token 'refund' -> refund (+5)",
+          "path token 'refunds' -> refund (+3)",
+          "tag 'Refunds' -> refund (+2)",
+          "text 'возврат' -> refund (+1)"
+        ],
+        "in_contract": false,
+        "kind": "refund",
+        "method": "POST",
+        "operation_id": "refundDeposit",
+        "path": "/deposits/{deposit_id}/refunds"
+      },
+      {
+        "canonical_method": "process_callback",
+        "confidence": 0.92,
+        "evidence": [
+          "operationId token 'notification' -> webhook (+5)",
+          "path token 'notifications' -> webhook (+3)",
+          "tag 'Notifications' -> webhook (+2)",
+          "text 'уведомление' -> webhook (+1)"
+        ],
+        "in_contract": true,
+        "kind": "webhook",
+        "method": "POST",
+        "operation_id": "depositNotification",
+        "path": "/notifications/deposit"
+      },
+      {
+        "canonical_method": null,
+        "confidence": 0.0,
+        "evidence": [],
+        "in_contract": false,
+        "kind": "unknown",
+        "method": "POST",
+        "operation_id": "calculateDepositFee",
+        "path": "/fees/quote"
+      },
+      {
+        "canonical_method": "list_requests",
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'list' -> list (+5)",
+          "structure GET without path id -> list (+3)",
+          "text 'список' -> list (+1)"
+        ],
+        "in_contract": false,
+        "kind": "list",
+        "method": "GET",
+        "operation_id": "listSbpBanks",
+        "path": "/directories/sbp-banks"
+      }
+    ],
+    "statuses": [
+      {
+        "canonical": "in_progress",
+        "confidence": 0.95,
+        "evidence": [
+          "statuses.yml: created -> in_progress"
+        ],
+        "provider": "created",
+        "source": "dictionary"
+      },
+      {
+        "canonical": "in_progress",
+        "confidence": 0.85,
+        "evidence": [
+          "statuses.yml token: awaiting_payment -> in_progress"
+        ],
+        "provider": "awaiting_payment",
+        "source": "token"
+      },
+      {
+        "canonical": "approved",
+        "confidence": 0.95,
+        "evidence": [
+          "statuses.yml: succeeded -> approved"
+        ],
+        "provider": "succeeded",
+        "source": "dictionary"
+      },
+      {
+        "canonical": "in_progress",
+        "confidence": 0.95,
+        "evidence": [
+          "statuses.yml: partially_paid -> in_progress"
+        ],
+        "provider": "partially_paid",
+        "source": "dictionary"
+      },
+      {
+        "canonical": "rejected",
+        "confidence": 0.95,
+        "evidence": [
+          "statuses.yml: refunded -> rejected"
+        ],
+        "provider": "refunded",
+        "source": "dictionary"
+      },
+      {
+        "canonical": "rejected",
+        "confidence": 0.95,
+        "evidence": [
+          "statuses.yml: expired -> rejected"
+        ],
+        "provider": "expired",
+        "source": "dictionary"
+      },
+      {
+        "canonical": "rejected",
+        "confidence": 0.95,
+        "evidence": [
+          "statuses.yml: rejected -> rejected"
+        ],
+        "provider": "rejected",
+        "source": "dictionary"
+      }
+    ],
+    "webhook": {
+      "confidence": 0.92,
+      "event_field": "event",
+      "events": [
+        {
+          "canonical_status": "in_progress",
+          "confidence": 0.85,
+          "source": "token",
+          "value": "deposit.awaiting_payment"
+        },
+        {
+          "canonical_status": "approved",
+          "confidence": 0.95,
+          "source": "dictionary",
+          "value": "deposit.partially_paid"
+        },
+        {
+          "canonical_status": "approved",
+          "confidence": 0.95,
+          "source": "dictionary",
+          "value": "deposit.succeeded"
+        },
+        {
+          "canonical_status": "rejected",
+          "confidence": 0.95,
+          "source": "dictionary",
+          "value": "deposit.refunded"
+        },
+        {
+          "canonical_status": "rejected",
+          "confidence": 0.95,
+          "source": "dictionary",
+          "value": "deposit.expired"
+        }
+      ],
+      "id_field": "deposit_id",
+      "method": "POST",
+      "path": "/notifications/deposit",
+      "signature": {
+        "algorithm": "hmac-sha512",
+        "confidence": 0.9,
+        "encoding": "hex",
+        "evidence": [
+          "operation description: Подпись передаётся в заголовке X-RublePay-Sign: HMAC-SHA512 от сырого тела запроса, hex"
+        ],
+        "location": "header",
+        "message": "raw_body",
+        "name": "X-RublePay-Sign",
+        "secret": "callback_secret",
+        "source": "parameter"
+      },
+      "source": "path_heuristic",
+      "status_field": "state"
+    }
+  },
+  "overrides_applied": [],
+  "provider": {
+    "class_name": "Provider::RublepayService",
+    "service_file": "rublepay_service.rb",
+    "slug": "rublepay",
+    "title": "RublePay Deposit API",
+    "version": "2.4.1"
+  },
+  "requires_confirmation": [
+    {
+      "code": "W101",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/paths/~1fees~1quote/post",
+      "message": "Operation calculateDepositFee (POST /fees/quote) classified as unknown with low confidence 0.0",
+      "where": "operation methods (name and role)"
+    },
+    {
+      "code": "W202",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/paths/~1deposits/post/responses/422",
+      "message": "Provider error code amount_less_than_min (HTTP 422) has no canonical analog; defaulting to validation_error",
+      "where": "ERROR_MAP"
+    },
+    {
+      "code": "W202",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/paths/~1fees~1quote/post/responses/422",
+      "message": "Provider error code source_not_enabled (HTTP 422) has no canonical analog; defaulting to validation_error",
+      "where": "ERROR_MAP"
+    },
+    {
+      "code": "W402",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/components/schemas/CreateDepositRequest/properties/receipt_email",
+      "message": "Conditional requirement inferred from description: receipt_email is required when fiscalization equals true (initDeposit)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "W403",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/components/schemas/DepositNotification/properties/occurred_at",
+      "message": "Required request field occurred_at in depositNotification is not mapped to any canonical field",
+      "where": "build_*_payload (TODO)"
+    },
+    {
+      "code": "W403",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/components/schemas/FeeQuoteRequest/properties/source_type",
+      "message": "Required request field source_type in calculateDepositFee is not mapped to any canonical field",
+      "where": "build_*_payload (TODO)"
+    },
+    {
+      "code": "I201",
+      "evidence": [],
+      "level": "info",
+      "location": null,
+      "message": "Status mapping recorded (7 statuses): created -> in_progress, awaiting_payment -> in_progress, succeeded -> approved, partially_paid -> in_progress, refunded -> rejected, expired -> rejected, rejected -> rejected",
+      "where": "STATUS_MAP"
+    },
+    {
+      "code": "I301",
+      "evidence": [],
+      "level": "info",
+      "location": "#/paths/~1notifications~1deposit/post/parameters/0",
+      "message": "Signature convention recorded: X-RublePay-Sign (header), algorithm hmac-sha512, encoding hex, message raw_body, secret callback_secret",
+      "where": "verify_signature!"
+    },
+    {
+      "code": "I401",
+      "evidence": [
+        "description: рублях",
+        "pattern: ^\\d+\\.\\d{2}$",
+        "type: string"
+      ],
+      "level": "info",
+      "location": "#/components/schemas/CreateDepositRequest/properties/amount",
+      "message": "Amount field amount in initDeposit uses major units (multiplier 1, score 6); signals: description: рублях, pattern: ^\\d+\\.\\d{2}$, type: string",
+      "where": "build_*_payload, MIN_AMOUNT"
+    },
+    {
+      "code": "I402",
+      "evidence": [],
+      "level": "info",
+      "location": "#/components/schemas/AccountSource/properties/account_number",
+      "message": "Conditional requirement recorded from discriminator: payment_details.account_number is required when payment_details.source_type equals account (initDeposit)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "I402",
+      "evidence": [],
+      "level": "info",
+      "location": "#/components/schemas/AccountSource/properties/bank_bik",
+      "message": "Conditional requirement recorded from discriminator: payment_details.bank_bik is required when payment_details.source_type equals account (initDeposit)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "I402",
+      "evidence": [],
+      "level": "info",
+      "location": "#/components/schemas/AccountSource/properties/inn",
+      "message": "Conditional requirement recorded from discriminator: payment_details.inn is required when payment_details.source_type equals account (initDeposit)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "I402",
+      "evidence": [],
+      "level": "info",
+      "location": "#/components/schemas/CardSource/properties/cvc",
+      "message": "Conditional requirement recorded from discriminator: payment_details.cvc is required when payment_details.source_type equals card (initDeposit)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "I402",
+      "evidence": [],
+      "level": "info",
+      "location": "#/components/schemas/CardSource/properties/expiry_month",
+      "message": "Conditional requirement recorded from discriminator: payment_details.expiry_month is required when payment_details.source_type equals card (initDeposit)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "I402",
+      "evidence": [],
+      "level": "info",
+      "location": "#/components/schemas/CardSource/properties/expiry_year",
+      "message": "Conditional requirement recorded from discriminator: payment_details.expiry_year is required when payment_details.source_type equals card (initDeposit)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "I402",
+      "evidence": [],
+      "level": "info",
+      "location": "#/components/schemas/CardSource/properties/pan",
+      "message": "Conditional requirement recorded from discriminator: payment_details.pan is required when payment_details.source_type equals card (initDeposit)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "I402",
+      "evidence": [],
+      "level": "info",
+      "location": "#/components/schemas/SbpSource/properties/bank_member_id",
+      "message": "Conditional requirement recorded from discriminator: payment_details.bank_member_id is required when payment_details.source_type equals sbp (initDeposit)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "I403",
+      "evidence": [
+        "currency: RUB (enum constant)",
+        "request method: card (default of payment_details.source_type)",
+        "direction: deposit (token 'deposit' in operationId initDeposit)"
+      ],
+      "level": "info",
+      "location": null,
+      "message": "Gateway config recorded: external_method card_deposit, gateway RUB_CARD_DEPOSIT (confidence 0.9); evidence: currency: RUB (enum constant), request method: card (default of payment_details.source_type), direction: deposit (token 'deposit' in operationId initDeposit)",
+      "where": "ProviderGateway config"
+    }
+  ],
+  "todos": [
+    {
+      "file": "rublepay_service.rb",
+      "line": 111,
+      "text": "TODO(confidence 0.0): operation kind unknown with confidence 0.0"
+    },
+    {
+      "file": "rublepay_service.rb",
+      "line": 277,
+      "text": "TODO(confidence 0.0): required field source_type has no platform source (W403)"
+    }
+  ],
+  "validation": {
+    "checks": [
+      {
+        "detail": "Prism: no syntax errors",
+        "name": "rublepay_service.rb: syntax",
+        "ok": true
+      },
+      {
+        "detail": "no ERB tags in the output",
+        "name": "rublepay_service.rb: no ERB leftovers",
+        "ok": true
+      },
+      {
+        "detail": "0 offenses",
+        "name": "rublepay_service.rb: rubocop",
+        "ok": true
+      },
+      {
+        "detail": "class inherits Provider::BaseService",
+        "name": "rublepay_service.rb: inherits BaseService",
+        "ok": true
+      },
+      {
+        "detail": "4/4 contract methods",
+        "name": "rublepay_service.rb: contract methods",
+        "ok": true
+      },
+      {
+        "detail": "Prism: no syntax errors",
+        "name": "base_contract.rb: syntax",
+        "ok": true
+      },
+      {
+        "detail": "no ERB tags in the output",
+        "name": "base_contract.rb: no ERB leftovers",
+        "ok": true
+      },
+      {
+        "detail": "0 offenses",
+        "name": "base_contract.rb: rubocop",
+        "ok": true
+      },
+      {
+        "detail": "Prism: no syntax errors",
+        "name": "rublepay_service_spec.rb: syntax",
+        "ok": true
+      },
+      {
+        "detail": "no ERB tags in the output",
+        "name": "rublepay_service_spec.rb: no ERB leftovers",
+        "ok": true
+      },
+      {
+        "detail": "0 offenses",
+        "name": "rublepay_service_spec.rb: rubocop",
+        "ok": true
+      },
+      {
+        "detail": "parses, 7 top-level entries",
+        "name": "fixtures.json: JSON",
+        "ok": true
+      },
+      {
+        "detail": "examples satisfy the schemas rebuilt from the IR",
+        "name": "fixtures.json: schemas",
+        "ok": true
+      },
+      {
+        "detail": "13 sections",
+        "name": "INTEGRATION.md: sections",
+        "ok": true
+      },
+      {
+        "detail": "no ERB tags in the output",
+        "name": "INTEGRATION.md: no ERB leftovers",
+        "ok": true
+      }
+    ],
+    "ok": true
+  }
+}

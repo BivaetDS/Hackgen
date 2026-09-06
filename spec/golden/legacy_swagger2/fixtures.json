@@ -1,0 +1,273 @@
+{
+  "create_request": {
+    "request": {
+      "cur": "RUB",
+      "merchant_id": "string",
+      "contract_num": "string",
+      "order_id": "string",
+      "sum": 10000,
+      "payment_type": "card",
+      "_synthetic_fields": [
+        "merchant_id",
+        "contract_num",
+        "order_id",
+        "sum",
+        "payment_type"
+      ]
+    },
+    "response_200": {
+      "payment_id": "string",
+      "order_id": "string",
+      "state": "REGISTERED",
+      "sum": 0,
+      "cur": "string",
+      "payment_type": "card",
+      "masked_account": "string",
+      "fault_code": "string",
+      "fault_message": "string",
+      "created": "2026-01-01T00:00:00Z",
+      "updated": "2026-01-01T00:00:00Z",
+      "_synthetic": true
+    },
+    "response_400": {
+      "fault_code": "INVALID_PARAM",
+      "fault_message": "Ошибка в составе или значениях параметров формы.",
+      "_synthetic": true
+    },
+    "response_401": {
+      "fault_code": "SIGN_ERROR",
+      "fault_message": "Токен мерчанта не передан, недействителен или договор заблокирован.",
+      "_synthetic": true
+    },
+    "response_402": {
+      "fault_code": "NOT_ENOUGH_FUNDS",
+      "fault_message": "На договоре недостаточно средств для списания.",
+      "_synthetic": true
+    },
+    "response_409": {
+      "payment_id": "string",
+      "order_id": "string",
+      "state": "REGISTERED",
+      "sum": 0,
+      "cur": "string",
+      "payment_type": "card",
+      "masked_account": "string",
+      "fault_code": "string",
+      "fault_message": "string",
+      "created": "2026-01-01T00:00:00Z",
+      "updated": "2026-01-01T00:00:00Z",
+      "_synthetic": true
+    },
+    "response_429": {
+      "fault_code": "REQUEST_LIMIT",
+      "fault_message": "Превышено ограничение на частоту запросов по договору.",
+      "_synthetic": true
+    },
+    "response_500": {
+      "fault_code": "INTERNAL_FAILURE",
+      "fault_message": "Внутренняя ошибка Kassira. Состояние поручения неизвестно — уточните его методом\n/payment/status/{payment_id} перед повторной регистрацией.",
+      "_synthetic": true
+    }
+  },
+  "fetch_status": {
+    "response_200": {
+      "payment_id": "string",
+      "order_id": "string",
+      "state": "REGISTERED",
+      "sum": 0,
+      "cur": "string",
+      "payment_type": "card",
+      "masked_account": "string",
+      "fault_code": "string",
+      "fault_message": "string",
+      "created": "2026-01-01T00:00:00Z",
+      "updated": "2026-01-01T00:00:00Z",
+      "_synthetic": true
+    },
+    "response_401": {
+      "fault_code": "SIGN_ERROR",
+      "fault_message": "Токен мерчанта не передан, недействителен или договор заблокирован.",
+      "_synthetic": true
+    },
+    "response_404": {
+      "fault_code": "DOC_NOT_FOUND",
+      "fault_message": "Поручение с таким идентификатором не найдено на договоре.",
+      "_synthetic": true
+    },
+    "response_500": {
+      "fault_code": "INTERNAL_FAILURE",
+      "fault_message": "Внутренняя ошибка Kassira. Состояние поручения неизвестно — уточните его методом\n/payment/status/{payment_id} перед повторной регистрацией.",
+      "_synthetic": true
+    }
+  },
+  "callback_registered": {
+    "payload": {
+      "notification_type": "PAYMENT_REGISTERED",
+      "payment_id": "string",
+      "order_id": "string",
+      "state": "REGISTERED",
+      "sum": 0,
+      "cur": "string",
+      "fault_code": "string",
+      "fault_message": "string",
+      "processed_at": "2026-01-01T00:00:00Z",
+      "_synthetic": true
+    },
+    "expected_operation_status": "in_progress",
+    "_synthetic": true
+  },
+  "callback": {
+    "payload": {
+      "notification_type": "PAYMENT_PAID",
+      "payment_id": "string",
+      "order_id": "string",
+      "state": "REGISTERED",
+      "sum": 0,
+      "cur": "string",
+      "fault_code": "string",
+      "fault_message": "string",
+      "processed_at": "2026-01-01T00:00:00Z",
+      "_synthetic": true
+    },
+    "expected_operation_status": "approved",
+    "_synthetic": true
+  },
+  "callback_failed": {
+    "payload": {
+      "notification_type": "PAYMENT_REFUSED",
+      "payment_id": "string",
+      "order_id": "string",
+      "state": "REGISTERED",
+      "sum": 0,
+      "cur": "string",
+      "fault_code": "string",
+      "fault_message": "string",
+      "processed_at": "2026-01-01T00:00:00Z",
+      "_synthetic": true
+    },
+    "expected_operation_status": "rejected",
+    "_synthetic": true
+  },
+  "callback_returned": {
+    "payload": {
+      "notification_type": "PAYMENT_RETURNED",
+      "payment_id": "string",
+      "order_id": "string",
+      "state": "REGISTERED",
+      "sum": 0,
+      "cur": "string",
+      "fault_code": "string",
+      "fault_message": "string",
+      "processed_at": "2026-01-01T00:00:00Z",
+      "_synthetic": true
+    },
+    "expected_operation_status": "rejected",
+    "_synthetic": true
+  },
+  "callback_expired": {
+    "payload": {
+      "notification_type": "PAYMENT_EXPIRED",
+      "payment_id": "string",
+      "order_id": "string",
+      "state": "REGISTERED",
+      "sum": 0,
+      "cur": "string",
+      "fault_code": "string",
+      "fault_message": "string",
+      "processed_at": "2026-01-01T00:00:00Z",
+      "_synthetic": true
+    },
+    "expected_operation_status": "rejected",
+    "_synthetic": true
+  },
+  "cancel_request": {
+    "request": {
+      "reason": "string",
+      "_synthetic": true
+    },
+    "response_200": {
+      "payment_id": "string",
+      "order_id": "string",
+      "state": "REGISTERED",
+      "sum": 0,
+      "cur": "string",
+      "payment_type": "card",
+      "masked_account": "string",
+      "fault_code": "string",
+      "fault_message": "string",
+      "created": "2026-01-01T00:00:00Z",
+      "updated": "2026-01-01T00:00:00Z",
+      "_synthetic": true
+    },
+    "response_401": {
+      "fault_code": "SIGN_ERROR",
+      "fault_message": "Токен мерчанта не передан, недействителен или договор заблокирован.",
+      "_synthetic": true
+    },
+    "response_404": {
+      "fault_code": "DOC_NOT_FOUND",
+      "fault_message": "Поручение не найдено.",
+      "_synthetic": true
+    },
+    "response_409": {
+      "fault_code": "DUPLICATE_ORDER",
+      "fault_message": "Отмена в текущем состоянии поручения невозможна.",
+      "_synthetic": true
+    }
+  },
+  "post_requisites_check": {
+    "request": {
+      "payment_type": "card",
+      "pan": "string",
+      "account_no": "string",
+      "bik": "string",
+      "_synthetic": true
+    },
+    "response_200": {
+      "allowed": false,
+      "bank_name": "string",
+      "fault_code": "string",
+      "fault_message": "string",
+      "_synthetic": true
+    },
+    "response_400": {
+      "fault_code": "INVALID_PARAM",
+      "fault_message": "Реквизиты переданы не полностью.",
+      "_synthetic": true
+    },
+    "response_401": {
+      "fault_code": "SIGN_ERROR",
+      "fault_message": "Токен мерчанта не передан, недействителен или договор заблокирован.",
+      "_synthetic": true
+    }
+  },
+  "fetch_balance": {
+    "response_200": {
+      "balance": 0,
+      "reserved": 0,
+      "cur": "string",
+      "updated": "2026-01-01T00:00:00Z",
+      "_synthetic": true
+    },
+    "response_401": {
+      "fault_code": "SIGN_ERROR",
+      "fault_message": "Токен мерчанта не передан, недействителен или договор заблокирован.",
+      "_synthetic": true
+    },
+    "response_500": {
+      "fault_code": "INTERNAL_FAILURE",
+      "fault_message": "Внутренняя ошибка Kassira. Состояние поручения неизвестно — уточните его методом\n/payment/status/{payment_id} перед повторной регистрацией.",
+      "_synthetic": true
+    }
+  },
+  "list_requests": {
+    "response_200": {
+      "_synthetic": true
+    },
+    "response_401": {
+      "fault_code": "SIGN_ERROR",
+      "fault_message": "Токен мерчанта не передан, недействителен или договор заблокирован.",
+      "_synthetic": true
+    }
+  }
+}

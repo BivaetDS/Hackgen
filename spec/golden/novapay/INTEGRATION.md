@@ -175,6 +175,19 @@ HMAC-SHA256(body, callback_secret) -> hex -> X-NovaPay-Signature (header)
 
 - Ответ провайдеру: HTTP 200 `{"received":true}` (формирует платформа после `process_callback`)
 
+## Тесты
+
+`novapay_service_spec.rb` - RSpec поверх `fixtures.json` через WebMock (сеть не нужна), 20 примеров:
+
+- `create_request` (10): запрос (URL, заголовки, тело), успех 201, дубль 409, ошибки 400, 401, 402, 422, 429, 500, неизвестный request_method
+- `fetch_status` (3): запрос с авторизацией, статус из response_200, ошибки 401, 404
+- `process_callback` (3): callback -> approved, callback_failed -> rejected, подделанная подпись
+- `check_conditions` (4): валидная операция, `MIN_AMOUNT`, `REQUIRED_REQUISITES`, `REQUEST_METHODS`
+
+- Запуск из каталога с файлами: `rspec novapay_service_spec.rb` (гемы `rspec`, `webmock`); то же делает `bin/integrate --run-spec` сразу после генерации
+- `base_contract.rb` (`Provider::BaseService`, `Provider::HttpClient` на Net::HTTP) - заглушки для автономного прогона (docs/ASSUMPTIONS.md, допущения 6 и 23); на платформе сервис получает настоящие `BaseService` и `client`
+- Подпись webhook в тестах считается тем же выражением, что в `verify_signature!` (HMAC-SHA256, hex); секрет - `credentials[:callback_secret]`
+
 ## Требует подтверждения
 
 Критичные выводы (единицы суммы, условная обязательность, подпись, статусы, конфиг шлюза) попадают сюда всегда, даже при высокой уверенности. Изменить вывод без правки кода: `overrides.yml` (ключи operations, amount_unit, required_if, signature, status_map, error_actions).

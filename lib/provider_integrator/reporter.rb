@@ -5,7 +5,7 @@ module ProviderIntegrator
   # docs/PLAN.md 7: what was read, what each operation was recognised as, how the provider
   # authenticates, how the callback is signed, the generation and validation lines, then everything
   # a human must confirm and where the files went. Details go behind --verbose, failures to stderr.
-  # The Reporter is also the Pipeline observer (#parsed, #generating, #generated).
+  # The Reporter is also the Pipeline observer (#parsed, #generating, #generated, #spec_ran).
   class Reporter
     WRAP = 78
     LEVEL_COLOURS = { "error" => :red, "warning" => :yellow, "info" => :cyan }.freeze
@@ -40,6 +40,13 @@ module ProviderIntegrator
       verdict.failures.each { |failure| line("  #{pastel.red("FAILED")} #{failure}") }
     end
 
+    # After --run-spec: one stable success line, or the captured RSpec output on stderr.
+    def spec_ran(run)
+      return line("Running generated spec... RSpec #{run.examples} examples, #{run.failures} failures") if run.ok?
+
+      failed_spec_run(run)
+    end
+
     # ---- Blocks ----------------------------------------------------------------------------------
 
     # The whole analysis block for a parsed spec.
@@ -56,6 +63,7 @@ module ProviderIntegrator
       case result.status
       when :ok then completed(result)
       when :spec, :generation then failure(FAILURE_TITLES.fetch(result.status), result.errors)
+      when :spec_failed then failed_spec(result)
       when :write then fatal("Cannot write output: #{result.error.message}")
       when :internal then internal(result.error)
       end
@@ -76,6 +84,17 @@ module ProviderIntegrator
 
     def line(text = "")
       io.puts(text)
+    end
+
+    def failed_spec_run(run)
+      err.puts(pastel.red("Running generated spec... FAILED"))
+      err.puts(run.error) if run.error
+      write_spec_output(run.output)
+    end
+
+    def write_spec_output(text)
+      err.write(text)
+      err.puts unless text.empty? || text.end_with?("\n")
     end
 
     # ---- analysis --------------------------------------------------------------------------------
@@ -128,6 +147,11 @@ module ProviderIntegrator
     def completed(result)
       summary(result.events)
       confirmations(result)
+      output(result)
+    end
+
+    def failed_spec(result)
+      err.puts(pastel.red("Generated spec failed; files were kept in #{result.output_dir}."))
       output(result)
     end
 

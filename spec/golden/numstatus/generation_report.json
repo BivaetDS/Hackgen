@@ -1,0 +1,876 @@
+{
+  "events": {
+    "analysis": [
+      {
+        "code": "W101",
+        "details": {
+          "confidence": 0.0,
+          "kind": "unknown",
+          "method": "POST",
+          "operation_id": "quoteDisbursementFee",
+          "path": "/fees/quote"
+        },
+        "level": "warning",
+        "location": "#/paths/~1fees~1quote/post",
+        "message": "Operation quoteDisbursementFee (POST /fees/quote) classified as unknown with low confidence 0.0"
+      },
+      {
+        "code": "W202",
+        "details": {
+          "canonical": "conflict",
+          "http": 409,
+          "provider_code": "OPR_STATE_LOCKED"
+        },
+        "level": "warning",
+        "location": "#/paths/~1disbursements~1{operationId}~1revoke/post/responses/409",
+        "message": "Provider error code OPR_STATE_LOCKED (HTTP 409) has no canonical analog; defaulting to conflict"
+      },
+      {
+        "code": "W203",
+        "details": {
+          "value": "disbursement.revoked"
+        },
+        "level": "warning",
+        "location": null,
+        "message": "Webhook event disbursement.revoked has no canonical status; the service treats it as unknown_event"
+      },
+      {
+        "code": "W204",
+        "details": {
+          "canonical": "rejected",
+          "status": "-1"
+        },
+        "level": "warning",
+        "location": null,
+        "message": "Numeric status -1 mapped by convention to rejected; confirm with the provider"
+      },
+      {
+        "code": "W402",
+        "details": {
+          "equals": "account",
+          "field": "destination.accountNumber",
+          "operation_id": "registerDisbursement",
+          "when": "destination.kind"
+        },
+        "level": "warning",
+        "location": "#/components/schemas/Destination/properties/accountNumber",
+        "message": "Conditional requirement inferred from description: destination.accountNumber is required when destination.kind equals account (registerDisbursement)"
+      },
+      {
+        "code": "W402",
+        "details": {
+          "equals": "account",
+          "field": "destination.bic",
+          "operation_id": "registerDisbursement",
+          "when": "destination.kind"
+        },
+        "level": "warning",
+        "location": "#/components/schemas/Destination/properties/bic",
+        "message": "Conditional requirement inferred from description: destination.bic is required when destination.kind equals account (registerDisbursement)"
+      },
+      {
+        "code": "W402",
+        "details": {
+          "equals": "card",
+          "field": "destination.cardNumber",
+          "operation_id": "registerDisbursement",
+          "when": "destination.kind"
+        },
+        "level": "warning",
+        "location": "#/components/schemas/Destination/properties/cardNumber",
+        "message": "Conditional requirement inferred from description: destination.cardNumber is required when destination.kind equals card (registerDisbursement)"
+      },
+      {
+        "code": "W402",
+        "details": {
+          "equals": "phone",
+          "field": "destination.phone",
+          "operation_id": "registerDisbursement",
+          "when": "destination.kind"
+        },
+        "level": "warning",
+        "location": "#/components/schemas/Destination/properties/phone",
+        "message": "Conditional requirement inferred from description: destination.phone is required when destination.kind equals phone (registerDisbursement)"
+      },
+      {
+        "code": "W403",
+        "details": {
+          "field": "sign",
+          "operation_id": "disbursementStateCallback"
+        },
+        "level": "warning",
+        "location": "#/components/schemas/CallbackPayload/properties/sign",
+        "message": "Required request field sign in disbursementStateCallback is not mapped to any canonical field"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.9,
+          "kind": "list",
+          "method": "GET",
+          "operation_id": "listDisbursements",
+          "path": "/disbursements"
+        },
+        "level": "info",
+        "location": "#/paths/~1disbursements/get",
+        "message": "Operation listDisbursements (GET /disbursements) classified as list with confidence 0.9"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.86,
+          "kind": "create",
+          "method": "POST",
+          "operation_id": "registerDisbursement",
+          "path": "/disbursements"
+        },
+        "level": "info",
+        "location": "#/paths/~1disbursements/post",
+        "message": "Operation registerDisbursement (POST /disbursements) classified as create with confidence 0.86"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.9,
+          "kind": "status",
+          "method": "GET",
+          "operation_id": "getDisbursementState",
+          "path": "/disbursements/{operationId}"
+        },
+        "level": "info",
+        "location": "#/paths/~1disbursements~1{operationId}/get",
+        "message": "Operation getDisbursementState (GET /disbursements/{operationId}) classified as status with confidence 0.9"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.89,
+          "kind": "cancel",
+          "method": "POST",
+          "operation_id": "revokeDisbursement",
+          "path": "/disbursements/{operationId}/revoke"
+        },
+        "level": "info",
+        "location": "#/paths/~1disbursements~1{operationId}~1revoke/post",
+        "message": "Operation revokeDisbursement (POST /disbursements/{operationId}/revoke) classified as cancel with confidence 0.89"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.0,
+          "kind": "unknown",
+          "method": "POST",
+          "operation_id": "quoteDisbursementFee",
+          "path": "/fees/quote"
+        },
+        "level": "info",
+        "location": "#/paths/~1fees~1quote/post",
+        "message": "Operation quoteDisbursementFee (POST /fees/quote) classified as unknown with confidence 0.0"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.9,
+          "kind": "balance",
+          "method": "GET",
+          "operation_id": "getMerchantBalance",
+          "path": "/merchant/balance"
+        },
+        "level": "info",
+        "location": "#/paths/~1merchant~1balance/get",
+        "message": "Operation getMerchantBalance (GET /merchant/balance) classified as balance with confidence 0.9"
+      },
+      {
+        "code": "I201",
+        "details": {
+          "count": 6,
+          "mapping": {
+            "-1": "rejected",
+            "0": "in_progress",
+            "1": "approved",
+            "2": "rejected",
+            "3": "rejected",
+            "4": "rejected"
+          }
+        },
+        "level": "info",
+        "location": null,
+        "message": "Status mapping recorded (6 statuses): 0 -> in_progress, 1 -> approved, 2 -> rejected, 3 -> rejected, 4 -> rejected, -1 -> rejected"
+      },
+      {
+        "code": "I301",
+        "details": {
+          "algorithm": "hmac-sha512",
+          "encoding": "hex",
+          "message": "concatenated_fields",
+          "name": "sign",
+          "placement": "body",
+          "secret": "callback_secret"
+        },
+        "level": "info",
+        "location": "#/paths/~1disbursements/post/callbacks/disbursementState/{$request.body#~1callbackUrl}/post",
+        "message": "Signature convention recorded: sign (body), algorithm hmac-sha512, encoding hex, message concatenated_fields, secret callback_secret"
+      },
+      {
+        "code": "I401",
+        "details": {
+          "field": "amount",
+          "multiplier": 100,
+          "operation_id": "registerDisbursement",
+          "score": 8,
+          "signals": [
+            "description: копейках",
+            "error example (422): копеек",
+            "minimum: 50000"
+          ],
+          "unit": "minor"
+        },
+        "level": "info",
+        "location": "#/components/schemas/DisbursementRequest/properties/amount",
+        "message": "Amount field amount in registerDisbursement uses minor units (multiplier 100, score 8); signals: description: копейках, error example (422): копеек, minimum: 50000"
+      },
+      {
+        "code": "I403",
+        "details": {
+          "confidence": 0.6,
+          "evidence": [
+            "currency: RUB (example)",
+            "request method: phone (default of destination.kind)",
+            "direction: withdraw (token 'disbursement' in operationId registerDisbursement)"
+          ],
+          "external_method": "phone_payout",
+          "gateway": "RUB_PHONE_WITHDRAW"
+        },
+        "level": "info",
+        "location": null,
+        "message": "Gateway config recorded: external_method phone_payout, gateway RUB_PHONE_WITHDRAW (confidence 0.6); evidence: currency: RUB (example), request method: phone (default of destination.kind), direction: withdraw (token 'disbursement' in operationId registerDisbursement)"
+      },
+      {
+        "code": "W102",
+        "details": {
+          "kind": "list",
+          "method": "GET",
+          "operation_id": "listDisbursements",
+          "path": "/disbursements"
+        },
+        "level": "info",
+        "location": "#/paths/~1disbursements/get",
+        "message": "Operation listDisbursements (GET /disbursements) is outside the BaseService contract (kind list); generated as an extra method"
+      },
+      {
+        "code": "W102",
+        "details": {
+          "kind": "cancel",
+          "method": "POST",
+          "operation_id": "revokeDisbursement",
+          "path": "/disbursements/{operationId}/revoke"
+        },
+        "level": "info",
+        "location": "#/paths/~1disbursements~1{operationId}~1revoke/post",
+        "message": "Operation revokeDisbursement (POST /disbursements/{operationId}/revoke) is outside the BaseService contract (kind cancel); generated as an extra method"
+      },
+      {
+        "code": "W102",
+        "details": {
+          "kind": "unknown",
+          "method": "POST",
+          "operation_id": "quoteDisbursementFee",
+          "path": "/fees/quote"
+        },
+        "level": "info",
+        "location": "#/paths/~1fees~1quote/post",
+        "message": "Operation quoteDisbursementFee (POST /fees/quote) is outside the BaseService contract (kind unknown); generated as an extra method"
+      },
+      {
+        "code": "W102",
+        "details": {
+          "kind": "balance",
+          "method": "GET",
+          "operation_id": "getMerchantBalance",
+          "path": "/merchant/balance"
+        },
+        "level": "info",
+        "location": "#/paths/~1merchant~1balance/get",
+        "message": "Operation getMerchantBalance (GET /merchant/balance) is outside the BaseService contract (kind balance); generated as an extra method"
+      }
+    ],
+    "generation": []
+  },
+  "files": [
+    {
+      "path": "tranzo_service.rb",
+      "sha256": "36e861e6ddb3948539c0547711cc7b2506dd6a4c4dd039b5e89a92b56eb642df"
+    },
+    {
+      "path": "base_contract.rb",
+      "sha256": "e1a7cf32263c5f0e3b095097d930af460857c5aaadd016e9bcc6051fc00b87b8"
+    },
+    {
+      "path": "INTEGRATION.md",
+      "sha256": "a573f57e6acd4b607eebfd78a24748f268710743e3a1157b7507492131717f06"
+    },
+    {
+      "path": "fixtures.json",
+      "sha256": "292111fc3cf0daeeeaa1fc3895dc3cfe7f48336821da054d768304d8ac84e082"
+    },
+    {
+      "path": "tranzo_service_spec.rb",
+      "sha256": "4bee17733b1f9fea25df880f3c5658e4ee9ebd61fa6f27244b7daec850c0908f"
+    }
+  ],
+  "generator": {
+    "ir_version": 1,
+    "name": "provider-integrator",
+    "version": "0.1.0"
+  },
+  "inferences": {
+    "amount_units": [
+      {
+        "confidence": 0.89,
+        "evidence": [
+          "description: копейках",
+          "error example (422): копеек",
+          "minimum: 50000"
+        ],
+        "field": "amount",
+        "operation_id": "registerDisbursement",
+        "source": "scoring",
+        "type": "multiply",
+        "unit_from": "major",
+        "unit_to": "minor",
+        "value": 100
+      }
+    ],
+    "authentication": {
+      "confidence": 1.0,
+      "evidence": [
+        "securitySchemes.MerchantOAuth2: oauth2 in header Authorization (clientCredentials https://auth.tranzo.example/oauth2/token)",
+        "security: MerchantOAuth2 used by 6 of 6 operations"
+      ],
+      "location": "header",
+      "name": "Authorization",
+      "scheme_name": "MerchantOAuth2",
+      "type": "oauth2_client_credentials"
+    },
+    "conditional_requirements": [
+      {
+        "confidence": 0.6,
+        "equals": "phone",
+        "evidence": [
+          "description: Обязательно, если kind = phone"
+        ],
+        "field": "destination.phone",
+        "operation_id": "registerDisbursement",
+        "source": "description",
+        "when": "destination.kind"
+      },
+      {
+        "confidence": 0.6,
+        "equals": "card",
+        "evidence": [
+          "description: Обязательно, если kind = card"
+        ],
+        "field": "destination.cardNumber",
+        "operation_id": "registerDisbursement",
+        "source": "description",
+        "when": "destination.kind"
+      },
+      {
+        "confidence": 0.6,
+        "equals": "account",
+        "evidence": [
+          "description: Обязательно, если kind = account"
+        ],
+        "field": "destination.accountNumber",
+        "operation_id": "registerDisbursement",
+        "source": "description",
+        "when": "destination.kind"
+      },
+      {
+        "confidence": 0.6,
+        "equals": "account",
+        "evidence": [
+          "description: Обязательно, если kind = account"
+        ],
+        "field": "destination.bic",
+        "operation_id": "registerDisbursement",
+        "source": "description",
+        "when": "destination.kind"
+      }
+    ],
+    "gateway_config": {
+      "confidence": 0.6,
+      "currency": "RUB",
+      "direction": "withdraw",
+      "evidence": [
+        "currency: RUB (example)",
+        "request method: phone (default of destination.kind)",
+        "direction: withdraw (token 'disbursement' in operationId registerDisbursement)"
+      ],
+      "external_method": "phone_payout",
+      "gateway": "RUB_PHONE_WITHDRAW",
+      "method": "phone"
+    },
+    "operations": [
+      {
+        "canonical_method": "create_request",
+        "confidence": 0.86,
+        "evidence": [
+          "operationId token 'disbursement' -> create (+2)",
+          "structure POST with body and no path id -> create (+3)",
+          "text 'новую' -> create (+1)"
+        ],
+        "in_contract": true,
+        "kind": "create",
+        "method": "POST",
+        "operation_id": "registerDisbursement",
+        "path": "/disbursements"
+      },
+      {
+        "canonical_method": "list_requests",
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'list' -> list (+5)",
+          "structure GET without path id -> list (+3)",
+          "text 'список' -> list (+1)"
+        ],
+        "in_contract": false,
+        "kind": "list",
+        "method": "GET",
+        "operation_id": "listDisbursements",
+        "path": "/disbursements"
+      },
+      {
+        "canonical_method": "fetch_status",
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'state' -> status (+5)",
+          "structure GET with path id -> status (+3)",
+          "text 'состояние' -> status (+1)"
+        ],
+        "in_contract": true,
+        "kind": "status",
+        "method": "GET",
+        "operation_id": "getDisbursementState",
+        "path": "/disbursements/{operationId}"
+      },
+      {
+        "canonical_method": "cancel_request",
+        "confidence": 0.89,
+        "evidence": [
+          "operationId token 'revoke' -> cancel (+5)",
+          "path token 'revoke' -> cancel (+3)"
+        ],
+        "in_contract": false,
+        "kind": "cancel",
+        "method": "POST",
+        "operation_id": "revokeDisbursement",
+        "path": "/disbursements/{operationId}/revoke"
+      },
+      {
+        "canonical_method": null,
+        "confidence": 0.0,
+        "evidence": [],
+        "in_contract": false,
+        "kind": "unknown",
+        "method": "POST",
+        "operation_id": "quoteDisbursementFee",
+        "path": "/fees/quote"
+      },
+      {
+        "canonical_method": "fetch_balance",
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'balance' -> balance (+5)",
+          "path token 'balance' -> balance (+3)",
+          "text 'баланс' -> balance (+1)"
+        ],
+        "in_contract": false,
+        "kind": "balance",
+        "method": "GET",
+        "operation_id": "getMerchantBalance",
+        "path": "/merchant/balance"
+      }
+    ],
+    "statuses": [
+      {
+        "canonical": "in_progress",
+        "confidence": 0.7,
+        "evidence": [
+          "description: 0 — в обработке"
+        ],
+        "provider": "0",
+        "source": "description"
+      },
+      {
+        "canonical": "approved",
+        "confidence": 0.7,
+        "evidence": [
+          "description: 1 — успешно исполнена"
+        ],
+        "provider": "1",
+        "source": "description"
+      },
+      {
+        "canonical": "rejected",
+        "confidence": 0.7,
+        "evidence": [
+          "description: 2 — отклонена банком получателя"
+        ],
+        "provider": "2",
+        "source": "description"
+      },
+      {
+        "canonical": "rejected",
+        "confidence": 0.7,
+        "evidence": [
+          "description: 3 — отменена мерчантом"
+        ],
+        "provider": "3",
+        "source": "description"
+      },
+      {
+        "canonical": "rejected",
+        "confidence": 0.7,
+        "evidence": [
+          "description: 4 — просрочена"
+        ],
+        "provider": "4",
+        "source": "description"
+      },
+      {
+        "canonical": "rejected",
+        "confidence": 0.5,
+        "evidence": [
+          "statuses.yml numeric: -1 -> rejected"
+        ],
+        "provider": "-1",
+        "source": "numeric_default"
+      }
+    ],
+    "webhook": {
+      "confidence": 1.0,
+      "event_field": "event",
+      "events": [
+        {
+          "canonical_status": "approved",
+          "confidence": 0.95,
+          "source": "dictionary",
+          "value": "disbursement.executed"
+        },
+        {
+          "canonical_status": "rejected",
+          "confidence": 0.95,
+          "source": "dictionary",
+          "value": "disbursement.declined"
+        },
+        {
+          "canonical_status": null,
+          "confidence": 0.0,
+          "source": "none",
+          "value": "disbursement.revoked"
+        },
+        {
+          "canonical_status": "rejected",
+          "confidence": 0.95,
+          "source": "dictionary",
+          "value": "disbursement.expired"
+        },
+        {
+          "canonical_status": "rejected",
+          "confidence": 0.95,
+          "source": "dictionary",
+          "value": "disbursement.failed"
+        }
+      ],
+      "id_field": "operationId",
+      "method": "POST",
+      "path": "{$request.body#/callbackUrl}",
+      "signature": {
+        "algorithm": "hmac-sha512",
+        "confidence": 0.9,
+        "encoding": "hex",
+        "evidence": [
+          "field sign: Подпись уведомления: HMAC-SHA512 в нижнем регистре hex от concatenation",
+          "operation description: sign = HMAC-SHA512 в нижнем регистре hex от concatenation значений"
+        ],
+        "location": "body",
+        "message": "concatenated_fields",
+        "name": "sign",
+        "secret": "callback_secret",
+        "source": "field"
+      },
+      "source": "callbacks",
+      "status_field": "state"
+    }
+  },
+  "overrides_applied": [],
+  "provider": {
+    "class_name": "Provider::TranzoService",
+    "service_file": "tranzo_service.rb",
+    "slug": "tranzo",
+    "title": "Tranzo Disbursement API",
+    "version": "2.4.1"
+  },
+  "requires_confirmation": [
+    {
+      "code": "W101",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/paths/~1fees~1quote/post",
+      "message": "Operation quoteDisbursementFee (POST /fees/quote) classified as unknown with low confidence 0.0",
+      "where": "operation methods (name and role)"
+    },
+    {
+      "code": "W202",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/paths/~1disbursements~1{operationId}~1revoke/post/responses/409",
+      "message": "Provider error code OPR_STATE_LOCKED (HTTP 409) has no canonical analog; defaulting to conflict",
+      "where": "ERROR_MAP"
+    },
+    {
+      "code": "W203",
+      "evidence": [],
+      "level": "warning",
+      "location": null,
+      "message": "Webhook event disbursement.revoked has no canonical status; the service treats it as unknown_event",
+      "where": "process_callback (unknown_event)"
+    },
+    {
+      "code": "W204",
+      "evidence": [],
+      "level": "warning",
+      "location": null,
+      "message": "Numeric status -1 mapped by convention to rejected; confirm with the provider",
+      "where": "STATUS_MAP"
+    },
+    {
+      "code": "W402",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/components/schemas/Destination/properties/accountNumber",
+      "message": "Conditional requirement inferred from description: destination.accountNumber is required when destination.kind equals account (registerDisbursement)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "W402",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/components/schemas/Destination/properties/bic",
+      "message": "Conditional requirement inferred from description: destination.bic is required when destination.kind equals account (registerDisbursement)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "W402",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/components/schemas/Destination/properties/cardNumber",
+      "message": "Conditional requirement inferred from description: destination.cardNumber is required when destination.kind equals card (registerDisbursement)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "W402",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/components/schemas/Destination/properties/phone",
+      "message": "Conditional requirement inferred from description: destination.phone is required when destination.kind equals phone (registerDisbursement)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "W403",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/components/schemas/CallbackPayload/properties/sign",
+      "message": "Required request field sign in disbursementStateCallback is not mapped to any canonical field",
+      "where": "build_*_payload (TODO)"
+    },
+    {
+      "code": "I201",
+      "evidence": [],
+      "level": "info",
+      "location": null,
+      "message": "Status mapping recorded (6 statuses): 0 -> in_progress, 1 -> approved, 2 -> rejected, 3 -> rejected, 4 -> rejected, -1 -> rejected",
+      "where": "STATUS_MAP"
+    },
+    {
+      "code": "I301",
+      "evidence": [],
+      "level": "info",
+      "location": "#/paths/~1disbursements/post/callbacks/disbursementState/{$request.body#~1callbackUrl}/post",
+      "message": "Signature convention recorded: sign (body), algorithm hmac-sha512, encoding hex, message concatenated_fields, secret callback_secret",
+      "where": "verify_signature!"
+    },
+    {
+      "code": "I401",
+      "evidence": [
+        "description: копейках",
+        "error example (422): копеек",
+        "minimum: 50000"
+      ],
+      "level": "info",
+      "location": "#/components/schemas/DisbursementRequest/properties/amount",
+      "message": "Amount field amount in registerDisbursement uses minor units (multiplier 100, score 8); signals: description: копейках, error example (422): копеек, minimum: 50000",
+      "where": "build_*_payload, MIN_AMOUNT"
+    },
+    {
+      "code": "I403",
+      "evidence": [
+        "currency: RUB (example)",
+        "request method: phone (default of destination.kind)",
+        "direction: withdraw (token 'disbursement' in operationId registerDisbursement)"
+      ],
+      "level": "info",
+      "location": null,
+      "message": "Gateway config recorded: external_method phone_payout, gateway RUB_PHONE_WITHDRAW (confidence 0.6); evidence: currency: RUB (example), request method: phone (default of destination.kind), direction: withdraw (token 'disbursement' in operationId registerDisbursement)",
+      "where": "ProviderGateway config"
+    }
+  ],
+  "todos": [
+    {
+      "file": "tranzo_service.rb",
+      "line": 134,
+      "text": "TODO(confidence 0.0): operation kind unknown with confidence 0.0"
+    },
+    {
+      "file": "tranzo_service.rb",
+      "line": 169,
+      "text": "TODO(confidence 0.6): required when destination.kind = phone (description: Обязательно, если kind ="
+    },
+    {
+      "file": "tranzo_service.rb",
+      "line": 187,
+      "text": "TODO(confidence 0.6): required when destination.kind = card (description: Обязательно, если kind ="
+    },
+    {
+      "file": "tranzo_service.rb",
+      "line": 205,
+      "text": "TODO(confidence 0.6): required when destination.kind = account (description: Обязательно, если kind"
+    },
+    {
+      "file": "tranzo_service.rb",
+      "line": 208,
+      "text": "TODO(confidence 0.6): required when destination.kind = account (description: Обязательно, если kind"
+    },
+    {
+      "file": "tranzo_service.rb",
+      "line": 242,
+      "text": "TODO(confidence 0.5): field order of the signature base string is not in the spec; values sorted by"
+    },
+    {
+      "file": "tranzo_service.rb",
+      "line": 312,
+      "text": "TODO(confidence 0.6): cache the token until it expires; the spec does not state the lifetime"
+    },
+    {
+      "file": "tranzo_service.rb",
+      "line": 360,
+      "text": "TODO(confidence 0.7): description: 0 — в обработке"
+    },
+    {
+      "file": "tranzo_service.rb",
+      "line": 362,
+      "text": "TODO(confidence 0.7): description: 1 — успешно исполнена"
+    },
+    {
+      "file": "tranzo_service.rb",
+      "line": 364,
+      "text": "TODO(confidence 0.7): description: 2 — отклонена банком получателя"
+    },
+    {
+      "file": "tranzo_service.rb",
+      "line": 366,
+      "text": "TODO(confidence 0.7): description: 3 — отменена мерчантом"
+    },
+    {
+      "file": "tranzo_service.rb",
+      "line": 368,
+      "text": "TODO(confidence 0.7): description: 4 — просрочена"
+    },
+    {
+      "file": "tranzo_service.rb",
+      "line": 370,
+      "text": "TODO(confidence 0.5): statuses.yml numeric: -1 -> rejected"
+    }
+  ],
+  "validation": {
+    "checks": [
+      {
+        "detail": "Prism: no syntax errors",
+        "name": "tranzo_service.rb: syntax",
+        "ok": true
+      },
+      {
+        "detail": "no ERB tags in the output",
+        "name": "tranzo_service.rb: no ERB leftovers",
+        "ok": true
+      },
+      {
+        "detail": "0 offenses",
+        "name": "tranzo_service.rb: rubocop",
+        "ok": true
+      },
+      {
+        "detail": "class inherits Provider::BaseService",
+        "name": "tranzo_service.rb: inherits BaseService",
+        "ok": true
+      },
+      {
+        "detail": "4/4 contract methods",
+        "name": "tranzo_service.rb: contract methods",
+        "ok": true
+      },
+      {
+        "detail": "Prism: no syntax errors",
+        "name": "base_contract.rb: syntax",
+        "ok": true
+      },
+      {
+        "detail": "no ERB tags in the output",
+        "name": "base_contract.rb: no ERB leftovers",
+        "ok": true
+      },
+      {
+        "detail": "0 offenses",
+        "name": "base_contract.rb: rubocop",
+        "ok": true
+      },
+      {
+        "detail": "Prism: no syntax errors",
+        "name": "tranzo_service_spec.rb: syntax",
+        "ok": true
+      },
+      {
+        "detail": "no ERB tags in the output",
+        "name": "tranzo_service_spec.rb: no ERB leftovers",
+        "ok": true
+      },
+      {
+        "detail": "0 offenses",
+        "name": "tranzo_service_spec.rb: rubocop",
+        "ok": true
+      },
+      {
+        "detail": "parses, 8 top-level entries",
+        "name": "fixtures.json: JSON",
+        "ok": true
+      },
+      {
+        "detail": "examples satisfy the schemas rebuilt from the IR",
+        "name": "fixtures.json: schemas",
+        "ok": true
+      },
+      {
+        "detail": "13 sections",
+        "name": "INTEGRATION.md: sections",
+        "ok": true
+      },
+      {
+        "detail": "no ERB tags in the output",
+        "name": "INTEGRATION.md: no ERB leftovers",
+        "ok": true
+      }
+    ],
+    "ok": true
+  }
+}

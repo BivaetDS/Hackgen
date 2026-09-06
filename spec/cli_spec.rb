@@ -55,8 +55,8 @@ RSpec.describe ProviderIntegrator::CLI do
       expect(out).to include("Generating service...\nGenerating integration guide...\nGenerating test fixtures...\n",
                              "Validating output... Ruby syntax OK", "Completed with 3 warnings:", "W301",
                              "Output:\n  #{File.join(out_dir, "novapay", "novapay_service.rb")}\n")
-      expect(written).to eq(%w[INTEGRATION.md base_contract.rb fixtures.json generation_report.json novapay_service.rb]
-                              .map { |name| "novapay/#{name}" })
+      expect(written).to eq(%w[INTEGRATION.md base_contract.rb fixtures.json generation_report.json
+                               novapay_service.rb novapay_service_spec.rb].map { |name| "novapay/#{name}" })
       expect(ProviderIntegrator::Files.read(File.join(out_dir, "novapay", "novapay_service.rb")))
         .to eq(ProviderIntegrator::Files.read(repo_path("spec", "golden", "novapay", "novapay_service.rb")))
     end
@@ -93,7 +93,40 @@ RSpec.describe ProviderIntegrator::CLI do
   it "turns warnings into exit 4 under --strict but still writes the files" do
     status, = run_cli(["integrate", "--spec", spec_path, "--strict", "--output", out_dir])
 
-    expect([status, written.size]).to eq([4, 5])
+    expect([status, written.size]).to eq([4, 6])
+  end
+
+  it "runs the generated spec under --run-spec and prints its summary" do
+    run_result = ProviderIntegrator::Models::SpecRun.new(
+      examples: 20, failures: 0, output: "20 examples, 0 failures\n", exit_status: 0, error: nil
+    )
+    allow(ProviderIntegrator::SpecRunner).to receive(:call).and_return(run_result)
+
+    status, out, err = run_cli(["--spec", spec_path, "--run-spec", "--output", out_dir])
+
+    aggregate_failures do
+      expect(status).to eq(0)
+      expect(out).to include("Running generated spec... RSpec 20 examples, 0 failures\n")
+      expect(err).to be_empty
+      expect(written.size).to eq(6)
+    end
+  end
+
+  it "exits 5, reports RSpec output and keeps the files when --run-spec fails" do
+    run_result = ProviderIntegrator::Models::SpecRun.new(
+      examples: 20, failures: 1, output: "failure details\n20 examples, 1 failure\n", exit_status: 1, error: nil
+    )
+    allow(ProviderIntegrator::SpecRunner).to receive(:call).and_return(run_result)
+
+    status, out, err = run_cli(["--spec", spec_path, "--run-spec", "--output", out_dir])
+
+    aggregate_failures do
+      expect(status).to eq(5)
+      expect(err).to include("Running generated spec... FAILED", "failure details",
+                             "Generated spec failed; files were kept in #{File.join(out_dir, "novapay")}.")
+      expect(out).to include("Output:", "novapay_service_spec.rb")
+      expect(written.size).to eq(6)
+    end
   end
 
   it "rejects a --provider that is not a safe slug with exit 2" do

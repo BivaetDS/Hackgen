@@ -1,0 +1,757 @@
+{
+  "events": {
+    "analysis": [
+      {
+        "code": "W101",
+        "details": {
+          "confidence": 0.0,
+          "kind": "unknown",
+          "method": "POST",
+          "operation_id": "quoteTransferFee",
+          "path": "/transfers/quote"
+        },
+        "level": "warning",
+        "location": "#/paths/~1transfers~1quote/post",
+        "message": "Operation quoteTransferFee (POST /transfers/quote) classified as unknown with low confidence 0.0"
+      },
+      {
+        "code": "W105",
+        "details": {
+          "candidates": [
+            "getTransferStatus",
+            "downloadTransferReceipt"
+          ],
+          "kind": "status",
+          "operation_id": "getTransferStatus"
+        },
+        "level": "warning",
+        "location": null,
+        "message": "Several status candidates (getTransferStatus, downloadTransferReceipt); getTransferStatus chosen, others generated as extra methods"
+      },
+      {
+        "code": "W202",
+        "details": {
+          "canonical": "conflict",
+          "http": 409,
+          "provider_code": "TRANSFER_NOT_CANCELABLE"
+        },
+        "level": "warning",
+        "location": "#/paths/~1transfers~1{transfer_id}~1cancel/post/responses/409",
+        "message": "Provider error code TRANSFER_NOT_CANCELABLE (HTTP 409) has no canonical analog; defaulting to conflict"
+      },
+      {
+        "code": "W304",
+        "details": null,
+        "level": "warning",
+        "location": null,
+        "message": "No webhook endpoint found; process_callback is generated as a stub"
+      },
+      {
+        "code": "W402",
+        "details": {
+          "equals": "ach",
+          "field": "account_number",
+          "operation_id": "createTransfer",
+          "when": "destination_type"
+        },
+        "level": "warning",
+        "location": "#/components/schemas/CreateTransferRequest/properties/account_number",
+        "message": "Conditional requirement inferred from description: account_number is required when destination_type equals ach (createTransfer)"
+      },
+      {
+        "code": "W402",
+        "details": {
+          "equals": "card",
+          "field": "card_number",
+          "operation_id": "createTransfer",
+          "when": "destination_type"
+        },
+        "level": "warning",
+        "location": "#/components/schemas/CreateTransferRequest/properties/card_number",
+        "message": "Conditional requirement inferred from description: card_number is required when destination_type equals card (createTransfer)"
+      },
+      {
+        "code": "W402",
+        "details": {
+          "equals": "ach",
+          "field": "routing_number",
+          "operation_id": "createTransfer",
+          "when": "destination_type"
+        },
+        "level": "warning",
+        "location": "#/components/schemas/CreateTransferRequest/properties/routing_number",
+        "message": "Conditional requirement inferred from description: routing_number is required when destination_type equals ach (createTransfer)"
+      },
+      {
+        "code": "W402",
+        "details": {
+          "equals": "wire",
+          "field": "swift_bic",
+          "operation_id": "createTransfer",
+          "when": "destination_type"
+        },
+        "level": "warning",
+        "location": "#/components/schemas/CreateTransferRequest/properties/swift_bic",
+        "message": "Conditional requirement inferred from description: swift_bic is required when destination_type equals wire (createTransfer)"
+      },
+      {
+        "code": "W403",
+        "details": {
+          "field": "purpose_code",
+          "operation_id": "createTransfer"
+        },
+        "level": "warning",
+        "location": "#/components/schemas/CreateTransferRequest/properties/purpose_code",
+        "message": "Required request field purpose_code in createTransfer is not mapped to any canonical field"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.9,
+          "kind": "list",
+          "method": "GET",
+          "operation_id": "listTransfers",
+          "path": "/transfers"
+        },
+        "level": "info",
+        "location": "#/paths/~1transfers/get",
+        "message": "Operation listTransfers (GET /transfers) classified as list with confidence 0.9"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.9,
+          "kind": "create",
+          "method": "POST",
+          "operation_id": "createTransfer",
+          "path": "/transfers"
+        },
+        "level": "info",
+        "location": "#/paths/~1transfers/post",
+        "message": "Operation createTransfer (POST /transfers) classified as create with confidence 0.9"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.0,
+          "kind": "unknown",
+          "method": "POST",
+          "operation_id": "quoteTransferFee",
+          "path": "/transfers/quote"
+        },
+        "level": "info",
+        "location": "#/paths/~1transfers~1quote/post",
+        "message": "Operation quoteTransferFee (POST /transfers/quote) classified as unknown with confidence 0.0"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.9,
+          "kind": "status",
+          "method": "GET",
+          "operation_id": "getTransferStatus",
+          "path": "/transfers/{transfer_id}"
+        },
+        "level": "info",
+        "location": "#/paths/~1transfers~1{transfer_id}/get",
+        "message": "Operation getTransferStatus (GET /transfers/{transfer_id}) classified as status with confidence 0.9"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.9,
+          "kind": "cancel",
+          "method": "POST",
+          "operation_id": "cancelTransfer",
+          "path": "/transfers/{transfer_id}/cancel"
+        },
+        "level": "info",
+        "location": "#/paths/~1transfers~1{transfer_id}~1cancel/post",
+        "message": "Operation cancelTransfer (POST /transfers/{transfer_id}/cancel) classified as cancel with confidence 0.9"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.8,
+          "kind": "status",
+          "method": "GET",
+          "operation_id": "downloadTransferReceipt",
+          "path": "/transfers/{transfer_id}/receipt"
+        },
+        "level": "info",
+        "location": "#/paths/~1transfers~1{transfer_id}~1receipt/get",
+        "message": "Operation downloadTransferReceipt (GET /transfers/{transfer_id}/receipt) classified as status with confidence 0.8"
+      },
+      {
+        "code": "I201",
+        "details": {
+          "count": 4,
+          "mapping": {
+            "DECLINED": "rejected",
+            "DONE": "approved",
+            "NEW": "in_progress",
+            "SENT": "in_progress"
+          }
+        },
+        "level": "info",
+        "location": null,
+        "message": "Status mapping recorded (4 statuses): NEW -> in_progress, SENT -> in_progress, DONE -> approved, DECLINED -> rejected"
+      },
+      {
+        "code": "I401",
+        "details": {
+          "field": "amount",
+          "multiplier": 100,
+          "operation_id": "createTransfer",
+          "score": 8,
+          "signals": [
+            "description: в центах",
+            "error example (400): cents",
+            "minimum: 10000"
+          ],
+          "unit": "minor"
+        },
+        "level": "info",
+        "location": "#/components/schemas/CreateTransferRequest/properties/amount",
+        "message": "Amount field amount in createTransfer uses minor units (multiplier 100, score 8); signals: description: в центах, error example (400): cents, minimum: 10000"
+      },
+      {
+        "code": "I403",
+        "details": {
+          "confidence": 0.9,
+          "evidence": [
+            "currency: USD (enum constant)",
+            "request method: ach (default of destination_type)",
+            "direction: withdraw (token 'transfer' in operationId createTransfer)"
+          ],
+          "external_method": "ach_payout",
+          "gateway": "USD_ACH_WITHDRAW"
+        },
+        "level": "info",
+        "location": null,
+        "message": "Gateway config recorded: external_method ach_payout, gateway USD_ACH_WITHDRAW (confidence 0.9); evidence: currency: USD (enum constant), request method: ach (default of destination_type), direction: withdraw (token 'transfer' in operationId createTransfer)"
+      },
+      {
+        "code": "W102",
+        "details": {
+          "kind": "list",
+          "method": "GET",
+          "operation_id": "listTransfers",
+          "path": "/transfers"
+        },
+        "level": "info",
+        "location": "#/paths/~1transfers/get",
+        "message": "Operation listTransfers (GET /transfers) is outside the BaseService contract (kind list); generated as an extra method"
+      },
+      {
+        "code": "W102",
+        "details": {
+          "kind": "unknown",
+          "method": "POST",
+          "operation_id": "quoteTransferFee",
+          "path": "/transfers/quote"
+        },
+        "level": "info",
+        "location": "#/paths/~1transfers~1quote/post",
+        "message": "Operation quoteTransferFee (POST /transfers/quote) is outside the BaseService contract (kind unknown); generated as an extra method"
+      },
+      {
+        "code": "W102",
+        "details": {
+          "kind": "cancel",
+          "method": "POST",
+          "operation_id": "cancelTransfer",
+          "path": "/transfers/{transfer_id}/cancel"
+        },
+        "level": "info",
+        "location": "#/paths/~1transfers~1{transfer_id}~1cancel/post",
+        "message": "Operation cancelTransfer (POST /transfers/{transfer_id}/cancel) is outside the BaseService contract (kind cancel); generated as an extra method"
+      },
+      {
+        "code": "W102",
+        "details": {
+          "kind": "status",
+          "method": "GET",
+          "operation_id": "downloadTransferReceipt",
+          "path": "/transfers/{transfer_id}/receipt"
+        },
+        "level": "info",
+        "location": "#/paths/~1transfers~1{transfer_id}~1receipt/get",
+        "message": "Operation downloadTransferReceipt (GET /transfers/{transfer_id}/receipt) is outside the BaseService contract (kind status); generated as an extra method"
+      }
+    ],
+    "generation": []
+  },
+  "files": [
+    {
+      "path": "bearerpay_service.rb",
+      "sha256": "a1422550933d00d2008b23f6995dde32207216ae53fd3631047d2d70421abccd"
+    },
+    {
+      "path": "base_contract.rb",
+      "sha256": "894c207670a5bf7ff2fabe752f45dd5a2bbe1b972bf8e43c62cdae2865044e67"
+    },
+    {
+      "path": "INTEGRATION.md",
+      "sha256": "3b995aa63e1c81402330b97352c2713551e7bfbac1ab56a48b42a8780c2a6124"
+    },
+    {
+      "path": "fixtures.json",
+      "sha256": "a35d167656624a4fb3155c3de1a300c7ed3c7941a47831a9fcb8d14395809a87"
+    },
+    {
+      "path": "bearerpay_service_spec.rb",
+      "sha256": "a54694f6f2504af2be1a9a35a6b6010b1ba55a7ddbf58f2a71371452a8c456ee"
+    }
+  ],
+  "generator": {
+    "ir_version": 1,
+    "name": "provider-integrator",
+    "version": "0.1.0"
+  },
+  "inferences": {
+    "amount_units": [
+      {
+        "confidence": 0.89,
+        "evidence": [
+          "description: в центах",
+          "error example (400): cents",
+          "minimum: 10000"
+        ],
+        "field": "amount",
+        "operation_id": "createTransfer",
+        "source": "scoring",
+        "type": "multiply",
+        "unit_from": "major",
+        "unit_to": "minor",
+        "value": 100
+      }
+    ],
+    "authentication": {
+      "confidence": 1.0,
+      "evidence": [
+        "securitySchemes.BearerAuth: http bearer in header Authorization",
+        "security: BearerAuth used by 6 of 6 operations"
+      ],
+      "location": "header",
+      "name": "Authorization",
+      "scheme_name": "BearerAuth",
+      "type": "http_bearer"
+    },
+    "conditional_requirements": [
+      {
+        "confidence": 0.6,
+        "equals": "ach",
+        "evidence": [
+          "description: Обязателен, если destination_type = ach"
+        ],
+        "field": "account_number",
+        "operation_id": "createTransfer",
+        "source": "description",
+        "when": "destination_type"
+      },
+      {
+        "confidence": 0.6,
+        "equals": "ach",
+        "evidence": [
+          "description: Обязателен, если destination_type = ach"
+        ],
+        "field": "routing_number",
+        "operation_id": "createTransfer",
+        "source": "description",
+        "when": "destination_type"
+      },
+      {
+        "confidence": 0.6,
+        "equals": "wire",
+        "evidence": [
+          "description: Required for destination_type = wire"
+        ],
+        "field": "swift_bic",
+        "operation_id": "createTransfer",
+        "source": "description",
+        "when": "destination_type"
+      },
+      {
+        "confidence": 0.6,
+        "equals": "card",
+        "evidence": [
+          "description: Required for destination_type = card"
+        ],
+        "field": "card_number",
+        "operation_id": "createTransfer",
+        "source": "description",
+        "when": "destination_type"
+      }
+    ],
+    "gateway_config": {
+      "confidence": 0.9,
+      "currency": "USD",
+      "direction": "withdraw",
+      "evidence": [
+        "currency: USD (enum constant)",
+        "request method: ach (default of destination_type)",
+        "direction: withdraw (token 'transfer' in operationId createTransfer)"
+      ],
+      "external_method": "ach_payout",
+      "gateway": "USD_ACH_WITHDRAW",
+      "method": "ach"
+    },
+    "operations": [
+      {
+        "canonical_method": "create_request",
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'create' -> create (+5)",
+          "structure POST with body and no path id -> create (+3)",
+          "text 'создать' -> create (+1)"
+        ],
+        "in_contract": true,
+        "kind": "create",
+        "method": "POST",
+        "operation_id": "createTransfer",
+        "path": "/transfers"
+      },
+      {
+        "canonical_method": "list_requests",
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'list' -> list (+5)",
+          "structure GET without path id -> list (+3)",
+          "text 'история' -> list (+1)"
+        ],
+        "in_contract": false,
+        "kind": "list",
+        "method": "GET",
+        "operation_id": "listTransfers",
+        "path": "/transfers"
+      },
+      {
+        "canonical_method": null,
+        "confidence": 0.0,
+        "evidence": [],
+        "in_contract": false,
+        "kind": "unknown",
+        "method": "POST",
+        "operation_id": "quoteTransferFee",
+        "path": "/transfers/quote"
+      },
+      {
+        "canonical_method": "fetch_status",
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'status' -> status (+5)",
+          "structure GET with path id -> status (+3)",
+          "text 'статус' -> status (+1)"
+        ],
+        "in_contract": true,
+        "kind": "status",
+        "method": "GET",
+        "operation_id": "getTransferStatus",
+        "path": "/transfers/{transfer_id}"
+      },
+      {
+        "canonical_method": "cancel_request",
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'cancel' -> cancel (+5)",
+          "path token 'cancel' -> cancel (+3)",
+          "text 'отменить' -> cancel (+1)"
+        ],
+        "in_contract": false,
+        "kind": "cancel",
+        "method": "POST",
+        "operation_id": "cancelTransfer",
+        "path": "/transfers/{transfer_id}/cancel"
+      },
+      {
+        "canonical_method": null,
+        "confidence": 0.8,
+        "evidence": [
+          "structure GET with path id -> status (+3)",
+          "text 'состоянии' -> status (+1)"
+        ],
+        "in_contract": false,
+        "kind": "status",
+        "method": "GET",
+        "operation_id": "downloadTransferReceipt",
+        "path": "/transfers/{transfer_id}/receipt"
+      }
+    ],
+    "statuses": [
+      {
+        "canonical": "in_progress",
+        "confidence": 0.95,
+        "evidence": [
+          "statuses.yml: new -> in_progress"
+        ],
+        "provider": "NEW",
+        "source": "dictionary"
+      },
+      {
+        "canonical": "in_progress",
+        "confidence": 0.95,
+        "evidence": [
+          "statuses.yml: sent -> in_progress"
+        ],
+        "provider": "SENT",
+        "source": "dictionary"
+      },
+      {
+        "canonical": "approved",
+        "confidence": 0.95,
+        "evidence": [
+          "statuses.yml: done -> approved"
+        ],
+        "provider": "DONE",
+        "source": "dictionary"
+      },
+      {
+        "canonical": "rejected",
+        "confidence": 0.95,
+        "evidence": [
+          "statuses.yml: declined -> rejected"
+        ],
+        "provider": "DECLINED",
+        "source": "dictionary"
+      }
+    ],
+    "webhook": null
+  },
+  "overrides_applied": [],
+  "provider": {
+    "class_name": "Provider::BearerpayService",
+    "service_file": "bearerpay_service.rb",
+    "slug": "bearerpay",
+    "title": "BearerPay Transfers API",
+    "version": "2.4.0"
+  },
+  "requires_confirmation": [
+    {
+      "code": "W101",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/paths/~1transfers~1quote/post",
+      "message": "Operation quoteTransferFee (POST /transfers/quote) classified as unknown with low confidence 0.0",
+      "where": "operation methods (name and role)"
+    },
+    {
+      "code": "W105",
+      "evidence": [],
+      "level": "warning",
+      "location": null,
+      "message": "Several status candidates (getTransferStatus, downloadTransferReceipt); getTransferStatus chosen, others generated as extra methods",
+      "where": "extra methods"
+    },
+    {
+      "code": "W202",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/paths/~1transfers~1{transfer_id}~1cancel/post/responses/409",
+      "message": "Provider error code TRANSFER_NOT_CANCELABLE (HTTP 409) has no canonical analog; defaulting to conflict",
+      "where": "ERROR_MAP"
+    },
+    {
+      "code": "W304",
+      "evidence": [],
+      "level": "warning",
+      "location": null,
+      "message": "No webhook endpoint found; process_callback is generated as a stub",
+      "where": "process_callback (stub)"
+    },
+    {
+      "code": "W402",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/components/schemas/CreateTransferRequest/properties/account_number",
+      "message": "Conditional requirement inferred from description: account_number is required when destination_type equals ach (createTransfer)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "W402",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/components/schemas/CreateTransferRequest/properties/card_number",
+      "message": "Conditional requirement inferred from description: card_number is required when destination_type equals card (createTransfer)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "W402",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/components/schemas/CreateTransferRequest/properties/routing_number",
+      "message": "Conditional requirement inferred from description: routing_number is required when destination_type equals ach (createTransfer)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "W402",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/components/schemas/CreateTransferRequest/properties/swift_bic",
+      "message": "Conditional requirement inferred from description: swift_bic is required when destination_type equals wire (createTransfer)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "W403",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/components/schemas/CreateTransferRequest/properties/purpose_code",
+      "message": "Required request field purpose_code in createTransfer is not mapped to any canonical field",
+      "where": "build_*_payload (TODO)"
+    },
+    {
+      "code": "I201",
+      "evidence": [],
+      "level": "info",
+      "location": null,
+      "message": "Status mapping recorded (4 statuses): NEW -> in_progress, SENT -> in_progress, DONE -> approved, DECLINED -> rejected",
+      "where": "STATUS_MAP"
+    },
+    {
+      "code": "I401",
+      "evidence": [
+        "description: в центах",
+        "error example (400): cents",
+        "minimum: 10000"
+      ],
+      "level": "info",
+      "location": "#/components/schemas/CreateTransferRequest/properties/amount",
+      "message": "Amount field amount in createTransfer uses minor units (multiplier 100, score 8); signals: description: в центах, error example (400): cents, minimum: 10000",
+      "where": "build_*_payload, MIN_AMOUNT"
+    },
+    {
+      "code": "I403",
+      "evidence": [
+        "currency: USD (enum constant)",
+        "request method: ach (default of destination_type)",
+        "direction: withdraw (token 'transfer' in operationId createTransfer)"
+      ],
+      "level": "info",
+      "location": null,
+      "message": "Gateway config recorded: external_method ach_payout, gateway USD_ACH_WITHDRAW (confidence 0.9); evidence: currency: USD (enum constant), request method: ach (default of destination_type), direction: withdraw (token 'transfer' in operationId createTransfer)",
+      "where": "ProviderGateway config"
+    }
+  ],
+  "todos": [
+    {
+      "file": "bearerpay_service.rb",
+      "line": 62,
+      "text": "TODO(confidence 0.0): the spec declares no webhook (W304); poll fetch_status instead"
+    },
+    {
+      "file": "bearerpay_service.rb",
+      "line": 101,
+      "text": "TODO(confidence 0.0): operation kind unknown with confidence 0.0"
+    },
+    {
+      "file": "bearerpay_service.rb",
+      "line": 150,
+      "text": "TODO(confidence 0.6): required when destination_type = ach (description: Обязателен, если"
+    },
+    {
+      "file": "bearerpay_service.rb",
+      "line": 153,
+      "text": "TODO(confidence 0.6): required when destination_type = ach (description: Обязателен, если"
+    },
+    {
+      "file": "bearerpay_service.rb",
+      "line": 156,
+      "text": "TODO(confidence 0.0): required field purpose_code has no platform source (W403)"
+    },
+    {
+      "file": "bearerpay_service.rb",
+      "line": 170,
+      "text": "TODO(confidence 0.0): required field purpose_code has no platform source (W403)"
+    },
+    {
+      "file": "bearerpay_service.rb",
+      "line": 184,
+      "text": "TODO(confidence 0.6): required when destination_type = card (description: Required for"
+    },
+    {
+      "file": "bearerpay_service.rb",
+      "line": 187,
+      "text": "TODO(confidence 0.0): required field purpose_code has no platform source (W403)"
+    }
+  ],
+  "validation": {
+    "checks": [
+      {
+        "detail": "Prism: no syntax errors",
+        "name": "bearerpay_service.rb: syntax",
+        "ok": true
+      },
+      {
+        "detail": "no ERB tags in the output",
+        "name": "bearerpay_service.rb: no ERB leftovers",
+        "ok": true
+      },
+      {
+        "detail": "0 offenses",
+        "name": "bearerpay_service.rb: rubocop",
+        "ok": true
+      },
+      {
+        "detail": "class inherits Provider::BaseService",
+        "name": "bearerpay_service.rb: inherits BaseService",
+        "ok": true
+      },
+      {
+        "detail": "4/4 contract methods",
+        "name": "bearerpay_service.rb: contract methods",
+        "ok": true
+      },
+      {
+        "detail": "Prism: no syntax errors",
+        "name": "base_contract.rb: syntax",
+        "ok": true
+      },
+      {
+        "detail": "no ERB tags in the output",
+        "name": "base_contract.rb: no ERB leftovers",
+        "ok": true
+      },
+      {
+        "detail": "0 offenses",
+        "name": "base_contract.rb: rubocop",
+        "ok": true
+      },
+      {
+        "detail": "Prism: no syntax errors",
+        "name": "bearerpay_service_spec.rb: syntax",
+        "ok": true
+      },
+      {
+        "detail": "no ERB tags in the output",
+        "name": "bearerpay_service_spec.rb: no ERB leftovers",
+        "ok": true
+      },
+      {
+        "detail": "0 offenses",
+        "name": "bearerpay_service_spec.rb: rubocop",
+        "ok": true
+      },
+      {
+        "detail": "parses, 6 top-level entries",
+        "name": "fixtures.json: JSON",
+        "ok": true
+      },
+      {
+        "detail": "examples satisfy the schemas rebuilt from the IR",
+        "name": "fixtures.json: schemas",
+        "ok": true
+      },
+      {
+        "detail": "13 sections",
+        "name": "INTEGRATION.md: sections",
+        "ok": true
+      },
+      {
+        "detail": "no ERB tags in the output",
+        "name": "INTEGRATION.md: no ERB leftovers",
+        "ok": true
+      }
+    ],
+    "ok": true
+  }
+}

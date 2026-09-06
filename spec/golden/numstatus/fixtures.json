@@ -1,0 +1,256 @@
+{
+  "create_request": {
+    "request": {
+      "merchantReference": "MR-2026-004471",
+      "amount": 250000,
+      "currency": "RUB",
+      "callbackUrl": "https://merchant.example/hooks/tranzo",
+      "comment": "Вознаграждение исполнителя за апрель",
+      "destination": {
+        "kind": "phone",
+        "phone": "+79261234567",
+        "holderName": "Иванов Иван Иванович"
+      }
+    },
+    "response_202": {
+      "operationId": "d9f2c41e-77aa-4d19-8f01-2b3c5a6d7e80",
+      "merchantReference": "MR-2026-004471",
+      "state": 0,
+      "amount": 250000,
+      "currency": "RUB",
+      "fee": 3500,
+      "destination": {
+        "kind": "phone",
+        "phone": "+79261234567",
+        "holderName": "Иванов Иван Иванович"
+      },
+      "createdAt": "2026-04-17T09:12:44+03:00",
+      "updatedAt": "2026-04-17T09:12:44+03:00"
+    },
+    "response_400": {
+      "errorCode": "REQ_MALFORMED_BODY",
+      "errorMessage": "Field amount must be an integer",
+      "traceId": "01HZ4M8Q2T"
+    },
+    "response_401": {
+      "errorCode": "SEC_TOKEN_EXPIRED",
+      "errorMessage": "Access token expired, request a new one",
+      "traceId": "01HZ4M8Q2U"
+    },
+    "response_402": {
+      "errorCode": "BAL_NOT_ENOUGH_FUNDS",
+      "errorMessage": "Merchant balance is lower than amount + fee",
+      "traceId": "01HZ4M8Q2K"
+    },
+    "response_409": {
+      "errorCode": "REQ_DUPLICATE_REFERENCE",
+      "errorMessage": "Disbursement with merchantReference MR-2026-004471 already exists",
+      "traceId": "01HZ4M8Q2L"
+    },
+    "response_422": {
+      "errorCode": "VAL_AMOUNT_OVER_LIMIT",
+      "errorMessage": "Сумма 2500000 копеек превышает разовый лимит 2000000 копеек по договору",
+      "traceId": "01HZ4M8Q2M"
+    },
+    "response_429": {
+      "errorCode": "RATE_TOO_MANY_REQUESTS",
+      "errorMessage": "Rate limit is 20 requests per second",
+      "retryAfterSeconds": 30,
+      "traceId": "01HZ4M8Q2W"
+    },
+    "response_500": {
+      "errorCode": "SYS_INTERNAL_FAILURE",
+      "errorMessage": "Unexpected processing error",
+      "traceId": "01HZ4M8Q2X"
+    },
+    "response_503": {
+      "errorCode": "SYS_MAINTENANCE",
+      "errorMessage": "Service is under maintenance, retry in 15 minutes",
+      "traceId": "01HZ4M8Q2Y"
+    }
+  },
+  "fetch_status": {
+    "response_200": {
+      "operationId": "d9f2c41e-77aa-4d19-8f01-2b3c5a6d7e80",
+      "merchantReference": "MR-2026-004471",
+      "state": 2,
+      "amount": 250000,
+      "currency": "RUB",
+      "fee": 3500,
+      "destination": {
+        "kind": "phone",
+        "phone": "+79261234567"
+      },
+      "declineReason": "Банк получателя отклонил перевод",
+      "createdAt": "2026-04-17T09:12:44+03:00",
+      "updatedAt": "2026-04-17T09:14:02+03:00"
+    },
+    "response_401": {
+      "errorCode": "SEC_TOKEN_EXPIRED",
+      "errorMessage": "Access token expired, request a new one",
+      "traceId": "01HZ4M8Q2U"
+    },
+    "response_404": {
+      "errorCode": "OPR_NOT_FOUND",
+      "errorMessage": "Disbursement not found",
+      "traceId": "01HZ4M8Q2V"
+    },
+    "response_429": {
+      "errorCode": "RATE_TOO_MANY_REQUESTS",
+      "errorMessage": "Rate limit is 20 requests per second",
+      "retryAfterSeconds": 30,
+      "traceId": "01HZ4M8Q2W"
+    }
+  },
+  "callback": {
+    "payload": {
+      "event": "disbursement.executed",
+      "operationId": "d9f2c41e-77aa-4d19-8f01-2b3c5a6d7e80",
+      "merchantReference": "MR-2026-004471",
+      "state": 1,
+      "amount": 250000,
+      "currency": "RUB",
+      "sentAt": "2026-04-17T09:14:02+03:00",
+      "sign": "9931c148cc21001804cd013d199045c3219442e4c71391e691aba26bb2c3c6248d04bca1e5e72725bae53dfd939b3f5e1c0188fb4060e9d6c1dd90e1f6402ef9"
+    },
+    "expected_operation_status": "approved"
+  },
+  "callback_failed": {
+    "payload": {
+      "event": "disbursement.declined",
+      "operationId": "d9f2c41e-77aa-4d19-8f01-2b3c5a6d7e80",
+      "merchantReference": "MR-2026-004471",
+      "state": 2,
+      "amount": 250000,
+      "currency": "RUB",
+      "errorCode": "VAL_INVALID_DESTINATION",
+      "errorText": "Recipient bank rejected the transfer",
+      "sentAt": "2026-04-17T09:14:02+03:00",
+      "sign": "199d4cbfbc744d49926fddaa0234a109424dbb49b2fcc9edb9495264f389aa75a404a4295274cc28a1b0d15646da2ac4750c92421817025652c0ed6cf0aac3f6"
+    },
+    "expected_operation_status": "rejected"
+  },
+  "list_requests": {
+    "response_200": {
+      "page": 1,
+      "perPage": 50,
+      "total": 2,
+      "items": [
+        {
+          "operationId": "d9f2c41e-77aa-4d19-8f01-2b3c5a6d7e80",
+          "merchantReference": "MR-2026-004471",
+          "state": 1,
+          "amount": 250000,
+          "currency": "RUB",
+          "fee": 3500,
+          "createdAt": "2026-04-17T09:12:44+03:00",
+          "updatedAt": "2026-04-17T09:14:02+03:00"
+        },
+        {
+          "operationId": "a1b2c3d4-5566-4788-9900-aabbccddeeff",
+          "merchantReference": "MR-2026-004472",
+          "state": 4,
+          "amount": 1800000,
+          "currency": "RUB",
+          "fee": 9000,
+          "createdAt": "2026-04-16T18:03:10+03:00",
+          "updatedAt": "2026-04-17T18:03:10+03:00"
+        }
+      ]
+    },
+    "response_400": {
+      "errorCode": "REQ_MALFORMED_BODY",
+      "errorMessage": "Field amount must be an integer",
+      "traceId": "01HZ4M8Q2T"
+    },
+    "response_401": {
+      "errorCode": "SEC_TOKEN_EXPIRED",
+      "errorMessage": "Access token expired, request a new one",
+      "traceId": "01HZ4M8Q2U"
+    },
+    "response_429": {
+      "errorCode": "RATE_TOO_MANY_REQUESTS",
+      "errorMessage": "Rate limit is 20 requests per second",
+      "retryAfterSeconds": 30,
+      "traceId": "01HZ4M8Q2W"
+    }
+  },
+  "cancel_request": {
+    "response_200": {
+      "operationId": "d9f2c41e-77aa-4d19-8f01-2b3c5a6d7e80",
+      "merchantReference": "MR-2026-004471",
+      "state": 3,
+      "amount": 250000,
+      "currency": "RUB",
+      "fee": 0,
+      "createdAt": "2026-04-17T09:12:44+03:00",
+      "updatedAt": "2026-04-17T09:13:01+03:00"
+    },
+    "response_401": {
+      "errorCode": "SEC_TOKEN_EXPIRED",
+      "errorMessage": "Access token expired, request a new one",
+      "traceId": "01HZ4M8Q2U"
+    },
+    "response_404": {
+      "errorCode": "OPR_NOT_FOUND",
+      "errorMessage": "Disbursement not found",
+      "traceId": "01HZ4M8Q2V"
+    },
+    "response_409": {
+      "errorCode": "OPR_STATE_LOCKED",
+      "errorMessage": "Disbursement is locked by the processing bank",
+      "traceId": "01HZ4M8Q2P"
+    }
+  },
+  "quote_disbursement_fee": {
+    "request": {
+      "amount": 250000,
+      "currency": "RUB",
+      "method": "phone"
+    },
+    "response_200": {
+      "amount": 250000,
+      "fee": 3500,
+      "total": 253500,
+      "currency": "RUB"
+    },
+    "response_400": {
+      "errorCode": "REQ_MALFORMED_BODY",
+      "errorMessage": "Field amount must be an integer",
+      "traceId": "01HZ4M8Q2T"
+    },
+    "response_401": {
+      "errorCode": "SEC_TOKEN_EXPIRED",
+      "errorMessage": "Access token expired, request a new one",
+      "traceId": "01HZ4M8Q2U"
+    }
+  },
+  "fetch_balance": {
+    "response_200": {
+      "merchantId": "M-100493",
+      "updatedAt": "2026-04-17T09:15:00+03:00",
+      "balances": [
+        {
+          "currency": "RUB",
+          "available": 84500000,
+          "hold": 2500000
+        },
+        {
+          "currency": "KZT",
+          "available": 1200000,
+          "hold": 0
+        }
+      ]
+    },
+    "response_401": {
+      "errorCode": "SEC_TOKEN_EXPIRED",
+      "errorMessage": "Access token expired, request a new one",
+      "traceId": "01HZ4M8Q2U"
+    },
+    "response_403": {
+      "errorCode": "SEC_INSUFFICIENT_SCOPE",
+      "errorMessage": "Scope merchant:read is required",
+      "traceId": "01HZ4M8Q2R"
+    }
+  }
+}

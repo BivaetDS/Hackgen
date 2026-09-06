@@ -10,7 +10,9 @@ RSpec.describe "bin/integrate", type: :integration do
   let(:executable) { repo_path("bin", "integrate") }
   let(:spec_path) { repo_path("docs", "provider_api.yaml") }
   let(:golden_dir) { repo_path("spec", "golden", "novapay") }
-  let(:expected_files) { %w[novapay_service.rb INTEGRATION.md fixtures.json base_contract.rb generation_report.json] }
+  let(:expected_files) do
+    %w[novapay_service.rb INTEGRATION.md fixtures.json novapay_service_spec.rb base_contract.rb generation_report.json]
+  end
 
   def integrate(workdir, *args)
     Open3.capture3(RbConfig.ruby, executable, "--spec", spec_path, "--provider", "novapay", "--output", "out", *args,
@@ -37,6 +39,19 @@ RSpec.describe "bin/integrate", type: :integration do
           expect(ProviderIntegrator::Files.read(File.join(written, name)))
             .to eq(ProviderIntegrator::Files.read(File.join(golden_dir, name))), "#{name} differs from the golden copy"
         end
+      end
+    end
+  end
+
+  it "runs the generated NovaPay spec under --run-spec" do
+    Dir.mktmpdir("integrate-run-spec") do |workdir|
+      out, err, status = integrate(workdir, "--run-spec")
+
+      aggregate_failures do
+        expect(status.exitstatus).to eq(0), "stderr: #{err}"
+        expect(err).to be_empty
+        expect(out).to include("Running generated spec... RSpec 20 examples, 0 failures\n")
+        expect(Dir.children(File.join(workdir, "out", "novapay")).sort).to eq(expected_files.sort)
       end
     end
   end

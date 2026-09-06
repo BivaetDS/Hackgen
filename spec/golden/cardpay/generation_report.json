@@ -1,0 +1,805 @@
+{
+  "events": {
+    "analysis": [
+      {
+        "code": "W105",
+        "details": {
+          "candidates": [
+            "createCardDisbursement",
+            "createSbpDisbursement"
+          ],
+          "kind": "create",
+          "operation_id": "createCardDisbursement"
+        },
+        "level": "warning",
+        "location": null,
+        "message": "Several create candidates (createCardDisbursement, createSbpDisbursement); createCardDisbursement chosen, others generated as extra methods"
+      },
+      {
+        "code": "W201",
+        "details": {
+          "default": "in_progress",
+          "status": "in_flight"
+        },
+        "level": "warning",
+        "location": null,
+        "message": "Status in_flight has no canonical mapping; defaulting to in_progress"
+      },
+      {
+        "code": "W202",
+        "details": {
+          "canonical": "invalid_credentials",
+          "http": 401,
+          "provider_code": "CP_KEY_REVOKED"
+        },
+        "level": "warning",
+        "location": "#/components/responses/Unauthorized",
+        "message": "Provider error code CP_KEY_REVOKED (HTTP 401) has no canonical analog; defaulting to invalid_credentials"
+      },
+      {
+        "code": "W203",
+        "details": {
+          "value": "disbursement.in_flight"
+        },
+        "level": "warning",
+        "location": null,
+        "message": "Webhook event disbursement.in_flight has no canonical status; the service treats it as unknown_event"
+      },
+      {
+        "code": "W402",
+        "details": {
+          "equals": "card",
+          "field": "destination.card_number",
+          "operation_id": "createCardDisbursement",
+          "when": "destination.type"
+        },
+        "level": "warning",
+        "location": "#/components/schemas/CardDestination/properties/card_number",
+        "message": "Conditional requirement inferred from description: destination.card_number is required when destination.type equals card (createCardDisbursement)"
+      },
+      {
+        "code": "W402",
+        "details": {
+          "equals": "card_token",
+          "field": "destination.card_token",
+          "operation_id": "createCardDisbursement",
+          "when": "destination.type"
+        },
+        "level": "warning",
+        "location": "#/components/schemas/CardDestination/properties/card_token",
+        "message": "Conditional requirement inferred from description: destination.card_token is required when destination.type equals card_token (createCardDisbursement)"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.89,
+          "kind": "list",
+          "method": "GET",
+          "operation_id": "listSbpMembers",
+          "path": "/v2/dictionaries/sbp-members"
+        },
+        "level": "info",
+        "location": "#/paths/~1v2~1dictionaries~1sbp-members/get",
+        "message": "Operation listSbpMembers (GET /v2/dictionaries/sbp-members) classified as list with confidence 0.89"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.9,
+          "kind": "create",
+          "method": "POST",
+          "operation_id": "createCardDisbursement",
+          "path": "/v2/disbursements/card"
+        },
+        "level": "info",
+        "location": "#/paths/~1v2~1disbursements~1card/post",
+        "message": "Operation createCardDisbursement (POST /v2/disbursements/card) classified as create with confidence 0.9"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.9,
+          "kind": "create",
+          "method": "POST",
+          "operation_id": "createSbpDisbursement",
+          "path": "/v2/disbursements/sbp"
+        },
+        "level": "info",
+        "location": "#/paths/~1v2~1disbursements~1sbp/post",
+        "message": "Operation createSbpDisbursement (POST /v2/disbursements/sbp) classified as create with confidence 0.9"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.9,
+          "kind": "status",
+          "method": "GET",
+          "operation_id": "getDisbursementState",
+          "path": "/v2/disbursements/{disbursement_id}"
+        },
+        "level": "info",
+        "location": "#/paths/~1v2~1disbursements~1{disbursement_id}/get",
+        "message": "Operation getDisbursementState (GET /v2/disbursements/{disbursement_id}) classified as status with confidence 0.9"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.9,
+          "kind": "cancel",
+          "method": "POST",
+          "operation_id": "cancelDisbursement",
+          "path": "/v2/disbursements/{disbursement_id}/cancel"
+        },
+        "level": "info",
+        "location": "#/paths/~1v2~1disbursements~1{disbursement_id}~1cancel/post",
+        "message": "Operation cancelDisbursement (POST /v2/disbursements/{disbursement_id}/cancel) classified as cancel with confidence 0.9"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.9,
+          "kind": "balance",
+          "method": "GET",
+          "operation_id": "getMerchantBalance",
+          "path": "/v2/merchant/balance"
+        },
+        "level": "info",
+        "location": "#/paths/~1v2~1merchant~1balance/get",
+        "message": "Operation getMerchantBalance (GET /v2/merchant/balance) classified as balance with confidence 0.9"
+      },
+      {
+        "code": "I101",
+        "details": {
+          "confidence": 0.92,
+          "kind": "webhook",
+          "method": "POST",
+          "operation_id": "disbursementNotification",
+          "path": "/v2/notifications/disbursement"
+        },
+        "level": "info",
+        "location": "#/paths/~1v2~1notifications~1disbursement/post",
+        "message": "Operation disbursementNotification (POST /v2/notifications/disbursement) classified as webhook with confidence 0.92"
+      },
+      {
+        "code": "I201",
+        "details": {
+          "count": 5,
+          "mapping": {
+            "in_flight": "in_progress",
+            "queued": "in_progress",
+            "rejected_by_bank": "rejected",
+            "returned": "rejected",
+            "settled": "approved"
+          }
+        },
+        "level": "info",
+        "location": null,
+        "message": "Status mapping recorded (5 statuses): queued -> in_progress, in_flight -> in_progress, settled -> approved, returned -> rejected, rejected_by_bank -> rejected"
+      },
+      {
+        "code": "I301",
+        "details": {
+          "algorithm": "hmac-sha512",
+          "encoding": "base64",
+          "message": "raw_body",
+          "name": "X-CardPay-Signature",
+          "placement": "header",
+          "secret": "callback_secret"
+        },
+        "level": "info",
+        "location": "#/paths/~1v2~1notifications~1disbursement/post/parameters/0",
+        "message": "Signature convention recorded: X-CardPay-Signature (header), algorithm hmac-sha512, encoding base64, message raw_body, secret callback_secret"
+      },
+      {
+        "code": "I401",
+        "details": {
+          "field": "amount",
+          "multiplier": 100,
+          "operation_id": "createCardDisbursement",
+          "score": 8,
+          "signals": [
+            "description: копейках",
+            "error example (422): kopecks",
+            "minimum: 50000"
+          ],
+          "unit": "minor"
+        },
+        "level": "info",
+        "location": "#/components/schemas/CardDisbursementRequest/properties/amount",
+        "message": "Amount field amount in createCardDisbursement uses minor units (multiplier 100, score 8); signals: description: копейках, error example (422): kopecks, minimum: 50000"
+      },
+      {
+        "code": "I401",
+        "details": {
+          "field": "amount",
+          "multiplier": 100,
+          "operation_id": "createSbpDisbursement",
+          "score": 5,
+          "signals": [
+            "description: копейках",
+            "minimum: 50000"
+          ],
+          "unit": "minor"
+        },
+        "level": "info",
+        "location": "#/components/schemas/SbpDisbursementRequest/properties/amount",
+        "message": "Amount field amount in createSbpDisbursement uses minor units (multiplier 100, score 5); signals: description: копейках, minimum: 50000"
+      },
+      {
+        "code": "I403",
+        "details": {
+          "confidence": 0.9,
+          "evidence": [
+            "currency: RUB (enum constant)",
+            "request method: card (default of destination.type)",
+            "direction: withdraw (token 'disbursement' in operationId createCardDisbursement)"
+          ],
+          "external_method": "card_payout",
+          "gateway": "RUB_CARD_WITHDRAW"
+        },
+        "level": "info",
+        "location": null,
+        "message": "Gateway config recorded: external_method card_payout, gateway RUB_CARD_WITHDRAW (confidence 0.9); evidence: currency: RUB (enum constant), request method: card (default of destination.type), direction: withdraw (token 'disbursement' in operationId createCardDisbursement)"
+      },
+      {
+        "code": "W102",
+        "details": {
+          "kind": "list",
+          "method": "GET",
+          "operation_id": "listSbpMembers",
+          "path": "/v2/dictionaries/sbp-members"
+        },
+        "level": "info",
+        "location": "#/paths/~1v2~1dictionaries~1sbp-members/get",
+        "message": "Operation listSbpMembers (GET /v2/dictionaries/sbp-members) is outside the BaseService contract (kind list); generated as an extra method"
+      },
+      {
+        "code": "W102",
+        "details": {
+          "kind": "create",
+          "method": "POST",
+          "operation_id": "createSbpDisbursement",
+          "path": "/v2/disbursements/sbp"
+        },
+        "level": "info",
+        "location": "#/paths/~1v2~1disbursements~1sbp/post",
+        "message": "Operation createSbpDisbursement (POST /v2/disbursements/sbp) is outside the BaseService contract (kind create); generated as an extra method"
+      },
+      {
+        "code": "W102",
+        "details": {
+          "kind": "cancel",
+          "method": "POST",
+          "operation_id": "cancelDisbursement",
+          "path": "/v2/disbursements/{disbursement_id}/cancel"
+        },
+        "level": "info",
+        "location": "#/paths/~1v2~1disbursements~1{disbursement_id}~1cancel/post",
+        "message": "Operation cancelDisbursement (POST /v2/disbursements/{disbursement_id}/cancel) is outside the BaseService contract (kind cancel); generated as an extra method"
+      },
+      {
+        "code": "W102",
+        "details": {
+          "kind": "balance",
+          "method": "GET",
+          "operation_id": "getMerchantBalance",
+          "path": "/v2/merchant/balance"
+        },
+        "level": "info",
+        "location": "#/paths/~1v2~1merchant~1balance/get",
+        "message": "Operation getMerchantBalance (GET /v2/merchant/balance) is outside the BaseService contract (kind balance); generated as an extra method"
+      }
+    ],
+    "generation": []
+  },
+  "files": [
+    {
+      "path": "cardpay_service.rb",
+      "sha256": "ed89bcda85d060f368019ecf28beab926c51ed4630897911974b68d162c1a3cf"
+    },
+    {
+      "path": "base_contract.rb",
+      "sha256": "e907f95bacd39d905e383c1b311691475e201180f6870b8a677dbb3d37201aae"
+    },
+    {
+      "path": "INTEGRATION.md",
+      "sha256": "f748bd84638c864ae1322e8a9a9d0b1aadef245817fd77afc69f0f46454673e8"
+    },
+    {
+      "path": "fixtures.json",
+      "sha256": "4232fde3842cad2a1e54865d8dc529b90cf73c86c5c44f6bceca7c379c6888a8"
+    },
+    {
+      "path": "cardpay_service_spec.rb",
+      "sha256": "d93aa78187a7a8ebcce9fc3f2e70e8d3a69273cd457946f7c64af7c054ce3d9b"
+    }
+  ],
+  "generator": {
+    "ir_version": 1,
+    "name": "provider-integrator",
+    "version": "0.1.0"
+  },
+  "inferences": {
+    "amount_units": [
+      {
+        "confidence": 0.89,
+        "evidence": [
+          "description: копейках",
+          "error example (422): kopecks",
+          "minimum: 50000"
+        ],
+        "field": "amount",
+        "operation_id": "createCardDisbursement",
+        "source": "scoring",
+        "type": "multiply",
+        "unit_from": "major",
+        "unit_to": "minor",
+        "value": 100
+      },
+      {
+        "confidence": 0.83,
+        "evidence": [
+          "description: копейках",
+          "minimum: 50000"
+        ],
+        "field": "amount",
+        "operation_id": "createSbpDisbursement",
+        "source": "scoring",
+        "type": "multiply",
+        "unit_from": "major",
+        "unit_to": "minor",
+        "value": 100
+      }
+    ],
+    "authentication": {
+      "confidence": 1.0,
+      "evidence": [
+        "securitySchemes.CardPayKey: apiKey in header X-CardPay-Key",
+        "security: CardPayKey used by 6 of 7 operations"
+      ],
+      "location": "header",
+      "name": "X-CardPay-Key",
+      "scheme_name": "CardPayKey",
+      "type": "api_key"
+    },
+    "conditional_requirements": [
+      {
+        "confidence": 0.6,
+        "equals": "card",
+        "evidence": [
+          "description: Обязателен, если type = card."
+        ],
+        "field": "destination.card_number",
+        "operation_id": "createCardDisbursement",
+        "source": "description",
+        "when": "destination.type"
+      },
+      {
+        "confidence": 0.6,
+        "equals": "card_token",
+        "evidence": [
+          "description: Обязателен, если type = card_token."
+        ],
+        "field": "destination.card_token",
+        "operation_id": "createCardDisbursement",
+        "source": "description",
+        "when": "destination.type"
+      }
+    ],
+    "gateway_config": {
+      "confidence": 0.9,
+      "currency": "RUB",
+      "direction": "withdraw",
+      "evidence": [
+        "currency: RUB (enum constant)",
+        "request method: card (default of destination.type)",
+        "direction: withdraw (token 'disbursement' in operationId createCardDisbursement)"
+      ],
+      "external_method": "card_payout",
+      "gateway": "RUB_CARD_WITHDRAW",
+      "method": "card"
+    },
+    "operations": [
+      {
+        "canonical_method": "create_request",
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'create' -> create (+5)",
+          "structure POST with body and no path id -> create (+3)",
+          "text 'создать' -> create (+1)"
+        ],
+        "in_contract": true,
+        "kind": "create",
+        "method": "POST",
+        "operation_id": "createCardDisbursement",
+        "path": "/v2/disbursements/card"
+      },
+      {
+        "canonical_method": null,
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'create' -> create (+5)",
+          "structure POST with body and no path id -> create (+3)",
+          "text 'создать' -> create (+1)"
+        ],
+        "in_contract": false,
+        "kind": "create",
+        "method": "POST",
+        "operation_id": "createSbpDisbursement",
+        "path": "/v2/disbursements/sbp"
+      },
+      {
+        "canonical_method": "fetch_status",
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'state' -> status (+5)",
+          "structure GET with path id -> status (+3)",
+          "text 'состояние' -> status (+1)"
+        ],
+        "in_contract": true,
+        "kind": "status",
+        "method": "GET",
+        "operation_id": "getDisbursementState",
+        "path": "/v2/disbursements/{disbursement_id}"
+      },
+      {
+        "canonical_method": "cancel_request",
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'cancel' -> cancel (+5)",
+          "path token 'cancel' -> cancel (+3)",
+          "text 'отменить' -> cancel (+1)"
+        ],
+        "in_contract": false,
+        "kind": "cancel",
+        "method": "POST",
+        "operation_id": "cancelDisbursement",
+        "path": "/v2/disbursements/{disbursement_id}/cancel"
+      },
+      {
+        "canonical_method": "fetch_balance",
+        "confidence": 0.9,
+        "evidence": [
+          "operationId token 'balance' -> balance (+5)",
+          "path token 'balance' -> balance (+3)",
+          "text 'баланс' -> balance (+1)"
+        ],
+        "in_contract": false,
+        "kind": "balance",
+        "method": "GET",
+        "operation_id": "getMerchantBalance",
+        "path": "/v2/merchant/balance"
+      },
+      {
+        "canonical_method": "list_requests",
+        "confidence": 0.89,
+        "evidence": [
+          "operationId token 'list' -> list (+5)",
+          "structure GET without path id -> list (+3)"
+        ],
+        "in_contract": false,
+        "kind": "list",
+        "method": "GET",
+        "operation_id": "listSbpMembers",
+        "path": "/v2/dictionaries/sbp-members"
+      },
+      {
+        "canonical_method": "process_callback",
+        "confidence": 0.92,
+        "evidence": [
+          "operationId token 'notification' -> webhook (+5)",
+          "path token 'notifications' -> webhook (+3)",
+          "tag 'Notifications' -> webhook (+2)",
+          "text 'уведомление' -> webhook (+1)"
+        ],
+        "in_contract": true,
+        "kind": "webhook",
+        "method": "POST",
+        "operation_id": "disbursementNotification",
+        "path": "/v2/notifications/disbursement"
+      }
+    ],
+    "statuses": [
+      {
+        "canonical": "in_progress",
+        "confidence": 0.95,
+        "evidence": [
+          "statuses.yml: queued -> in_progress"
+        ],
+        "provider": "queued",
+        "source": "dictionary"
+      },
+      {
+        "canonical": "in_progress",
+        "confidence": 0.3,
+        "evidence": [
+          "default: in_progress"
+        ],
+        "provider": "in_flight",
+        "source": "default"
+      },
+      {
+        "canonical": "approved",
+        "confidence": 0.95,
+        "evidence": [
+          "statuses.yml: settled -> approved"
+        ],
+        "provider": "settled",
+        "source": "dictionary"
+      },
+      {
+        "canonical": "rejected",
+        "confidence": 0.95,
+        "evidence": [
+          "statuses.yml: returned -> rejected"
+        ],
+        "provider": "returned",
+        "source": "dictionary"
+      },
+      {
+        "canonical": "rejected",
+        "confidence": 0.85,
+        "evidence": [
+          "statuses.yml token: rejected_by_bank -> rejected"
+        ],
+        "provider": "rejected_by_bank",
+        "source": "token"
+      }
+    ],
+    "webhook": {
+      "confidence": 0.92,
+      "event_field": "event_type",
+      "events": [
+        {
+          "canonical_status": null,
+          "confidence": 0.0,
+          "source": "none",
+          "value": "disbursement.in_flight"
+        },
+        {
+          "canonical_status": "approved",
+          "confidence": 0.95,
+          "source": "dictionary",
+          "value": "disbursement.settled"
+        },
+        {
+          "canonical_status": "rejected",
+          "confidence": 0.95,
+          "source": "dictionary",
+          "value": "disbursement.returned"
+        },
+        {
+          "canonical_status": "rejected",
+          "confidence": 0.85,
+          "source": "token",
+          "value": "disbursement.rejected_by_bank"
+        }
+      ],
+      "id_field": "disbursement_id",
+      "method": "POST",
+      "path": "/v2/notifications/disbursement",
+      "signature": {
+        "algorithm": "hmac-sha512",
+        "confidence": 0.9,
+        "encoding": "base64",
+        "evidence": [
+          "parameter X-CardPay-Signature (header): HMAC-SHA512 от сырого тела запроса на ключе callback_secret, результат в base64",
+          "operation description: Уведомление подписано: заголовок `X-CardPay-Signature` содержит HMAC-SHA512 от сырого тела"
+        ],
+        "location": "header",
+        "message": "raw_body",
+        "name": "X-CardPay-Signature",
+        "secret": "callback_secret",
+        "source": "parameter"
+      },
+      "source": "path_heuristic",
+      "status_field": "state"
+    }
+  },
+  "overrides_applied": [],
+  "provider": {
+    "class_name": "Provider::CardpayService",
+    "service_file": "cardpay_service.rb",
+    "slug": "cardpay",
+    "title": "CardPay Disbursement API",
+    "version": "2.4.0"
+  },
+  "requires_confirmation": [
+    {
+      "code": "W105",
+      "evidence": [],
+      "level": "warning",
+      "location": null,
+      "message": "Several create candidates (createCardDisbursement, createSbpDisbursement); createCardDisbursement chosen, others generated as extra methods",
+      "where": "extra methods"
+    },
+    {
+      "code": "W201",
+      "evidence": [],
+      "level": "warning",
+      "location": null,
+      "message": "Status in_flight has no canonical mapping; defaulting to in_progress",
+      "where": "STATUS_MAP"
+    },
+    {
+      "code": "W202",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/components/responses/Unauthorized",
+      "message": "Provider error code CP_KEY_REVOKED (HTTP 401) has no canonical analog; defaulting to invalid_credentials",
+      "where": "ERROR_MAP"
+    },
+    {
+      "code": "W203",
+      "evidence": [],
+      "level": "warning",
+      "location": null,
+      "message": "Webhook event disbursement.in_flight has no canonical status; the service treats it as unknown_event",
+      "where": "process_callback (unknown_event)"
+    },
+    {
+      "code": "W402",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/components/schemas/CardDestination/properties/card_number",
+      "message": "Conditional requirement inferred from description: destination.card_number is required when destination.type equals card (createCardDisbursement)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "W402",
+      "evidence": [],
+      "level": "warning",
+      "location": "#/components/schemas/CardDestination/properties/card_token",
+      "message": "Conditional requirement inferred from description: destination.card_token is required when destination.type equals card_token (createCardDisbursement)",
+      "where": "check_conditions, REQUIRED_REQUISITES"
+    },
+    {
+      "code": "I201",
+      "evidence": [],
+      "level": "info",
+      "location": null,
+      "message": "Status mapping recorded (5 statuses): queued -> in_progress, in_flight -> in_progress, settled -> approved, returned -> rejected, rejected_by_bank -> rejected",
+      "where": "STATUS_MAP"
+    },
+    {
+      "code": "I301",
+      "evidence": [],
+      "level": "info",
+      "location": "#/paths/~1v2~1notifications~1disbursement/post/parameters/0",
+      "message": "Signature convention recorded: X-CardPay-Signature (header), algorithm hmac-sha512, encoding base64, message raw_body, secret callback_secret",
+      "where": "verify_signature!"
+    },
+    {
+      "code": "I401",
+      "evidence": [
+        "description: копейках",
+        "error example (422): kopecks",
+        "minimum: 50000"
+      ],
+      "level": "info",
+      "location": "#/components/schemas/CardDisbursementRequest/properties/amount",
+      "message": "Amount field amount in createCardDisbursement uses minor units (multiplier 100, score 8); signals: description: копейках, error example (422): kopecks, minimum: 50000",
+      "where": "build_*_payload, MIN_AMOUNT"
+    },
+    {
+      "code": "I401",
+      "evidence": [
+        "description: копейках",
+        "minimum: 50000"
+      ],
+      "level": "info",
+      "location": "#/components/schemas/SbpDisbursementRequest/properties/amount",
+      "message": "Amount field amount in createSbpDisbursement uses minor units (multiplier 100, score 5); signals: description: копейках, minimum: 50000",
+      "where": "build_*_payload, MIN_AMOUNT"
+    },
+    {
+      "code": "I403",
+      "evidence": [
+        "currency: RUB (enum constant)",
+        "request method: card (default of destination.type)",
+        "direction: withdraw (token 'disbursement' in operationId createCardDisbursement)"
+      ],
+      "level": "info",
+      "location": null,
+      "message": "Gateway config recorded: external_method card_payout, gateway RUB_CARD_WITHDRAW (confidence 0.9); evidence: currency: RUB (enum constant), request method: card (default of destination.type), direction: withdraw (token 'disbursement' in operationId createCardDisbursement)",
+      "where": "ProviderGateway config"
+    }
+  ],
+  "todos": [
+    {
+      "file": "cardpay_service.rb",
+      "line": 164,
+      "text": "TODO(confidence 0.6): required when destination.type = card (description: Обязателен, если type ="
+    },
+    {
+      "file": "cardpay_service.rb",
+      "line": 184,
+      "text": "TODO(confidence 0.6): required when destination.type = card_token (description: Обязателен, если"
+    },
+    {
+      "file": "cardpay_service.rb",
+      "line": 338,
+      "text": "TODO(confidence 0.3): default: in_progress"
+    }
+  ],
+  "validation": {
+    "checks": [
+      {
+        "detail": "Prism: no syntax errors",
+        "name": "cardpay_service.rb: syntax",
+        "ok": true
+      },
+      {
+        "detail": "no ERB tags in the output",
+        "name": "cardpay_service.rb: no ERB leftovers",
+        "ok": true
+      },
+      {
+        "detail": "0 offenses",
+        "name": "cardpay_service.rb: rubocop",
+        "ok": true
+      },
+      {
+        "detail": "class inherits Provider::BaseService",
+        "name": "cardpay_service.rb: inherits BaseService",
+        "ok": true
+      },
+      {
+        "detail": "4/4 contract methods",
+        "name": "cardpay_service.rb: contract methods",
+        "ok": true
+      },
+      {
+        "detail": "Prism: no syntax errors",
+        "name": "base_contract.rb: syntax",
+        "ok": true
+      },
+      {
+        "detail": "no ERB tags in the output",
+        "name": "base_contract.rb: no ERB leftovers",
+        "ok": true
+      },
+      {
+        "detail": "0 offenses",
+        "name": "base_contract.rb: rubocop",
+        "ok": true
+      },
+      {
+        "detail": "Prism: no syntax errors",
+        "name": "cardpay_service_spec.rb: syntax",
+        "ok": true
+      },
+      {
+        "detail": "no ERB tags in the output",
+        "name": "cardpay_service_spec.rb: no ERB leftovers",
+        "ok": true
+      },
+      {
+        "detail": "0 offenses",
+        "name": "cardpay_service_spec.rb: rubocop",
+        "ok": true
+      },
+      {
+        "detail": "parses, 8 top-level entries",
+        "name": "fixtures.json: JSON",
+        "ok": true
+      },
+      {
+        "detail": "examples satisfy the schemas rebuilt from the IR",
+        "name": "fixtures.json: schemas",
+        "ok": true
+      },
+      {
+        "detail": "13 sections",
+        "name": "INTEGRATION.md: sections",
+        "ok": true
+      },
+      {
+        "detail": "no ERB tags in the output",
+        "name": "INTEGRATION.md: no ERB leftovers",
+        "ok": true
+      }
+    ],
+    "ok": true
+  }
+}

@@ -1,0 +1,209 @@
+{
+  "create_request": {
+    "request": {
+      "merchant_order_id": "ord-2026-000871",
+      "merchant_id": "shop_10245",
+      "amount": "1500.00",
+      "currency": "RUB",
+      "description": "Заказ №871 в магазине example.ru",
+      "payment_details": {
+        "source_type": "card",
+        "pan": "4111111111111111",
+        "expiry_month": "07",
+        "expiry_year": "29",
+        "cvc": "123",
+        "cardholder_name": "IVAN PETROV"
+      },
+      "payer": {
+        "email": "buyer@example.ru",
+        "ip_address": "203.0.113.17"
+      },
+      "return_url": "https://example.ru/orders/871/done",
+      "fiscalization": true,
+      "receipt_email": "buyer@example.ru"
+    },
+    "response_201": {
+      "deposit_id": "dp_8c41f0e2",
+      "merchant_order_id": "ord-2026-000871",
+      "state": "created",
+      "amount": "1500.00",
+      "paid_amount": "0.00",
+      "currency": "RUB",
+      "payment_url": "https://pay.rublepay.example/d/8c41f0e2",
+      "created_at": "2026-02-14T09:15:00Z",
+      "updated_at": "2026-02-14T09:15:00Z",
+      "expires_at": "2026-02-14T10:15:00Z"
+    },
+    "response_400": {
+      "error_code": "malformed_request",
+      "error_message": "Field payment_details.source_type is required",
+      "request_id": "req_0f2a77c1"
+    },
+    "response_401": {
+      "error_code": "merchant_disabled",
+      "error_message": "Merchant key is revoked or the shop is disabled",
+      "request_id": "req_0f2a7700"
+    },
+    "response_409": {
+      "error_code": "deposit_already_registered",
+      "error_message": "Deposit for merchant_order_id ord-2026-000871 already exists",
+      "request_id": "req_0f2a77c2"
+    },
+    "response_422": {
+      "error_code": "amount_less_than_min",
+      "error_message": "Minimum deposit amount is 10.00 RUB",
+      "request_id": "req_0f2a77c3"
+    },
+    "response_429": {
+      "error_code": "too_many_requests",
+      "error_message": "Request rate limit for the shop is exceeded",
+      "retry_in": 30
+    },
+    "response_503": {
+      "error_code": "acquirer_unavailable",
+      "error_message": "Acquiring partner is temporarily unavailable, retry later",
+      "request_id": "req_0f2a7702"
+    }
+  },
+  "fetch_status": {
+    "response_200": {
+      "deposit_id": "dp_8c41f0e2",
+      "merchant_order_id": "ord-2026-000871",
+      "state": "succeeded",
+      "amount": "1500.00",
+      "paid_amount": "1500.00",
+      "currency": "RUB",
+      "payment_url": "https://pay.rublepay.example/d/8c41f0e2",
+      "created_at": "2026-02-14T09:15:00Z",
+      "updated_at": "2026-02-14T09:17:42Z",
+      "expires_at": "2026-02-14T10:15:00Z"
+    },
+    "response_401": {
+      "error_code": "merchant_disabled",
+      "error_message": "Merchant key is revoked or the shop is disabled",
+      "request_id": "req_0f2a7700"
+    },
+    "response_404": {
+      "error_code": "deposit_not_found",
+      "error_message": "Deposit dp_8c41f0e2 is not found",
+      "request_id": "req_0f2a7701"
+    },
+    "response_429": {
+      "error_code": "too_many_requests",
+      "error_message": "Request rate limit for the shop is exceeded",
+      "retry_in": 30
+    }
+  },
+  "callback": {
+    "payload": {
+      "event": "deposit.succeeded",
+      "deposit_id": "dp_8c41f0e2",
+      "merchant_order_id": "ord-2026-000871",
+      "state": "succeeded",
+      "amount": "1500.00",
+      "paid_amount": "1500.00",
+      "currency": "RUB",
+      "occurred_at": "2026-02-14T09:17:42Z",
+      "attempt": 1
+    },
+    "expected_operation_status": "approved"
+  },
+  "callback_failed": {
+    "payload": {
+      "event": "deposit.expired",
+      "deposit_id": "dp_9d5210ff",
+      "merchant_order_id": "ord-2026-000873",
+      "state": "expired",
+      "amount": "890.00",
+      "paid_amount": "0.00",
+      "currency": "RUB",
+      "occurred_at": "2026-02-14T11:00:00Z",
+      "error_code": "payment_window_closed",
+      "error_message": "Payer did not complete the payment in time",
+      "attempt": 1
+    },
+    "expected_operation_status": "rejected"
+  },
+  "refund_request": {
+    "request": {
+      "amount": "500.00",
+      "reason": "Частичный возврат по обращению покупателя",
+      "merchant_refund_id": "ref-871-1"
+    },
+    "response_200": {
+      "refund_id": "rf_31b7c0aa",
+      "deposit_id": "dp_8c41f0e2",
+      "state": "created",
+      "amount": "500.00",
+      "currency": "RUB",
+      "created_at": "2026-02-15T11:02:10Z"
+    },
+    "response_400": {
+      "error_code": "malformed_request",
+      "error_message": "Field payment_details.source_type is required",
+      "request_id": "req_0f2a77c1"
+    },
+    "response_401": {
+      "error_code": "merchant_disabled",
+      "error_message": "Merchant key is revoked or the shop is disabled",
+      "request_id": "req_0f2a7700"
+    },
+    "response_404": {
+      "error_code": "deposit_not_found",
+      "error_message": "Deposit dp_8c41f0e2 is not found",
+      "request_id": "req_0f2a7701"
+    },
+    "response_422": {
+      "error_code": "refund_not_allowed",
+      "error_message": "Deposit in state expired cannot be refunded",
+      "request_id": "req_0f2a7801"
+    }
+  },
+  "calculate_deposit_fee": {
+    "request": {
+      "amount": "1500.00",
+      "currency": "RUB",
+      "source_type": "card"
+    },
+    "response_200": {
+      "amount": "1500.00",
+      "fee": "40.50",
+      "total_amount": "1459.50",
+      "currency": "RUB",
+      "source_type": "card",
+      "tariff_code": "std_card_27"
+    },
+    "response_401": {
+      "error_code": "merchant_disabled",
+      "error_message": "Merchant key is revoked or the shop is disabled",
+      "request_id": "req_0f2a7700"
+    },
+    "response_422": {
+      "error_code": "source_not_enabled",
+      "error_message": "Source type account is not enabled for this shop",
+      "request_id": "req_0f2a7811"
+    }
+  },
+  "list_requests": {
+    "response_200": {
+      "banks": [
+        {
+          "member_id": "100000000111",
+          "name": "Т-Банк",
+          "available": true
+        },
+        {
+          "member_id": "100000000004",
+          "name": "Альфа-Банк",
+          "available": true
+        }
+      ],
+      "updated_at": "2026-02-01T00:00:00Z"
+    },
+    "response_401": {
+      "error_code": "merchant_disabled",
+      "error_message": "Merchant key is revoked or the shop is disabled",
+      "request_id": "req_0f2a7700"
+    }
+  }
+}

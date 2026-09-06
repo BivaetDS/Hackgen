@@ -11,12 +11,13 @@ RSpec.describe ProviderIntegrator::Generator do
   let(:service) { GenerationHelpers.novapay_file(:service) }
 
   describe ".call on spec/fixtures/normalized_novapay.json" do
-    it "succeeds with the five output files in output order" do
+    it "succeeds with the six output files in output order" do
       aggregate_failures do
         expect(result).to be_success
         expect(result.files.map(&:name))
-          .to eq(%w[novapay_service.rb base_contract.rb INTEGRATION.md fixtures.json generation_report.json])
-        expect(result.files.map(&:kind)).to eq(%w[service base_contract documentation fixtures report])
+          .to eq(%w[novapay_service.rb base_contract.rb INTEGRATION.md fixtures.json novapay_service_spec.rb
+                    generation_report.json])
+        expect(result.files.map(&:kind)).to eq(%w[service base_contract documentation fixtures service_spec report])
         expect(result.files.map(&:path)).to all(start_with("output/novapay/"))
       end
     end

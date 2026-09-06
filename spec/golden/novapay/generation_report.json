@@ -205,11 +205,15 @@
     },
     {
       "path": "INTEGRATION.md",
-      "sha256": "1915d4f8c92997b01f387dee55db9ff2e861e7a1a9bf420923cd43fb3f40ae7c"
+      "sha256": "43af59b53c5eda27f2047b8582b7ce6773fccb1b8c85d3c55958161e63dfd9b5"
     },
     {
       "path": "fixtures.json",
       "sha256": "67654c876334d76f5f08e0412339af8cd9fbef8ca32d37688e68fdf606e9a7d7"
+    },
+    {
+      "path": "novapay_service_spec.rb",
+      "sha256": "14212d4e6788490a36bc58fba38721bb4c1e355c5494656a0392be4a2401f608"
     }
   ],
   "generator": {
@@ -587,6 +591,21 @@
         "ok": true
       },
       {
+        "detail": "Prism: no syntax errors",
+        "name": "novapay_service_spec.rb: syntax",
+        "ok": true
+      },
+      {
+        "detail": "no ERB tags in the output",
+        "name": "novapay_service_spec.rb: no ERB leftovers",
+        "ok": true
+      },
+      {
+        "detail": "0 offenses",
+        "name": "novapay_service_spec.rb: rubocop",
+        "ok": true
+      },
+      {
         "detail": "parses, 6 top-level entries",
         "name": "fixtures.json: JSON",
         "ok": true
@@ -597,7 +616,7 @@
         "ok": true
       },
       {
-        "detail": "12 sections",
+        "detail": "13 sections",
         "name": "INTEGRATION.md: sections",
         "ok": true
       },

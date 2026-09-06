@@ -17,6 +17,7 @@ RSpec.describe ProviderIntegrator::Pipeline do
       def parsed(result) = @calls << [:parsed, result.class]
       def generating(slug, output_dir) = @calls << [:generating, slug, output_dir]
       def generated(result) = @calls << [:generated, result.class]
+      def spec_ran(run) = @calls << [:spec_ran, run]
     end.new
   end
 
@@ -28,7 +29,7 @@ RSpec.describe ProviderIntegrator::Pipeline do
     Dir.glob("**/*", base: dir).select { |entry| File.file?(File.join(dir, entry)) }.sort
   end
 
-  it "writes the five generated files under <output>/<slug>/, byte-identical to the golden copy" do
+  it "writes the six generated files under <output>/<slug>/, byte-identical to the golden copy" do
     Dir.mktmpdir("pipeline") do |dir|
       result = run(dir, provider: "novapay")
 
@@ -37,7 +38,7 @@ RSpec.describe ProviderIntegrator::Pipeline do
         expect(result.status).to eq(:ok)
         expect(result.output_dir).to eq(File.join(dir, "novapay"))
         expect(files_in(dir)).to eq(%w[INTEGRATION.md base_contract.rb fixtures.json generation_report.json
-                                       novapay_service.rb].map { |name| "novapay/#{name}" })
+                                       novapay_service.rb novapay_service_spec.rb].map { |name| "novapay/#{name}" })
         result.files.each do |file|
           expect(ProviderIntegrator::Files.read(file.path))
             .to eq(ProviderIntegrator::Files.read(File.join(golden_dir, file.name)))
@@ -54,7 +55,7 @@ RSpec.describe ProviderIntegrator::Pipeline do
       aggregate_failures do
         expect(first.output_dir).to eq(File.join(dir, "novapay"))
         expect(second.files.map(&:sha256)).to eq(first.files.map(&:sha256))
-        expect(files_in(dir).size).to eq(5)
+        expect(files_in(dir).size).to eq(6)
       end
     end
   end
@@ -123,6 +124,45 @@ RSpec.describe ProviderIntegrator::Pipeline do
     end
   end
 
+  it "runs the generated spec after writing when run_spec is true" do
+    run_result = ProviderIntegrator::Models::SpecRun.new(
+      examples: 20, failures: 0, output: "20 examples, 0 failures\n", exit_status: 0, error: nil
+    )
+    allow(ProviderIntegrator::SpecRunner).to receive(:call).and_return(run_result)
+
+    Dir.mktmpdir("pipeline") do |dir|
+      result = run(dir, run_spec: true, observer:)
+      spec_path = File.join(dir, "novapay", "novapay_service_spec.rb")
+
+      aggregate_failures do
+        expect(result.status).to eq(:ok)
+        expect(result.spec_run).to equal(run_result)
+        expect(ProviderIntegrator::SpecRunner).to have_received(:call)
+          .with(spec_path:, chdir: File.join(dir, "novapay"))
+        expect(observer.calls.last).to eq([:spec_ran, run_result])
+      end
+    end
+  end
+
+  it "returns :spec_failed and keeps all files when the generated spec fails" do
+    run_result = ProviderIntegrator::Models::SpecRun.new(
+      examples: 20, failures: 1, output: "20 examples, 1 failure\n", exit_status: 1, error: nil
+    )
+    allow(ProviderIntegrator::SpecRunner).to receive(:call).and_return(run_result)
+
+    Dir.mktmpdir("pipeline") do |dir|
+      result = run(dir, run_spec: true)
+
+      aggregate_failures do
+        expect(result.status).to eq(:spec_failed)
+        expect(result).to be_failure
+        expect(result.files.size).to eq(6)
+        expect(result.spec_run).to equal(run_result)
+        expect(files_in(dir).size).to eq(6)
+      end
+    end
+  end
+
   it "returns :write with the OS reason when the output root is a file" do
     Dir.mktmpdir("pipeline") do |dir|
       blocker = File.join(dir, "blocker")
@@ -158,6 +198,7 @@ RSpec.describe ProviderIntegrator::Pipeline do
   end
 
   it "ignores a silent default observer" do
-    expect(described_class::NullObserver.new.generating("x", "y")).to be_nil
+    silent = described_class::NullObserver.new
+    expect([silent.generating("x", "y"), silent.spec_ran(nil)]).to eq([nil, nil])
   end
 end

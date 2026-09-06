@@ -2,11 +2,11 @@
 
 module ProviderIntegrator
   # Thor command line (`bin/integrate`). One command, one pass through the Pipeline; the Reporter
-  # prints each stage as it happens. Exit codes are the contract with CI and the web layer
-  # (docs/PLAN.md 7): 0 ok, 1 internal error, 2 arguments, 3 unusable spec, 4 warnings under
-  # --strict, 5 output failed validation (nothing written), 6 output could not be written.
+  # prints each stage as it happens. Exit codes are the contract with CI (docs/PLAN.md 7): 0 ok,
+  # 1 internal error, 2 arguments, 3 unusable spec, 4 warnings under --strict, 5 output validation
+  # or generated-spec failure, 6 output could not be written.
   class CLI < Thor
-    EXIT = { ok: 0, internal: 1, arguments: 2, spec: 3, ambiguous: 4, generation: 5, write: 6 }.freeze
+    EXIT = { ok: 0, internal: 1, arguments: 2, spec: 3, ambiguous: 4, generation: 5, spec_failed: 5, write: 6 }.freeze
     LANGUAGES = %w[ruby].freeze
 
     default_command :integrate
@@ -35,6 +35,7 @@ module ProviderIntegrator
     option :overrides, type: :string, desc: "Path to an overrides.yml with fixed-key hints"
     option :analyze_only, type: :boolean, default: false, desc: "Print the analysed spec (IR) as JSON and stop"
     option :strict, type: :boolean, default: false, desc: "Treat warnings as a failure (exit 4)"
+    option :run_spec, type: :boolean, default: false, desc: "Run the generated RSpec after writing the files"
     option :verbose, type: :boolean, default: false, desc: "Show info events, spec locations and backtraces"
     option :lang, type: :string, default: "ruby", desc: "Target language (only ruby is supported)"
     def integrate
@@ -49,7 +50,8 @@ module ProviderIntegrator
 
     def run_pipeline
       Pipeline.call(path: options[:spec], provider: options[:provider], output: options[:output],
-                    overrides: options[:overrides], analyze_only: options[:analyze_only], observer: reporter)
+                    overrides: options[:overrides], analyze_only: options[:analyze_only], run_spec: options[:run_spec],
+                    observer: reporter)
     end
 
     # The IR as canonical JSON on stdout; nothing else is printed there under --analyze-only.

@@ -3,7 +3,7 @@
 module ProviderIntegrator
   class Reporter
     # The one-line verdict of the output validator for the CLI ("Ruby syntax OK, RuboCop 0 offenses,
-    # 4/4 contract methods, fixtures valid, INTEGRATION.md 12 sections"), built from the checks of
+    # 4/4 contract methods, fixtures valid, INTEGRATION.md 13 sections"), built from the checks of
     # GenerationResult#validation by their kind, never by parsing their wording.
     class ValidationLine
       def initialize(validation)

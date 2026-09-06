@@ -5,15 +5,16 @@ module ProviderIntegrator
     # Outcome of Pipeline.call. `status` says how far the run got: :ok (files written, or the
     # analysis finished under analyze_only), :spec (the document is unusable), :generation (the
     # output failed validation; nothing was written), :write (the files could not be written),
-    # :internal (a bug; `error` holds the exception). `events` merges the analysis and generation
-    # diagnostics, `files` are the GeneratedFile objects actually written under `output_dir`.
-    PipelineResult = Data.define(:status, :spec, :events, :files, :output_dir, :error)
+    # :spec_failed (the generated RSpec failed after files were written), :internal (a bug; `error`
+    # holds the exception). `events` merges analysis and generation diagnostics; `files` are the
+    # GeneratedFile objects actually written, and `spec_run` is the optional --run-spec result.
+    PipelineResult = Data.define(:status, :spec, :events, :files, :output_dir, :spec_run, :error)
 
     # Reopened so the constant and the predicates live outside the Data.define block.
     class PipelineResult
       include ResultPredicates
 
-      STATUSES = %i[ok spec generation write internal].freeze
+      STATUSES = %i[ok spec generation spec_failed write internal].freeze
 
       def initialize(**)
         super

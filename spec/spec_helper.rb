@@ -12,6 +12,9 @@ WebMock.disable_net_connect!
 Dir[File.join(__dir__, "support", "**", "*.rb")].each { |file| require file }
 
 RSpec.configure do |config|
+  # Golden service specs share Provider::* constants and are proved one by one in child processes
+  # by spec/integration/generated_specs_spec.rb; do not also load all six into the repository suite.
+  config.exclude_pattern = "spec/golden/**/*_spec.rb"
   config.expect_with(:rspec) do |expectations|
     expectations.syntax = :expect
     expectations.include_chain_clauses_in_custom_matcher_descriptions = true

@@ -12,7 +12,9 @@ namespace :golden do
        "rake \"golden:update[novapay,bearerpay]\" adds or refreshes the named specs"
   task :update, [:names] do |_task, args|
     require_relative "lib/provider_integrator"
-    names = args[:names].to_s.split(/[,\s]+/).reject(&:empty?)
+    # Rake treats every comma-delimited value after the first as an "extra" when the task has
+    # one named argument. Keep accepting both `update[a,b]` and a whitespace-delimited first arg.
+    names = [args[:names], *args.extras].flat_map { |value| value.to_s.split(/[,\s]+/) }.reject(&:empty?)
     written = ProviderIntegrator::Golden.update!(names.empty? ? ProviderIntegrator::Golden.present : names)
     puts written.empty? ? "no golden directories (pass names: rake \"golden:update[novapay]\")" : written
   end
@@ -35,8 +37,8 @@ LF = "\n"
 
 desc "Normalize CRLF to LF in text files (rubocop -A rewrites files as CRLF on Windows)"
 task :lf do
-  patterns = ["lib/**/*.{rb,erb,yml,json}", "spec/**/*.{rb,yml,yaml,json}", "app/**/*.{rb,erb}",
-              "bin/*", "Rakefile", "Gemfile", "config.ru", "*.md", "docs/*.md", "examples/*"]
+  patterns = ["lib/**/*.{rb,erb,yml,json}", "spec/**/*.{rb,yml,yaml,json}", "bin/*", "Rakefile", "Gemfile",
+              "*.md", "docs/*.md", "examples/*"]
   fixed = Dir[*patterns].select do |path|
     next false unless File.file?(path)
 

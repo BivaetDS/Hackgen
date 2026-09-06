@@ -3,8 +3,8 @@
 # spec/golden/<spec>/ holds the byte-exact output of the generator for the fixture specs. Any
 # change of the output shows up here as a diff; `rake golden:update` regenerates the directories.
 RSpec.describe ProviderIntegrator::Golden do
-  it "maintains the case study spec (wave 1) - the rest of the fixtures join in wave 2" do
-    expect(described_class.present).to include("novapay")
+  it "maintains golden output for every regression spec" do
+    expect(described_class.present).to eq(%w[bearerpay cardpay legacy_swagger2 novapay numstatus rublepay])
   end
 
   described_class.present.each do |name|

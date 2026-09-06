@@ -19,7 +19,8 @@ module ProviderIntegrator
       Models::GenerationResult.new(value: files, events: log.sorted, validation:)
     end
 
-    # The five content files, in output order; a template failure becomes E201 for that file.
+    # The five content files plus the generated service spec, in output order; a template failure
+    # becomes E201 for that file.
     def generate(context, log)
       generators = [ServiceGenerator, BaseContractGenerator, DocumentationGenerator, FixturesGenerator, RspecGenerator]
       generators.filter_map do |generator|

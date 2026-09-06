@@ -11,7 +11,7 @@ RSpec.describe ProviderIntegrator::Reporter do
   let(:generation) { GenerationHelpers.novapay_generation }
 
   def pipeline_result(status, **attrs)
-    defaults = { spec: parsed.spec, events: parsed.events, files: [], output_dir: nil, error: nil }
+    defaults = { spec: parsed.spec, events: parsed.events, files: [], output_dir: nil, spec_run: nil, error: nil }
     ProviderIntegrator::Models::PipelineResult.new(status:, **defaults.merge(attrs))
   end
 
@@ -69,8 +69,9 @@ RSpec.describe ProviderIntegrator::Reporter do
         Generating service...
         Generating integration guide...
         Generating test fixtures...
+        Generating service spec...
         Generating contract stub and report...
-        Validating output... Ruby syntax OK, RuboCop 0 offenses, 4/4 contract methods, fixtures valid, INTEGRATION.md 12 sections
+        Validating output... Ruby syntax OK, RuboCop 0 offenses, 4/4 contract methods, fixtures valid, INTEGRATION.md 13 sections
       TEXT
     end
 
@@ -85,6 +86,29 @@ RSpec.describe ProviderIntegrator::Reporter do
         expect(io.string).to include("  FAILED novapay_service.rb: syntax: unexpected end (line 3)\n",
                                      "  FAILED base_contract.rb: syntax: unexpected end (line 3)\n")
       end
+    end
+  end
+
+  describe "#spec_ran" do
+    it "prints one stable summary line for a passing run" do
+      run = ProviderIntegrator::Models::SpecRun.new(
+        examples: 20, failures: 0, output: "ignored", exit_status: 0, error: nil
+      )
+
+      reporter.spec_ran(run)
+
+      expect([io.string, err.string]).to eq(["Running generated spec... RSpec 20 examples, 0 failures\n", ""])
+    end
+
+    it "prints the setup reason and captured output on stderr for a failed run" do
+      run = ProviderIntegrator::Models::SpecRun.new(
+        examples: 0, failures: 1, output: "rspec output\n", exit_status: 1, error: "runner problem"
+      )
+
+      reporter.spec_ran(run)
+
+      expect([io.string, err.string])
+        .to eq(["", "Running generated spec... FAILED\nrunner problem\nrspec output\n"])
     end
   end
 
@@ -132,6 +156,7 @@ RSpec.describe ProviderIntegrator::Reporter do
             ./output/novapay/novapay_service.rb
             ./output/novapay/INTEGRATION.md
             ./output/novapay/fixtures.json
+            ./output/novapay/novapay_service_spec.rb
             ./output/novapay/base_contract.rb
             ./output/novapay/generation_report.json
         TEXT
@@ -146,6 +171,15 @@ RSpec.describe ProviderIntegrator::Reporter do
       aggregate_failures do
         expect(io.string).to include("Requires confirmation: 7 items (W301, W402 x2, I201, I301, I401, I403)\n")
         expect(io.string).not_to include("Output:", "INTEGRATION.md")
+      end
+    end
+
+    it "reports that files remain after a generated spec failure" do
+      reporter.finish(pipeline_result(:spec_failed, files: written_files, output_dir: "./output/novapay"))
+
+      aggregate_failures do
+        expect(err.string).to eq("Generated spec failed; files were kept in ./output/novapay.\n")
+        expect(io.string).to include("Output:\n", "./output/novapay/novapay_service_spec.rb\n")
       end
     end
 
